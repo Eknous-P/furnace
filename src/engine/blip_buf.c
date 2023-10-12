@@ -231,7 +231,7 @@ int blip_read_samples( blip_t* m, short out [], int count, int stereo )
 			out += step;
 			
 			/* High-pass filter */
-			sum -= s << (delta_bits - bass_shift);
+			// sum -= s << (delta_bits - bass_shift);
 		}
 		while ( in != end );
 		m->integrator = sum;
