@@ -22,6 +22,8 @@
 #include <fmt/printf.h>
 #include <algorithm>
 
+bool advancedMode=false;
+
 void FurnaceGUI::drawNewSong() {
   bool accepted=false;
 
@@ -33,7 +35,9 @@ void FurnaceGUI::drawNewSong() {
   ImVec2 avail=ImGui::GetContentRegionAvail();
   avail.y-=ImGui::GetFrameHeightWithSpacing();
 
+  if (!advancedMode) {
   if (ImGui::BeginChild("sysPickerC",avail,false,ImGuiWindowFlags_NoScrollWithMouse|ImGuiWindowFlags_NoScrollbar)) {
+    advancedMode=false;
     if (newSongFirstFrame)
       ImGui::SetKeyboardFocusHere();
     ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
@@ -164,6 +168,21 @@ void FurnaceGUI::drawNewSong() {
         accepted=true;
       }
     }
+  }
+
+  ImGui::SameLine();
+
+  if (ImGui::Button("Advanced...")) {
+    advancedMode=true;
+  }
+
+  }
+  if (advancedMode) {
+    if (ImGui::BeginChild("sysPickerCAdv",avail,false,ImGuiWindowFlags_NoScrollWithMouse|ImGuiWindowFlags_NoScrollbar)) {
+      ImGui::Text("advanced selector here...");
+      ImGui::EndChild();
+    }
+    if (ImGui::Button("Back")) advancedMode=false;
   }
 
   ImGui::SameLine();
