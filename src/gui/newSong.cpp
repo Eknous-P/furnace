@@ -19,10 +19,12 @@
 
 #include "gui.h"
 #include "misc/cpp/imgui_stdlib.h"
+#include "IconsFontAwesome4.h"
 #include <fmt/printf.h>
 #include <algorithm>
 
 bool advancedMode=false;
+bool advancedBeginConfig=false;
 
 void FurnaceGUI::drawNewSong() {
   bool accepted=false;
@@ -35,11 +37,12 @@ void FurnaceGUI::drawNewSong() {
   ImVec2 avail=ImGui::GetContentRegionAvail();
   avail.y-=ImGui::GetFrameHeightWithSpacing();
 
+  if (newSongFirstFrame)
+    ImGui::SetKeyboardFocusHere();
+  
   if (!advancedMode) {
   if (ImGui::BeginChild("sysPickerC",avail,false,ImGuiWindowFlags_NoScrollWithMouse|ImGuiWindowFlags_NoScrollbar)) {
     advancedMode=false;
-    if (newSongFirstFrame)
-      ImGui::SetKeyboardFocusHere();
     ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
     if (ImGui::InputTextWithHint("##SysSearch","Search...",&newSongQuery)) {
       String lowerCase=newSongQuery;
@@ -174,15 +177,45 @@ void FurnaceGUI::drawNewSong() {
 
   if (ImGui::Button("Advanced...")) {
     advancedMode=true;
+    nextDesc="";
   }
 
   }
   if (advancedMode) {
+    DivSystem sys;
     if (ImGui::BeginChild("sysPickerCAdv",avail,false,ImGuiWindowFlags_NoScrollWithMouse|ImGuiWindowFlags_NoScrollbar)) {
-      ImGui::Text("advanced selector here...");
+      if (ImGui::BeginTable("AdvNew",1,ImGuiTableFlags_ScrollY)) {
+        ImGui::TableSetupColumn("1",ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        if (ImGui::Button(ICON_FA_PLUS)) {
+          advancedBeginConfig=true;
+          ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+          sys=systemPicker();
+        }
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        if (advancedBeginConfig) {
+          if (ImGui::Button("Add")) {
+            // nextDesc+=
+            advancedBeginConfig=false;
+          }
+        }
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        ImGui::EndTable();
+      }
       ImGui::EndChild();
     }
     if (ImGui::Button("Back")) advancedMode=false;
+    ImGui::SameLine();
+    if (ImGui::Button("OK")) {
+      accepted=(nextDesc!="");
+    }
+    if (ImGui::IsItemHovered() && nextDesc=="") {
+      ImGui::SetTooltip("what are you going to do with no chips?");
+    }
   }
 
   ImGui::SameLine();
