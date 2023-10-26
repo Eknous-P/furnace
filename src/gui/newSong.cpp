@@ -23,8 +23,13 @@
 #include <fmt/printf.h>
 #include <algorithm>
 
+// for advanced selector (not elegant, i know)
 bool advancedMode=false;
 bool advancedBeginConfig=false;
+bool advancedAddSys=false;
+float volume=1.0f, panning=0.0f;
+DivSystem advSys=DIV_SYSTEM_NULL;
+std::initializer_list<FurnaceGUISysDefChip> advChips;
 
 void FurnaceGUI::drawNewSong() {
   bool accepted=false;
@@ -182,23 +187,34 @@ void FurnaceGUI::drawNewSong() {
 
   }
   if (advancedMode) {
-    DivSystem sys;
     if (ImGui::BeginChild("sysPickerCAdv",avail,false,ImGuiWindowFlags_NoScrollWithMouse|ImGuiWindowFlags_NoScrollbar)) {
       if (ImGui::BeginTable("AdvNew",1,ImGuiTableFlags_ScrollY)) {
         ImGui::TableSetupColumn("1",ImGuiTableColumnFlags_WidthStretch);
         ImGui::TableNextRow();
         ImGui::TableNextColumn();
         if (ImGui::Button(ICON_FA_PLUS)) {
-          advancedBeginConfig=true;
-          ImGui::TableNextRow();
-        ImGui::TableNextColumn();
-          sys=systemPicker();
+          advancedAddSys=true;
         }
         ImGui::TableNextRow();
         ImGui::TableNextColumn();
+
+        if (advancedAddSys) {
+          advSys=systemPicker();
+        }
+        if (advSys>DIV_SYSTEM_NULL) {
+          advancedAddSys=false;
+          advancedBeginConfig=true;
+        }
+        
+        // ImGui::TableNextRow();
+        // ImGui::TableNextColumn();
         if (advancedBeginConfig) {
+          CWSliderFloat("Volume",&volume,-3.0f,3.0f);
+          CWSliderFloat("Panning",&panning,-1.0f,1.0f);
           if (ImGui::Button("Add")) {
-            // nextDesc+=
+            FurnaceGUISysDefChip chip=FurnaceGUISysDefChip(advSys,volume,panning,"");
+            advChips.push_back(chip);
+            advSys=DIV_SYSTEM_NULL;
             advancedBeginConfig=false;
           }
         }
@@ -211,6 +227,7 @@ void FurnaceGUI::drawNewSong() {
     if (ImGui::Button("Back")) advancedMode=false;
     ImGui::SameLine();
     if (ImGui::Button("OK")) {
+      nextDesc=(FurnaceGUISysDef("",advChips,NULL).definition);
       accepted=(nextDesc!="");
     }
     if (ImGui::IsItemHovered() && nextDesc=="") {
