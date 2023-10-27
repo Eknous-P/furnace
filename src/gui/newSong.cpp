@@ -192,8 +192,11 @@ void FurnaceGUI::drawNewSong() {
         ImGui::TableSetupColumn("1",ImGuiTableColumnFlags_WidthStretch);
         ImGui::TableNextRow();
         ImGui::TableNextColumn();
-        if (ImGui::Button(ICON_FA_PLUS)) {
+        if (ImGui::Button(ICON_FA_PLUS) && (advChips.size() < 33)) {
           advancedAddSys=true;
+        }
+        if (ImGui::IsItemHovered() && (advChips.size() > 32)) {
+          ImGui::SetTooltip("too many chips!");
         }
         ImGui::TableNextRow();
         ImGui::TableNextColumn();
@@ -216,22 +219,35 @@ void FurnaceGUI::drawNewSong() {
             advChips.push_back(chip);
             advSys=DIV_SYSTEM_NULL;
             advancedBeginConfig=false;
+            volume=1.0f;
+            panning=0.0f;
+          }
+          ImGui::SameLine();
+          if (ImGui::Button("Cancel")) {
+            advSys=DIV_SYSTEM_NULL;
+            advancedBeginConfig=false;
+            volume=1.0f;
+            panning=0.0f;
           }
         }
         ImGui::TableNextRow();
         ImGui::TableNextColumn();
+        ImGui::Separator();
         ImGui::Text("Selected chips:");
         if (ImGui::BeginTable("advChipList",2)) {
           ImGui::TableSetupColumn("##Chip",ImGuiTableColumnFlags_WidthStretch);
           ImGui::TableSetupColumn("##Del",ImGuiTableColumnFlags_WidthFixed);
-          for (int i=0; i < advChips.size(); i++) {
+          for (std::vector<FurnaceGUISysDefChip>::iterator i = advChips.begin(); i != advChips.end();) {
+            if (advChips.empty()) break; // otherwise segfault
             ImGui::TableNextRow();
             ImGui::TableNextColumn();
-            ImGui::Text("%s",e->getSystemName(advChips[i].sys));
+            ImGui::Text("%s",e->getSystemName((*i).sys));
             ImGui::TableNextColumn();
             pushDestColor();
             if (ImGui::Button(ICON_FA_TIMES)) {
-              advChips.erase(advChips.begin()+i);
+              i=advChips.erase(i);
+            } else {
+              ++i;
             }
             popDestColor();
             if (ImGui::IsItemHovered()) {
@@ -276,7 +292,10 @@ void FurnaceGUI::drawNewSong() {
     selStart=SelectionPoint();
     selEnd=SelectionPoint();
     cursor=SelectionPoint();
+    // reset advanced mode params
     advancedMode=false;
+    advancedBeginConfig=false;
+    advancedAddSys=false;
     updateWindowTitle();
     ImGui::CloseCurrentPopup();
   }
