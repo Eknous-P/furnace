@@ -220,6 +220,26 @@ void FurnaceGUI::drawNewSong() {
         }
         ImGui::TableNextRow();
         ImGui::TableNextColumn();
+        ImGui::Text("Selected chips:");
+        if (ImGui::BeginTable("advChipList",2)) {
+          ImGui::TableSetupColumn("##Chip",ImGuiTableColumnFlags_WidthStretch);
+          ImGui::TableSetupColumn("##Del",ImGuiTableColumnFlags_WidthFixed);
+          for (int i=0; i < advChips.size(); i++) {
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            ImGui::Text("%s",e->getSystemName(advChips[i].sys));
+            ImGui::TableNextColumn();
+            pushDestColor();
+            if (ImGui::Button(ICON_FA_TIMES)) {
+              advChips.erase(advChips.begin()+i);
+            }
+            popDestColor();
+            if (ImGui::IsItemHovered()) {
+              ImGui::SetTooltip("Remove from selection");
+            }
+          }
+          ImGui::EndTable();
+        }
         ImGui::EndTable();
       }
       ImGui::EndChild();
@@ -228,9 +248,10 @@ void FurnaceGUI::drawNewSong() {
     ImGui::SameLine();
     if (ImGui::Button("OK")) {
       nextDesc=(FurnaceGUISysDef("",advChips,NULL).definition);
-      accepted=(nextDesc!="");
+      accepted=(!advChips.empty());
+      advChips.clear();
     }
-    if (ImGui::IsItemHovered() && nextDesc=="") {
+    if (ImGui::IsItemHovered() && advChips.empty()) {
       ImGui::SetTooltip("what are you going to do with no chips?");
     }
   }
@@ -255,6 +276,7 @@ void FurnaceGUI::drawNewSong() {
     selStart=SelectionPoint();
     selEnd=SelectionPoint();
     cursor=SelectionPoint();
+    advancedMode=false;
     updateWindowTitle();
     ImGui::CloseCurrentPopup();
   }
