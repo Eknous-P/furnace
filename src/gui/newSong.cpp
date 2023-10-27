@@ -29,7 +29,7 @@ bool advancedBeginConfig=false;
 bool advancedAddSys=false;
 float volume=1.0f, panning=0.0f;
 DivSystem advSys=DIV_SYSTEM_NULL;
-std::initializer_list<FurnaceGUISysDefChip> advChips;
+std::vector <FurnaceGUISysDefChip> advChips;
 
 void FurnaceGUI::drawNewSong() {
   bool accepted=false;

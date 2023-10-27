@@ -1102,7 +1102,7 @@ struct FurnaceGUISysDef {
   const char* extra;
   String definition;
   std::vector<FurnaceGUISysDefChip> orig;
-  FurnaceGUISysDef(const char* n, std::initializer_list<FurnaceGUISysDefChip> def, const char* e=NULL);
+  FurnaceGUISysDef(const char* n, std::vector<FurnaceGUISysDefChip> def, const char* e=NULL);
 };
 
 struct FurnaceGUISysCategory {

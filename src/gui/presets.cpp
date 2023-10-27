@@ -2813,7 +2813,7 @@ void FurnaceGUI::initSystemPresets() {
   CATEGORY_END;
 }
 
-FurnaceGUISysDef::FurnaceGUISysDef(const char* n, std::initializer_list<FurnaceGUISysDefChip> def, const char* e):
+FurnaceGUISysDef::FurnaceGUISysDef(const char* n, std::vector<FurnaceGUISysDefChip> def, const char* e):
   name(n),
   extra(e) {
   orig=def;
