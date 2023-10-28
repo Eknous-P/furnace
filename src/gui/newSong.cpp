@@ -29,6 +29,7 @@ bool advancedBeginConfig=false;
 bool advancedAddSys=false;
 float volume=1.0f, panning=0.0f;
 DivSystem advSys=DIV_SYSTEM_NULL;
+DivConfig& advSysFlags;//TODO: flags
 std::vector <FurnaceGUISysDefChip> advChips;
 
 void FurnaceGUI::drawNewSong() {
@@ -214,8 +215,9 @@ void FurnaceGUI::drawNewSong() {
         if (advancedBeginConfig) {
           CWSliderFloat("Volume",&volume,-3.0f,3.0f);
           CWSliderFloat("Panning",&panning,-1.0f,1.0f);
+          drawSysConf(advChips.size(),advChips.size(),advSys,advSysFlags,true);
           if (ImGui::Button("Add")) {
-            FurnaceGUISysDefChip chip=FurnaceGUISysDefChip(advSys,volume,panning,"");
+            FurnaceGUISysDefChip chip=FurnaceGUISysDefChip(advSys,volume,panning,advSysFlags.toString());
             advChips.push_back(chip);
             advSys=DIV_SYSTEM_NULL;
             advancedBeginConfig=false;
