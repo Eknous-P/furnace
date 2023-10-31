@@ -29,7 +29,7 @@ bool advancedBeginConfig=false;
 bool advancedAddSys=false;
 float volume=1.0f, panning=0.0f;
 DivSystem advSys=DIV_SYSTEM_NULL;
-DivConfig advSysFlags;//TODO: flags
+DivConfig advSysFlags;
 std::vector <FurnaceGUISysDefChip> advChips;
 
 void FurnaceGUI::drawNewSong() {
@@ -217,12 +217,14 @@ void FurnaceGUI::drawNewSong() {
           CWSliderFloat("Panning",&panning,-1.0f,1.0f);
           drawSysConf(advChips.size(),advChips.size(),advSys,advSysFlags,true);
           if (ImGui::Button("Add")) {
-            FurnaceGUISysDefChip chip=FurnaceGUISysDefChip(advSys,volume,panning,((advSysFlags.toString()).c_str()));
+            const char* advChipFlags=(advSysFlags.toString()).c_str();
+            FurnaceGUISysDefChip chip=FurnaceGUISysDefChip(advSys,volume,panning,advChipFlags);
             advChips.push_back(chip);
             advSys=DIV_SYSTEM_NULL;
             advancedBeginConfig=false;
             volume=1.0f;
             panning=0.0f;
+            advSysFlags.clear();
           }
           ImGui::SameLine();
           if (ImGui::Button("Cancel")) {
@@ -230,6 +232,7 @@ void FurnaceGUI::drawNewSong() {
             advancedBeginConfig=false;
             volume=1.0f;
             panning=0.0f;
+            advSysFlags.clear();
           }
         }
         ImGui::TableNextRow();
@@ -264,11 +267,13 @@ void FurnaceGUI::drawNewSong() {
     }
     if (ImGui::Button("Back")) advancedMode=false;
     ImGui::SameLine();
+    ImGui::BeginDisabled(advancedBeginConfig || advancedAddSys); // to prevent accidental presses when configuring
     if (ImGui::Button("OK")) {
       nextDesc=(FurnaceGUISysDef("",advChips,NULL).definition);
       accepted=(!advChips.empty());
       advChips.clear();
     }
+    ImGui::EndDisabled();
     if (ImGui::IsItemHovered() && advChips.empty()) {
       ImGui::SetTooltip("what are you going to do with no chips?");
     }
