@@ -101,6 +101,7 @@ enum FurnaceGUIColors {
   GUI_COLOR_MODAL_BACKDROP,
   GUI_COLOR_HEADER,
   GUI_COLOR_TEXT,
+  GUI_COLOR_TEXT_DISABLED,
   GUI_COLOR_ACCENT_PRIMARY,
   GUI_COLOR_ACCENT_SECONDARY,
   GUI_COLOR_TITLE_INACTIVE,
@@ -124,6 +125,36 @@ enum FurnaceGUIColors {
   GUI_COLOR_NAV_HIGHLIGHT,
   GUI_COLOR_NAV_WIN_HIGHLIGHT,
   GUI_COLOR_NAV_WIN_BACKDROP,
+  GUI_COLOR_PLOT_LINES,
+  GUI_COLOR_PLOT_LINES_HOVER,
+  GUI_COLOR_PLOT_HISTOGRAM,
+  GUI_COLOR_PLOT_HISTOGRAM_HOVER,
+
+  GUI_COLOR_BUTTON,
+  GUI_COLOR_BUTTON_HOVER,
+  GUI_COLOR_BUTTON_ACTIVE,
+  GUI_COLOR_TAB,
+  GUI_COLOR_TAB_HOVER,
+  GUI_COLOR_TAB_ACTIVE,
+  GUI_COLOR_TAB_UNFOCUSED,
+  GUI_COLOR_TAB_UNFOCUSED_ACTIVE,
+  GUI_COLOR_IMGUI_HEADER,
+  GUI_COLOR_IMGUI_HEADER_HOVER,
+  GUI_COLOR_IMGUI_HEADER_ACTIVE,
+  GUI_COLOR_RESIZE_GRIP,
+  GUI_COLOR_RESIZE_GRIP_HOVER,
+  GUI_COLOR_RESIZE_GRIP_ACTIVE,
+  GUI_COLOR_WIDGET_BACKGROUND,
+  GUI_COLOR_WIDGET_BACKGROUND_HOVER,
+  GUI_COLOR_WIDGET_BACKGROUND_ACTIVE,
+  GUI_COLOR_SLIDER_GRAB,
+  GUI_COLOR_SLIDER_GRAB_ACTIVE,
+  GUI_COLOR_TITLE_BACKGROUND_ACTIVE,
+  GUI_COLOR_CHECK_MARK,
+  GUI_COLOR_TEXT_SELECTION,
+  GUI_COLOR_TABLE_ROW_EVEN,
+  GUI_COLOR_TABLE_ROW_ODD,
+
   GUI_COLOR_TOGGLE_OFF,
   GUI_COLOR_TOGGLE_ON,
   GUI_COLOR_EDITING,
@@ -936,7 +967,7 @@ struct MIDIMap {
   int**** map;
   std::vector<MIDIBind> binds;
 
-  bool noteInput, volInput, rawVolume, polyInput, directChannel, programChange, midiClock, midiTimeCode, yamahaFMResponse;
+  bool noteInput, volInput, rawVolume, polyInput, directChannel, programChange, midiClock, midiTimeCode, yamahaFMResponse, directProgram;
   // 0: disabled
   //
   // 1: C- C# D- D# E- F- F# G- G# A- A# B-
@@ -999,11 +1030,12 @@ struct MIDIMap {
     midiClock(false),
     midiTimeCode(false),
     yamahaFMResponse(false),
+    directProgram(false),
     valueInputStyle(1),
     valueInputControlMSB(0),
     valueInputControlLSB(0),
     valueInputControlSingle(0),
-    volExp(1.0f),
+    volExp(2.0f),
     valueInputCurMSB(0),
     valueInputCurLSB(0),
     valueInputCurSingle(0) {
@@ -1654,6 +1686,7 @@ class FurnaceGUI {
     int fontAutoHint;
     int fontAntiAlias;
     int selectAssetOnLoad;
+    int basicColors;
     unsigned int maxUndoSteps;
     String mainFontPath;
     String headFontPath;
@@ -1849,6 +1882,7 @@ class FurnaceGUI {
       fontAutoHint(1),
       fontAntiAlias(1),
       selectAssetOnLoad(1),
+      basicColors(1),
       maxUndoSteps(100),
       mainFontPath(""),
       headFontPath(""),
