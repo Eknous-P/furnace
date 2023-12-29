@@ -885,6 +885,14 @@ struct SelectionPoint {
     xCoarse(0), xFine(0), y(0) {}
 };
 
+struct UndoRegion {
+  struct UndoRegionPoint {
+    int ord, x, y;
+    UndoRegionPoint():
+      ord(0), x(0), y(0) {}
+  } begin, end;
+};
+
 enum ActionType {
   GUI_UNDO_CHANGE_ORDER,
   GUI_UNDO_PATTERN_EDIT,
@@ -1903,7 +1911,7 @@ class FurnaceGUI {
       chanOscThreads(0),
       renderPoolThreads(0),
       showPool(0),
-      writeInsNames(1),
+      writeInsNames(0),
       readInsNames(1),
       fontBackend(1),
       fontHinting(0),
@@ -2547,6 +2555,7 @@ class FurnaceGUI {
   DivSystem systemPicker();
   void noteInput(int num, int key, int vol=-1);
   void valueInput(int num, bool direct=false, int target=-1);
+  void orderInput(int num);
 
   void doGenerateWave();
 
