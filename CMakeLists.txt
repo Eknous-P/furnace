@@ -39,6 +39,7 @@ if (ANDROID)
   set(USE_RTMIDI_DEFAULT OFF)
   set(WITH_PORTAUDIO_DEFAULT OFF)
   set(USE_BACKWARD_DEFAULT OFF)
+  set(WITH_RTHP_DEFAULT OFF)
   find_library(TERMUX rt)
   if (TERMUX)
     message(STATUS "Termux detected")
@@ -46,6 +47,7 @@ if (ANDROID)
 else()
   set(USE_RTMIDI_DEFAULT ON)
   set(WITH_PORTAUDIO_DEFAULT ON)
+  set(WITH_RTHP_DEFAULT ON)
   if (WIN32 OR APPLE)
     set(USE_BACKWARD_DEFAULT ON)
   else()
@@ -94,6 +96,7 @@ option(WITH_PORTAUDIO "Whether to build with PortAudio for audio output." ${WITH
 option(WITH_RENDER_SDL "Whether to build with the SDL_Renderer render backend." ${WITH_RENDER_SDL_DEFAULT})
 option(WITH_RENDER_OPENGL "Whether to build with the OpenGL render backend." ${WITH_RENDER_OPENGL_DEFAULT})
 option(WITH_RENDER_DX11 "Whether to build with the DirectX 11 render backend." ${WITH_RENDER_DX11_DEFAULT})
+option(WITH_RTHP "Whether to build with real-time hardware playback support" ${WITH_RTHP_DEFAULT})
 option(USE_GLES "Use OpenGL ES for the OpenGL render backend." ${USE_GLES_DEFAULT})
 option(USE_FREETYPE "Use FreeType for font rendering." ON)
 option(SYSTEM_FFTW "Use a system-installed version of FFTW instead of the vendored one" OFF)
@@ -437,6 +440,36 @@ if (USE_RTMIDI)
 else()
   message(STATUS "Building without RtMidi")
 endif()
+
+set(SERIAL_SOURCES
+extern/serial/src/serial.cc
+extern/serial/include/serial/serial.h
+extern/serial/include/serial/v8stdint.h
+)
+if(APPLE)
+  # If OSX
+  list(APPEND SERIAL_SOURCES extern/serial/src/impl/unix.cc)
+  list(APPEND SERIAL_SOURCES extern/serial/src/impl/list_ports/list_ports_osx.cc)
+elseif(UNIX)
+  # If unix
+  list(APPEND SERIAL_SOURCES extern/serial/src/impl/unix.cc)
+  list(APPEND SERIAL_SOURCES extern/serial/src/impl/list_ports/list_ports_linux.cc)
+else()
+  # If windows
+  list(APPEND SERIAL_SOURCES extern/serial/src/impl/win.cc)
+  list(APPEND SERIAL_SOURCES extern/serial/src/impl/list_ports/list_ports_win.cc)
+endif()
+# hey, if serial hadn't used some weird build system, then parts of it's CMake wouldn't've ended up here!
+if (WITH_RTHP)
+  message(STATUS "Buildind with real-time hardware playback support")
+  list(APPEND DEPENDENCIES_INCLUDE_DIRS "extern/serial/include")
+endif()
+
+set(RTHP_SOURCES
+""# TODO: RTHP sources
+)
+
+list(APPEND RTHP_SOURCES ${SERIAL_SOURCES})
 
 set(ENGINE_SOURCES
 src/log.cpp
@@ -906,6 +939,10 @@ if (NOT WIN32)
 endif()
 
 set(USED_SOURCES ${ENGINE_SOURCES} ${AUDIO_SOURCES} ${CLI_SOURCES} src/main.cpp)
+
+if(WITH_RTHP)
+  list(APPEND USED_SOURCES ${RTHP_SOURCES})
+endif()
 
 if (USE_BACKWARD)
   list(APPEND USED_SOURCES src/backtrace.cpp)
