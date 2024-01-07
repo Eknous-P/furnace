@@ -467,7 +467,7 @@ endif()
 
 set(RTHP_SOURCES
 "src/rthp/rthp.cpp"
-"ser/rthp/impl/e-rthp.cpp"
+# "ser/rthp/impl/e-rthp.cpp"
 )
 
 list(APPEND RTHP_SOURCES ${SERIAL_SOURCES})
