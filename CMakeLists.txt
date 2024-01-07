@@ -466,7 +466,8 @@ if (WITH_RTHP)
 endif()
 
 set(RTHP_SOURCES
-""# TODO: RTHP sources
+"src/rthp/rthp.cpp"
+"ser/rthp/impl/e-rthp.cpp"
 )
 
 list(APPEND RTHP_SOURCES ${SERIAL_SOURCES})
