@@ -943,6 +943,9 @@ set(USED_SOURCES ${ENGINE_SOURCES} ${AUDIO_SOURCES} ${CLI_SOURCES} src/main.cpp)
 
 if(WITH_RTHP)
   list(APPEND USED_SOURCES ${RTHP_SOURCES})
+  if(BUILD_GUI)
+    list(APPEND USED_SOURCES src/gui/rthpWindow.cpp)
+  endif()
 endif()
 
 if (USE_BACKWARD)

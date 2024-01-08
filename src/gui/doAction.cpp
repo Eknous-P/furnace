@@ -286,6 +286,9 @@ void FurnaceGUI::doAction(int what) {
     case GUI_ACTION_WINDOW_XY_OSC:
       nextWindow=GUI_WINDOW_XY_OSC;
       break;
+    case GUI_ACTION_WINDOW_RTHP:
+      nextWindow=GUI_WINDOW_RTHP;
+      break;
     
     case GUI_ACTION_COLLAPSE_WINDOW:
       collapseWindow=true;
@@ -384,6 +387,9 @@ void FurnaceGUI::doAction(int what) {
           break;
         case GUI_WINDOW_XY_OSC:
           xyOscOpen=false;
+          break;
+        case GUI_WINDOW_RTHP:
+          rthpWindowOpen=false;
           break;
         default:
           break;

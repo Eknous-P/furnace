@@ -1041,6 +1041,11 @@ Pos=60,60\n\
 Size=300,300\n\
 Collapsed=0\n\
 \n\
+[Window][Real-time Hardware Playback]\n\
+Pos=60,60\n\
+Size=300,200\n\
+Collapsed=0\n\
+\n\
 [Docking][Data]\n\
 DockSpace             ID=0x8B93E3BD Window=0xA787BDB4 Pos=0,24 Size=1280,776 Split=Y Selected=0x6C01C512\n\
   DockNode            ID=0x00000001 Parent=0x8B93E3BD SizeRef=1280,217 Split=X Selected=0xF3094A52\n\
@@ -3466,6 +3471,7 @@ bool FurnaceGUI::loop() {
   DECLARE_METRIC(log)
   DECLARE_METRIC(effectList)
   DECLARE_METRIC(popup)
+  DECLARE_METRIC(rthpWindow)
 
 #ifdef IS_MOBILE
   bool doThreadedInput=true;
@@ -4363,6 +4369,10 @@ bool FurnaceGUI::loop() {
         if (ImGui::MenuItem("log viewer",BIND_FOR(GUI_ACTION_WINDOW_LOG),logOpen)) logOpen=!logOpen;
         if (ImGui::MenuItem("statistics",BIND_FOR(GUI_ACTION_WINDOW_STATS),statsOpen)) statsOpen=!statsOpen;
         if (spoilerOpen) if (ImGui::MenuItem("spoiler",NULL,spoilerOpen)) spoilerOpen=!spoilerOpen;
+        if (!basicMode) {
+          ImGui::Separator();
+          if (ImGui::MenuItem("real-time hardware playback",BIND_FOR(GUI_ACTION_WINDOW_RTHP),rthpWindowOpen)) rthpWindowOpen=!rthpWindowOpen;
+        }
 
         ImGui::EndMenu();
       }
@@ -4627,6 +4637,7 @@ bool FurnaceGUI::loop() {
       MEASURE(regView,drawRegView());
       MEASURE(log,drawLog());
       MEASURE(effectList,drawEffectList());
+      MEASURE(rthpWindow,drawRTHPWindow());
     }
 
     // release selection if mouse released
@@ -6440,6 +6451,7 @@ bool FurnaceGUI::init() {
   subSongsOpen=e->getConfBool("subSongsOpen",true);
   findOpen=e->getConfBool("findOpen",false);
   spoilerOpen=e->getConfBool("spoilerOpen",false);
+  rthpWindowOpen=e->getConfBool("rthpWindowOpen",false);
 
   if (e->hasConf("lastDir")) {
     basicMode=e->getConfBool("basicMode",false);
@@ -7004,6 +7016,7 @@ void FurnaceGUI::commitState() {
   e->setConf("subSongsOpen",subSongsOpen);
   e->setConf("findOpen",findOpen);
   e->setConf("spoilerOpen",spoilerOpen);
+  e->setConf("rthpWindowOpen",rthpWindowOpen);
   e->setConf("basicMode",basicMode);
 
   // commit dir state
@@ -7333,6 +7346,7 @@ FurnaceGUI::FurnaceGUI():
   speedOpen(true),
   groovesOpen(false),
   xyOscOpen(false),
+  rthpWindowOpen(false),
   basicMode(true),
   shortIntro(false),
   insListDir(false),
