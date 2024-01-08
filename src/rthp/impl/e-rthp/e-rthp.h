@@ -22,12 +22,16 @@
 
 #include "../../ta-log.h"
 
+#define MSG_CONFIRM "^"
+#define MSG_CANCEL "X"
+
 class RTHP {
   // for serial communication
   unsigned long int serialBaudrate, serialTimeout;
   String serialPort;
   bool serialConnected;
+  unsigned long int beaconInterval;
 
   void initSerial();
-  
+  void sendBeacon();
 };

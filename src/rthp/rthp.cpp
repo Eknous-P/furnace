@@ -21,4 +21,4 @@
 #include "serial/serial.h"
 
 // TODO: the stuff
-// (should i put the rthp window here or src/gui ?)
+// (rthp window will go to src/gui as rthp may be enabled in cli mode)

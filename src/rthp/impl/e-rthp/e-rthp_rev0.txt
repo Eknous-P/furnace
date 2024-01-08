@@ -5,6 +5,8 @@ MAXIMUM SUPPORT:
 
 data bus - 8 bits
 address bus - 16 bits
+("address bus" includes the addressing, chip/write enable and other pins)
+theoretical chip clock - 8MHz
 
 
 
