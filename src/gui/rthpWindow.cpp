@@ -18,6 +18,7 @@
  */
 
 #include "gui.h"
+#include "../ta-log.h"
 #include <imgui.h>
 
 void FurnaceGUI::drawRTHPWindow(){
@@ -28,6 +29,9 @@ void FurnaceGUI::drawRTHPWindow(){
   }
   if (!rthpWindowOpen) return;
   if (ImGui::Begin("Real-time Hardware Playback",&rthpWindowOpen,globalWinFlags)) {
+    ImGui::Text("hewwo\n");
+    ImGui::Text("  TODO:\nmain rthp stuff\ne-rthp host driver\ne-rthp client driver\ne-rthp protocol...\nmodify each chip to spit reg writes at me???");
+
     ImGui::End();
   }
 }
