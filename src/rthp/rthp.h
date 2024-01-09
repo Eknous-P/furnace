@@ -27,6 +27,7 @@
 // TODO: the stuff
 
 class RTHPContainer {
+    DivEngine* e;
     serial::Serial furPort;
 
     void initSerial(String sPort);

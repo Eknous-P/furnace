@@ -80,6 +80,10 @@ bool safeModeWithAudio=false;
 
 bool infoMode=false;
 
+#ifdef WITH_RTHP
+#include "rthp/rthp.h"
+#endif
+
 std::vector<TAParam> params;
 
 TAParamResult pHelp(String) {

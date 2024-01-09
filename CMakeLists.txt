@@ -942,13 +942,6 @@ endif()
 
 set(USED_SOURCES ${ENGINE_SOURCES} ${AUDIO_SOURCES} ${CLI_SOURCES} src/main.cpp)
 
-if(WITH_RTHP)
-  list(APPEND USED_SOURCES ${RTHP_SOURCES})
-  if(BUILD_GUI)
-    list(APPEND USED_SOURCES src/gui/rthpWindow.cpp)
-  endif()
-endif()
-
 if (USE_BACKWARD)
   list(APPEND USED_SOURCES src/backtrace.cpp)
   if (WIN32 AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -1026,6 +1019,13 @@ if (WARNINGS_ARE_ERRORS)
     "Treating all warnings in furnace's C++ code as errors! "
     "Please report any errors you encounter on the bug tracker."
   )
+endif()
+
+if(WITH_RTHP)
+  list(APPEND USED_SOURCES ${RTHP_SOURCES})
+  if(BUILD_GUI)
+    list(APPEND USED_SOURCES src/gui/rthpWindow.cpp)
+  endif()
 endif()
 
 if (NOT ANDROID OR TERMUX)
