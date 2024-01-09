@@ -17,19 +17,39 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "../ta-log.h"
-#include "serial/serial.h"
-#include "../engine/engine.h"
-#include "../engine/dispatch.h"
+#ifndef _RTHP_H
+#define _RTHP_H
 
-// #include "impl/e-rthp.h"
+#include "../ta-log.h"
+#include "../engine/engine.h"
+
+// implementations
+#include "impl/e-rthp/e-rthp.h"
 
 // TODO: the stuff
 
-class RTHPContainer {
-    DivEngine* e;
-    serial::Serial furPort;
-
-    void initSerial(String sPort);
-    void dumpWrites();
+enum RTHPImplementation {
+  RTHP_NONE=0,
+  RTHP_ERTHP
 };
+
+const char* RTHPImplementationNames[]={
+  "*NONE*",
+  "E-RTHP"
+};
+
+class RTHPContainer {
+  private:
+
+    RTHPImplementation impl;
+    String log;
+
+  public:
+    DivEngine* e;
+    void init(RTHPImplementation setImpl);
+    void sendWrites();
+
+    void appendLog(String log, bool sendGlobal);
+};
+
+#endif

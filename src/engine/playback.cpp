@@ -1636,6 +1636,10 @@ bool DivEngine::nextTick(bool noAccum, bool inhibitLowLat) {
 
   if (haltOn==DIV_HALT_TICK) halted=true;
 
+#ifdef WITH_RTHP
+  rthp.sendWrites();
+#endif
+
   return ret;
 }
 

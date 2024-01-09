@@ -3846,6 +3846,10 @@ bool DivEngine::init() {
     keyHit[i]=false;
   }
 
+#ifdef WITH_RTHP
+  rthp.init(RTHP_ERTHP);
+#endif
+
   initDispatch();
   renderSamples();
   reset();

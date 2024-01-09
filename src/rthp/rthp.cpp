@@ -19,21 +19,37 @@
 
 #include "rthp.h"
 
-void RTHPContainer::initSerial(String sPort) {
-  serial::Serial furPort(sPort,9600,serial::Timeout::simpleTimeout(1000));
-  if (!furPort.isOpen()) {
-    logE("RTHP: could not open serial port!");
-    return;
+ERTHP erthp;
+
+void RTHPContainer::init(RTHPImplementation setImpl) {
+  impl=setImpl;
+  logI("RTHP: begin init");
+  logI("RTHP: using impl %s", RTHPImplementationNames[impl]);
+  switch (impl) {
+    case RTHP_ERTHP: {
+      if (erthp.initSerial("/dev/ttyUSB0",9600,1000)) { // temporary port
+        logE(erthp.getLastLog().c_str());
+      }
+      break;
+    }
+    default: {
+      break;
+    }
   }
-  furPort.write("RTHP");
 }
 
-void RTHPContainer::dumpWrites() {
+void RTHPContainer::sendWrites() {
+  // get reg wirte
   std::vector<DivRegWrite> regWrites=e->getDispatch(0)->getRegisterWrites();
   DivRegWrite regWrite=regWrites[0];
   String dump="addr: ";
   dump+=regWrite.addr;
   dump+=", val: ";
   dump+=regWrite.val;
-  furPort.write(dump);
+  switch (impl) {
+    case RTHP_ERTHP: {
+      erthp.sendSerial(dump);
+    }
+    default: break;
+  }
 }

@@ -467,8 +467,8 @@ if (WITH_RTHP)
 endif()
 
 set(RTHP_SOURCES
- src/rthp/rthp.cpp
-# src/rthp/impl/e-rthp.cpp
+src/rthp/rthp.cpp
+src/rthp/impl/e-rthp/e-rthp.cpp
 )
 
 list(APPEND RTHP_SOURCES ${SERIAL_SOURCES})
@@ -1023,6 +1023,7 @@ endif()
 
 if(WITH_RTHP)
   list(APPEND USED_SOURCES ${RTHP_SOURCES})
+  list(APPEND DEPENDENCIES_DEFINES WITH_RTHP)
   if(BUILD_GUI)
     list(APPEND USED_SOURCES src/gui/rthpWindow.cpp)
   endif()

@@ -1,4 +1,4 @@
-REAL-TIME HARDWARE PLAYBACK PROTOCOL
+E-RTHP - REAL-TIME HARDWARE PLAYBACK PROTOCOL
 REVISION 0 UNFINISHED
 
 MAXIMUM SUPPORT:
@@ -21,6 +21,7 @@ B - byte
 escape char - / (only applies to this notation)
 confirmation message byte {CF} - ^
 cancel message byte {CL} - X
+beacon byte {BC} - *
 
 ~ - wait for response
 
@@ -80,6 +81,11 @@ CANCEL:
 
 H: {CL}~
 C: {CF}
+
+BEACON:
+
+H: {BC}~
+C: {BC}
 
 PLAYBACK PREPARATION:
 
