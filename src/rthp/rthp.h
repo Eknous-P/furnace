@@ -17,23 +17,18 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "rthp.h"
+#include "../ta-log.h"
+#include "serial/serial.h"
+#include "../engine/engine.h"
+#include "../engine/dispatch.h"
 
-void RTHPContainer::initSerial(String sPort) {
-  serial::Serial furPort(sPort,9600,serial::Timeout::simpleTimeout(1000));
-  if (!furPort.isOpen()) {
-    logE("RTHP: could not open serial port!");
-    return;
-  }
-  furPort.write("RTHP");
-}
+// #include "impl/e-rthp.h"
 
-void RTHPContainer::dumpWrites() {
-  std::vector<DivRegWrite> regWrites=e->getDispatch(0)->getRegisterWrites();
-  DivRegWrite regWrite=regWrites[0];
-  String dump="addr: ";
-  dump+=regWrite.addr;
-  dump+=", val: ";
-  dump+=regWrite.val;
-  furPort.write(dump);
-}
+// TODO: the stuff
+
+class RTHPContainer {
+    serial::Serial furPort;
+
+    void initSerial(String sPort);
+    void dumpWrites();
+};

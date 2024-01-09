@@ -462,12 +462,13 @@ endif()
 # hey, if serial hadn't used some weird build system, then parts of it's CMake wouldn't've ended up here!
 if (WITH_RTHP)
   message(STATUS "Building with real-time hardware playback support")
-  list(APPEND DEPENDENCIES_INCLUDE_DIRS "extern/serial/include")
+  list(APPEND DEPENDENCIES_INCLUDE_DIRS extern/serial/include)
+  list(APPEND DEPENDENCIES_INCLUDE_DIRS src/rthp)
 endif()
 
 set(RTHP_SOURCES
-"src/rthp/rthp.cpp"
-# "src/rthp/impl/e-rthp.cpp"
+ src/rthp/rthp.cpp
+# src/rthp/impl/e-rthp.cpp
 )
 
 list(APPEND RTHP_SOURCES ${SERIAL_SOURCES})
