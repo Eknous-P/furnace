@@ -16,6 +16,7 @@
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
+#pragma once
 
 #ifndef _RTHP_H
 #define _RTHP_H
@@ -24,7 +25,7 @@
 #include "../engine/engine.h"
 
 // implementations
-#include "impl/e-rthp/e-rthp.h"
+#include "impl/e-rthp/e-rthp.cpp"
 
 // TODO: the stuff
 
@@ -40,16 +41,13 @@ const char* RTHPImplementationNames[]={
 
 class RTHPContainer {
   private:
-
+    bool initialized;
     RTHPImplementation impl;
-    String log;
 
   public:
     DivEngine* e;
     void init(RTHPImplementation setImpl);
     void sendWrites();
-
-    void appendLog(String log, bool sendGlobal);
 };
 
 #endif

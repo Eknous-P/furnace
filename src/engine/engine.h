@@ -35,10 +35,6 @@
 #include <thread>
 #include "../fixedQueue.h"
 
-#ifdef WITH_RTHP
-#include "rthp.h"
-#endif
-
 class DivWorkPool;
 
 #define addWarning(x) \
@@ -473,9 +469,7 @@ class DivEngine {
   static DivSystem sysFileMapDMF[DIV_MAX_CHIP_DEFS];
 
   DivCSPlayer* cmdStreamInt;
-#ifdef WITH_RTHP
-  RTHPContainer rthp;
-#endif
+
   struct SamplePreview {
     double rate;
     int sample;

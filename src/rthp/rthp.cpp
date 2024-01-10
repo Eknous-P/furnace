@@ -36,10 +36,15 @@ void RTHPContainer::init(RTHPImplementation setImpl) {
       break;
     }
   }
+  initialized=true;
 }
 
 void RTHPContainer::sendWrites() {
   // get reg wirte
+  if (!initialized) {
+    logE("RTHP: not initialized!");
+    return;
+  }
   std::vector<DivRegWrite> regWrites=e->getDispatch(0)->getRegisterWrites();
   DivRegWrite regWrite=regWrites[0];
   String dump="addr: ";
