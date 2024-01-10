@@ -3471,7 +3471,9 @@ bool FurnaceGUI::loop() {
   DECLARE_METRIC(log)
   DECLARE_METRIC(effectList)
   DECLARE_METRIC(popup)
+#ifdef WITH_RTHP
   DECLARE_METRIC(rthpWindow)
+#endif
 
 #ifdef IS_MOBILE
   bool doThreadedInput=true;
@@ -4369,10 +4371,12 @@ bool FurnaceGUI::loop() {
         if (ImGui::MenuItem("log viewer",BIND_FOR(GUI_ACTION_WINDOW_LOG),logOpen)) logOpen=!logOpen;
         if (ImGui::MenuItem("statistics",BIND_FOR(GUI_ACTION_WINDOW_STATS),statsOpen)) statsOpen=!statsOpen;
         if (spoilerOpen) if (ImGui::MenuItem("spoiler",NULL,spoilerOpen)) spoilerOpen=!spoilerOpen;
+#ifdef WITH_RTHP
         if (!basicMode) {
           ImGui::Separator();
           if (ImGui::MenuItem("real-time hardware playback",BIND_FOR(GUI_ACTION_WINDOW_RTHP),rthpWindowOpen)) rthpWindowOpen=!rthpWindowOpen;
         }
+#endif
 
         ImGui::EndMenu();
       }
@@ -4637,7 +4641,9 @@ bool FurnaceGUI::loop() {
       MEASURE(regView,drawRegView());
       MEASURE(log,drawLog());
       MEASURE(effectList,drawEffectList());
+#ifdef WITH_RTHP
       MEASURE(rthpWindow,drawRTHPWindow());
+#endif
     }
 
     // release selection if mouse released
@@ -6451,7 +6457,9 @@ bool FurnaceGUI::init() {
   subSongsOpen=e->getConfBool("subSongsOpen",true);
   findOpen=e->getConfBool("findOpen",false);
   spoilerOpen=e->getConfBool("spoilerOpen",false);
+#ifdef WITH_RTHP
   rthpWindowOpen=e->getConfBool("rthpWindowOpen",false);
+#endif
 
   if (e->hasConf("lastDir")) {
     basicMode=e->getConfBool("basicMode",false);
@@ -7016,7 +7024,9 @@ void FurnaceGUI::commitState() {
   e->setConf("subSongsOpen",subSongsOpen);
   e->setConf("findOpen",findOpen);
   e->setConf("spoilerOpen",spoilerOpen);
+#ifdef WITH_RTHP
   e->setConf("rthpWindowOpen",rthpWindowOpen);
+#endif
   e->setConf("basicMode",basicMode);
 
   // commit dir state
@@ -7346,7 +7356,9 @@ FurnaceGUI::FurnaceGUI():
   speedOpen(true),
   groovesOpen(false),
   xyOscOpen(false),
+#ifdef WITH_RTHP
   rthpWindowOpen(false),
+#endif
   basicMode(true),
   shortIntro(false),
   insListDir(false),

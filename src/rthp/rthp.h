@@ -38,6 +38,7 @@ const char* RTHPImplementationNames[]={
   "*NONE*",
   "E-RTHP"
 };
+DivEngine* e;
 
 class RTHPContainer {
   private:
@@ -45,7 +46,6 @@ class RTHPContainer {
     RTHPImplementation impl;
 
   public:
-    DivEngine* e;
     void init(RTHPImplementation setImpl);
     void sendWrites();
 };

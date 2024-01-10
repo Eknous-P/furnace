@@ -451,7 +451,9 @@ enum FurnaceGUIWindows {
   GUI_WINDOW_CLOCK,
   GUI_WINDOW_GROOVES,
   GUI_WINDOW_XY_OSC,
+#ifdef WITH_RTHP
   GUI_WINDOW_RTHP,
+#endif
   GUI_WINDOW_INTRO_MON,
   GUI_WINDOW_SPOILER
 };
@@ -634,7 +636,9 @@ enum FurnaceGUIActions {
   GUI_ACTION_WINDOW_CLOCK,
   GUI_ACTION_WINDOW_GROOVES,
   GUI_ACTION_WINDOW_XY_OSC,
+#ifdef WITH_RTHP
   GUI_ACTION_WINDOW_RTHP,
+#endif
 
   GUI_ACTION_COLLAPSE_WINDOW,
   GUI_ACTION_CLOSE_WINDOW,
@@ -1975,7 +1979,10 @@ class FurnaceGUI {
   bool mixerOpen, debugOpen, inspectorOpen, oscOpen, volMeterOpen, statsOpen, compatFlagsOpen;
   bool pianoOpen, notesOpen, channelsOpen, regViewOpen, logOpen, effectListOpen, chanOscOpen;
   bool subSongsOpen, findOpen, spoilerOpen, patManagerOpen, sysManagerOpen, clockOpen, speedOpen;
-  bool groovesOpen, xyOscOpen, rthpWindowOpen;
+  bool groovesOpen, xyOscOpen;
+#ifdef WITH_RTHP
+  bool rthpWindowOpen;
+#endif
 
   bool basicMode, shortIntro;
   bool insListDir, waveListDir, sampleListDir;
@@ -2487,7 +2494,9 @@ class FurnaceGUI {
   void drawClock();
   void drawTutorial();
   void drawXYOsc();
+#ifdef WITH_RTHP
   void drawRTHPWindow();
+#endif
 
   void parseKeybinds();
   void promptKey(int which);
