@@ -1640,7 +1640,7 @@ bool DivEngine::nextTick(bool noAccum, bool inhibitLowLat) {
   // std::vector<DivRegWrite> regWrites=getDispatch(0)->getRegisterWrites();
   // DivRegWrite regWrite=regWrites[0];
   // rthp->write(regWrite.addr,regWrite.val);
-  rthp->write(0,0);
+  rthp.write(0,0);
 #endif
 
   return ret;

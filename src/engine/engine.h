@@ -475,7 +475,7 @@ class DivEngine {
   DivCSPlayer* cmdStreamInt;
 
 #ifdef WITH_RTHP
-  RTHPContainer* rthp;
+  RTHPContainer rthp;
 #endif
 
   struct SamplePreview {
