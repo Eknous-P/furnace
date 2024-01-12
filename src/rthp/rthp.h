@@ -22,7 +22,7 @@
 #define _RTHP_H
 
 #include "../ta-log.h"
-#include "../engine/engine.h"
+#include "../ta-utils.h"
 
 // implementations
 #include "impl/e-rthp/e-rthp.cpp"
@@ -47,7 +47,7 @@ class RTHPContainer {
 
   public:
     void init(RTHPImplementation setImpl);
-    void sendWrites();
+    void write(unsigned short a, unsighed short v);
 };
 
 #endif

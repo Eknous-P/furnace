@@ -39,18 +39,16 @@ void RTHPContainer::init(RTHPImplementation setImpl) {
   initialized=true;
 }
 
-void RTHPContainer::sendWrites() {
+void RTHPContainer::write(unsigned short a,unsigned short v) {
   // get reg wirte
   if (!initialized) {
     logE("RTHP: not initialized!");
     return;
   }
-  std::vector<DivRegWrite> regWrites=e->getDispatch(0)->getRegisterWrites();
-  DivRegWrite regWrite=regWrites[0];
   String dump="addr: ";
-  dump+=regWrite.addr;
+  dump+=a;
   dump+=", val: ";
-  dump+=regWrite.val;
+  dump+=v;
   switch (impl) {
     case RTHP_ERTHP: {
       erthp.sendSerial(dump);
