@@ -35,10 +35,6 @@
 #include <thread>
 #include "../fixedQueue.h"
 
-#ifdef WITH_RTHP
-#include "rthp.h"
-#endif
-
 class DivWorkPool;
 
 #define addWarning(x) \

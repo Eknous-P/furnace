@@ -29,15 +29,23 @@ const char* RTHPImplementationNames[]={
 
 ERTHP erthp;
 
+int initERTHP() {
+  logI("RTHP: serial ports found: %d", erthp.scanAvailPorts());
+  if (erthp.initSerial("/dev/ttyUSB0",9600,1000)) { // temporary port
+    logE(erthp.getLastLog().c_str());
+    return 1;
+  }
+  return 0;
+}
+
 void RTHPContainer::init(RTHPImplementation setImpl) {
   container.impl=setImpl;
+  container.initialized=false;
   logI("RTHP: begin init");
   logI("RTHP: using impl %s", RTHPImplementationNames[setImpl]);
   switch (container.impl) {
     case RTHP_ERTHP: {
-      if (erthp.initSerial("/dev/ttyUSB0",9600,1000)) { // temporary port
-        logE(erthp.getLastLog().c_str());
-      }
+      if(initERTHP()) return;
       break;
     }
     default: {
@@ -50,7 +58,7 @@ void RTHPContainer::init(RTHPImplementation setImpl) {
 void RTHPContainer::write(unsigned short a,unsigned short v) {
   // get reg wirte
   if (!container.initialized) {
-    logE("RTHP: not initialized!");
+    // logE("RTHP: not initialized!");
     return;
   }
   String dump="addr: ";
@@ -60,6 +68,7 @@ void RTHPContainer::write(unsigned short a,unsigned short v) {
   switch (container.impl) {
     case RTHP_ERTHP: {
       erthp.sendSerial(dump);
+      break;
     }
     default: break;
   }

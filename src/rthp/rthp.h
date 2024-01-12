@@ -36,13 +36,20 @@ class RTHPContainer {
     struct container {
       bool initialized;
       RTHPImplementation impl;
+      std::vector<int> deviceIds;
       container():
         initialized(false),
         impl(RTHP_NONE) {}
     } container;
 
     void init(RTHPImplementation setImpl);
+    std::string getAvailDeviceName();
+    auto getAvailDevice();
     void write(unsigned short a, unsigned short v);
 };
+
+// implementation-specific helper functions
+
+int initERTHP();
 
 #endif
