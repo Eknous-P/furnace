@@ -3847,7 +3847,7 @@ bool DivEngine::init() {
   }
 
 #ifdef WITH_RTHP
-  rthp.init(RTHP_ERTHP);
+  rthp->init(RTHP_ERTHP);
 #endif
 
   initDispatch();

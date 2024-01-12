@@ -19,13 +19,21 @@
 
 #include "rthp.h"
 
+// implementations
+#include "impl/e-rthp/e-rthp.h"
+
+const char* RTHPImplementationNames[]={
+  "*NONE*",
+  "E-RTHP"
+};
+
 ERTHP erthp;
 
 void RTHPContainer::init(RTHPImplementation setImpl) {
-  impl=setImpl;
+  container.impl=setImpl;
   logI("RTHP: begin init");
-  logI("RTHP: using impl %s", RTHPImplementationNames[impl]);
-  switch (impl) {
+  logI("RTHP: using impl %s", RTHPImplementationNames[setImpl]);
+  switch (container.impl) {
     case RTHP_ERTHP: {
       if (erthp.initSerial("/dev/ttyUSB0",9600,1000)) { // temporary port
         logE(erthp.getLastLog().c_str());
@@ -36,12 +44,12 @@ void RTHPContainer::init(RTHPImplementation setImpl) {
       break;
     }
   }
-  initialized=true;
+  container.initialized=true;
 }
 
 void RTHPContainer::write(unsigned short a,unsigned short v) {
   // get reg wirte
-  if (!initialized) {
+  if (!container.initialized) {
     logE("RTHP: not initialized!");
     return;
   }
@@ -49,7 +57,7 @@ void RTHPContainer::write(unsigned short a,unsigned short v) {
   dump+=a;
   dump+=", val: ";
   dump+=v;
-  switch (impl) {
+  switch (container.impl) {
     case RTHP_ERTHP: {
       erthp.sendSerial(dump);
     }

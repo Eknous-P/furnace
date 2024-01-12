@@ -1,6 +1,7 @@
 // E-RTHP VERSION 0
 // REAL-TIME HARDWARE PLAYBACK HOST IMPLEMENTATION
 // COMPLIES WITH E-RTHP REVIVIOSN 0
+#pragma once
 
 #include <string>
 #include "serial/serial.h"

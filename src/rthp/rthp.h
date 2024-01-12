@@ -16,7 +16,7 @@
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
-#pragma once
+// #pragma once
 
 #ifndef _RTHP_H
 #define _RTHP_H
@@ -24,30 +24,25 @@
 #include "../ta-log.h"
 #include "../ta-utils.h"
 
-// implementations
-#include "impl/e-rthp/e-rthp.cpp"
-
-// TODO: the stuff
-
 enum RTHPImplementation {
   RTHP_NONE=0,
   RTHP_ERTHP
 };
 
-const char* RTHPImplementationNames[]={
-  "*NONE*",
-  "E-RTHP"
-};
-DivEngine* e;
+extern const char* RTHPImplementationNames[];
 
 class RTHPContainer {
-  private:
-    bool initialized;
-    RTHPImplementation impl;
-
   public:
+    struct container {
+      bool initialized;
+      RTHPImplementation impl;
+      container():
+        initialized(false),
+        impl(RTHP_NONE) {}
+    } container;
+
     void init(RTHPImplementation setImpl);
-    void write(unsigned short a, unsighed short v);
+    void write(unsigned short a, unsigned short v);
 };
 
 #endif
