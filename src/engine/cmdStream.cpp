@@ -361,13 +361,6 @@ bool DivCSPlayer::tick() {
     }
   }
 
-#ifdef WITH_RTHP
-  std::vector<DivRegWrite> regWrites=e->getDispatch(0)->getRegisterWrites();
-  DivRegWrite regWrite=regWrites[0];
-  rthp.write(regWrite.addr,regWrite.val);
-  // rthp.write(0,0);
-#endif
-
   return ticked;
 }
 
@@ -406,10 +399,6 @@ bool DivCSPlayer::init() {
   }
 
   arpSpeed=1;
-
-#ifdef WITH_RTHP
-  rthp.init(RTHP_ERTHP);
-#endif
 
   return true;
 }

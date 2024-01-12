@@ -1614,6 +1614,14 @@ bool DivEngine::nextTick(bool noAccum, bool inhibitLowLat) {
     return ret;
   }
 
+#ifdef WITH_RTHP
+  std::vector<DivRegWrite>& regWrites=getDispatch(0)->getRegisterWrites();
+  for (DivRegWrite& regWrite:regWrites) {
+    rthp.write(regWrite.addr,regWrite.val);
+  }
+  // rthp.write(0,0);
+#endif
+
   // system tick
   for (int i=0; i<song.systemLen; i++) disCont[i].dispatch->tick(subticks==tickMult);
 
