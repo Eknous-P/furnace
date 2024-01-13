@@ -90,6 +90,10 @@ void FurnaceGUI::bindEngine(DivEngine* eng) {
   wavePreview.setEngine(e);
 }
 
+void FurnaceGUI::bindRTHP(RTHPContainer* rthpi) {
+  rthp=rthpi;
+}
+
 void FurnaceGUI::enableSafeMode() {
   safeMode=true;
 }

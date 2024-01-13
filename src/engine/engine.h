@@ -475,7 +475,7 @@ class DivEngine {
   DivCSPlayer* cmdStreamInt;
 
 #ifdef WITH_RTHP
-  RTHPContainer rthp;
+  RTHPContainer* rthp;
 #endif
 
   struct SamplePreview {
@@ -1248,6 +1248,10 @@ class DivEngine {
 
     // terminate the engine.
     bool quit();
+
+#ifdef WITH_RTHP // bind rthp
+    void bindRTHP(RTHPContainer* rthpi);
+#endif
 
     unsigned char* yrw801ROM;
     unsigned char* tg100ROM;

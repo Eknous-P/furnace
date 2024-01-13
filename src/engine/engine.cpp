@@ -3886,3 +3886,11 @@ bool DivEngine::quit() {
   song.unload();
   return true;
 }
+
+#ifdef WITH_RTHP
+
+void DivEngine::bindRTHP(RTHPContainer* rthpi) {
+  rthp=rthpi;
+}
+
+#endif
