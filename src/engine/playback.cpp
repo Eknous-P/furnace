@@ -1623,7 +1623,6 @@ bool DivEngine::nextTick(bool noAccum, bool inhibitLowLat) {
 #ifdef WITH_RTHP
   std::vector<DivRegWrite>& regWrites=getDispatch(0)->getRegisterWrites();
   for (DivRegWrite& regWrite:regWrites) {
-    logV("rthpwrite");
     rthp->write(regWrite.addr,regWrite.val);
   }
   regWrites.clear();
