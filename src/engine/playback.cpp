@@ -1331,6 +1331,9 @@ void DivEngine::nextRow() {
 
 bool DivEngine::nextTick(bool noAccum, bool inhibitLowLat) {
   bool ret=false;
+#ifdef WITH_RTHP
+  getDispatch(0)->toggleRegisterDump(true);
+#endif
   if (divider<1) divider=1;
 
   if (lowLatency && !skipping && !inhibitLowLat) {
@@ -1614,16 +1617,18 @@ bool DivEngine::nextTick(bool noAccum, bool inhibitLowLat) {
     return ret;
   }
 
+  // system tick
+  for (int i=0; i<song.systemLen; i++) disCont[i].dispatch->tick(subticks==tickMult);
+
 #ifdef WITH_RTHP
   std::vector<DivRegWrite>& regWrites=getDispatch(0)->getRegisterWrites();
   for (DivRegWrite& regWrite:regWrites) {
+    logV("rthpwrite");
     rthp->write(regWrite.addr,regWrite.val);
   }
-  // rthp.write(0,0);
+  regWrites.clear();
+  getDispatch(0)->toggleRegisterDump(false);
 #endif
-
-  // system tick
-  for (int i=0; i<song.systemLen; i++) disCont[i].dispatch->tick(subticks==tickMult);
 
   if (!freelance) {
     if (stepPlay!=1) {

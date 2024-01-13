@@ -100,6 +100,7 @@ void RTHPContainer::write(unsigned short a,unsigned short v) {
 }
 
 int RTHPContainer::deinit() {
+  if (!container.initialized) return 0;
   switch (container.impl) {
     case RTHP_ERTHP: {
       erthp.closeSerial();
