@@ -22,8 +22,6 @@
 #include <imgui.h>
 #include "rthp.h"
 
-RTHPContainer rthp;
-
 void FurnaceGUI::drawRTHPWindow(){
   rthp.setImpl(RTHP_ERTHP);
   if (nextWindow==GUI_WINDOW_RTHP) {
@@ -33,6 +31,7 @@ void FurnaceGUI::drawRTHPWindow(){
   }
   if (!rthpWindowOpen) return;
   if (ImGui::Begin("Real-time Hardware Playback",&rthpWindowOpen,globalWinFlags)) {
+    ImGui::BeginDisabled(RTHPInitialized);
     if (ImGui::Button("Scan ports")) {
       rthp.scanAvailPorts();
       RTHPAvailPorts=rthp.getAvailPortNames();
@@ -44,7 +43,6 @@ void FurnaceGUI::drawRTHPWindow(){
       }
       ImGui::EndCombo();
     }
-    ImGui::BeginDisabled(RTHPInitialized);
     if (ImGui::Button("Init")) {
       switch(rthp.init(RTHP_ERTHP,RTHPPort)) {
         case 0: {

@@ -2369,10 +2369,11 @@ class FurnaceGUI {
 
   // RTHP stuff
 #ifdef WITH_RTHP
-    int RTHPImplementation;
-    std::vector<String> RTHPAvailPorts;
-    String RTHPPort;
-    bool RTHPInitialized;
+  RTHPContainer rthp;
+  int RTHPImplementation;
+  std::vector<String> RTHPAvailPorts;
+  String RTHPPort;
+  bool RTHPInitialized;
 #endif
 
   void drawExportAudio(bool onWindow=false);
