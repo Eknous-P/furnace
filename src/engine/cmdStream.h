@@ -23,11 +23,6 @@
 #include "defines.h"
 #include "safeReader.h"
 
-#ifdef WITH_RTHP
-#include "rthp.h"
-#include "dispatch.h"
-#endif
-
 class DivEngine;
 
 struct DivCSChannelState {
@@ -79,10 +74,6 @@ class DivCSPlayer {
   unsigned char fastDelays[16];
   unsigned char fastCmds[16];
   unsigned char arpSpeed;
-
-#ifdef WITH_RTHP
-  RTHPContainer rthp;
-#endif
 
   short vibTable[64];
   public:
