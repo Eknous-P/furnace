@@ -98,3 +98,14 @@ void RTHPContainer::write(unsigned short a,unsigned short v) {
     default: break;
   }
 }
+
+int RTHPContainer::deinit() {
+  switch (container.impl) {
+    case RTHP_ERTHP: {
+      erthp.closeSerial();
+      container.initialized=false;
+      return 0;
+    }
+    default: return 0;
+  }
+}

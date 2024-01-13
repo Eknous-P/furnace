@@ -49,6 +49,7 @@ class RTHPContainer {
     std::vector<String> getAvailPortNames();
     auto getAvailPorts();
     void write(unsigned short a, unsigned short v);
+    int deinit();
 };
 
 // implementation-specific helper functions

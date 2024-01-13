@@ -56,6 +56,12 @@ void FurnaceGUI::drawRTHPWindow(){
       }
     }
     ImGui::EndDisabled();
+    ImGui::BeginDisabled(!RTHPInitialized);
+    if (ImGui::Button("Disconnect")) {
+      rthp.deinit();
+      RTHPInitialized=false;
+    }
+    ImGui::EndDisabled();
     ImGui::End();
   }
 }

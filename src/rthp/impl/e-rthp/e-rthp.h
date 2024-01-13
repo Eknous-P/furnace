@@ -45,6 +45,7 @@ class ERTHP {
     int initSerial(std::string port, unsigned int baudrate, unsigned int timeout);
     int sendSerial(std::string msg);
     void sendBeacon();
+    void closeSerial();
 
     // logging
     void clearLog();
@@ -108,4 +109,8 @@ int ERTHP::initSerial(std::string port, unsigned int baudrate, unsigned int time
 
 int ERTHP::sendSerial(std::string msg) {
   return (int)serialPort.write(msg);
+}
+
+void ERTHP::closeSerial() {
+  return serialPort.close();
 }
