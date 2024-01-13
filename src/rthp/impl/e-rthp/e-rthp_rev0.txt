@@ -1,111 +1,19 @@
 E-RTHP - REAL-TIME HARDWARE PLAYBACK PROTOCOL
 REVISION 0 UNFINISHED
 
-MAXIMUM SUPPORT:
+protocol is unidirectional, for simplicity
 
-data bus - 8 bits
-address bus - 16 bits
-("address bus" includes the addressing, chip/write enable and other pins)
-theoretical chip clock - 8MHz
+serial config:
 
-
-
-DATA TYPES, SYMBOLS AND OTHER STUFF:
-
-(nothing) - ascii char sequence (string)
-d - decimal number
-x - hex number
-b - binary number
-B - byte
-
-escape char - / (only applies to this notation)
-confirmation message byte {CF} - ^
-cancel message byte {CL} - X
-beacon byte {BC} - *
-
-~ - wait for response
-
-brackets:
-[] - loop send
-{} - variable send
-
-
-
-CONNECTION GRAPH:
-
-+-------------+        +--------+    data line      +--------------------+
-|    HOST     | serial |   uC   +-------------------+                    |
-|     (H)     +--------+   (C)  |    address line   |      SOUND IC      |
-|             |        |        +-------------------+                    |
-+-------------+        +--------+-------------------+--------------------+
-                                     other lines
-
-OR
-                           CLIENT (C)
-                       +---------------------+
-+-------------+        |                     |
-|    HOST     | serial | +------+            |
-|     (H)     +--------|-+  IO  +-~          |
-|             |        | +------+            |
-+-------------+        |                     |
-                       +---------------------+
-
-(client is a device capable of serial communication and containing a sound IC)
-
-
-INITIAL STATES:
-
-baud rate: 9600
+baudrate: 1000000
 timeout: 1000ms
-data length: 8
-address length: 8
 
-****SERIAL DATA****
+data sent:
+startup:
+	RTHP
+tick:
+	>AD
 
-INITIALIZATION:
-
-H: RTHP~
-C: V{VERSIONNUMBER}R{REVISIONNUMBER}
-H: C/DB{DATASIZE}AB{ADDRSIZE}~
-C: {CF}
-
-MANUAL RESET:
-
-H: R~
-C: R~
-(H waits for confirm)
-H: R!
-(C disconnects; back to init)
-
-CANCEL:
-
-H: {CL}~
-C: {CF}
-
-BEACON:
-
-H: {BC}~
-C: {BC}
-
-PLAYBACK PREPARATION:
-
-NEWBAUD is the new baud rate at which playback data will be sent, represented as an unsigned 32-bit integer
-NEWBAUD=TICKRATE*12*CHANNUM*(ADDRSIZE+DATASIZE)+16
-NEWBAUD should be a standard baud rate HIGHER than calculated with the formula above
-
-TICKRATE - the rate at which the song plays at (usually 60/50, can be a number in range 1-999)
-12 - maximum possible commands per second for a SINGLE channel
-CHANNUM - amount of channels
-ADDRSIZE - address line size
-DATASIZE - data line size
-16 - 2*8 bits for bi-di communication
-
-H: C/BD{NEWBAUD}~
-C: {CF}
-
-PLAYBACK TICK: (send on every tick)
-
-H: /D[{DATA}{ADDR}]~
-C: {CF}
-
-
+where:
+	A - address
+	D - data
