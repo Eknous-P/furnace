@@ -7669,7 +7669,8 @@ FurnaceGUI::FurnaceGUI():
   RTHPImplementation(RTHP_ERTHP),
   RTHPAvailPorts({}),
   RTHPPort(""),
-  RTHPInitialized(false) {
+  RTHPInitialized(false),
+  dumpedChip(0) {
 #else
   curExportType(GUI_EXPORT_NONE) {
 #endif

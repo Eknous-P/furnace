@@ -116,3 +116,11 @@ int RTHPContainer::deinit() {
 bool RTHPContainer::getRTHPState() {
   return container.initialized;
 }
+
+void RTHPContainer::setDumpedChip(int chip) {
+  container.chipToDump=chip;
+}
+
+int RTHPContainer::getDumpedChip() {
+  return container.chipToDump;
+}

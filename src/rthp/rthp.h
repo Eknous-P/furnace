@@ -37,10 +37,12 @@ class RTHPContainer {
       bool initialized;
       RTHPImplementations impl;
       String port;
+      int chipToDump;
       container():
         initialized(false),
         impl(RTHP_NONE),
-        port("") {}
+        port(""),
+        chipToDump(0) {}
     } container;
 
     void setImpl(RTHPImplementations impl);
@@ -51,6 +53,8 @@ class RTHPContainer {
     void write(unsigned short a, unsigned short v);
     int deinit();
     bool getRTHPState();
+    void setDumpedChip(int chip);
+    int getDumpedChip();
 };
 
 // implementation-specific helper functions

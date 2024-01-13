@@ -25,6 +25,7 @@
 void FurnaceGUI::drawRTHPWindow(){
   rthp->setImpl(RTHP_ERTHP);
   RTHPInitialized=rthp->getRTHPState();
+  dumpedChip=rthp->getDumpedChip();
   if (nextWindow==GUI_WINDOW_RTHP) {
     rthpWindowOpen=true;
     ImGui::SetNextWindowFocus();
@@ -56,6 +57,11 @@ void FurnaceGUI::drawRTHPWindow(){
     ImGui::BeginDisabled(!RTHPInitialized);
     if (ImGui::Button("Disconnect")) {
       rthp->deinit();
+    }
+    if (ImGui::InputInt("chip to dump",&dumpedChip)) {
+      if (dumpedChip<0) dumpedChip=0;
+      if (dumpedChip>e->song.systemLen-1) dumpedChip=e->song.systemLen-1;
+      rthp->setDumpedChip(dumpedChip);
     }
     ImGui::EndDisabled();
     ImGui::End();

@@ -1333,7 +1333,7 @@ bool DivEngine::nextTick(bool noAccum, bool inhibitLowLat) {
   bool ret=false;
 #ifdef WITH_RTHP
   if (rthp->getRTHPState()) {
-    getDispatch(0)->toggleRegisterDump(true);
+    getDispatch(rthp->getDumpedChip())->toggleRegisterDump(true);
   }
 #endif
   if (divider<1) divider=1;
@@ -1624,12 +1624,12 @@ bool DivEngine::nextTick(bool noAccum, bool inhibitLowLat) {
 
 #ifdef WITH_RTHP
   if (rthp->getRTHPState()) {
-    std::vector<DivRegWrite>& regWrites=getDispatch(0)->getRegisterWrites();
+    std::vector<DivRegWrite>& regWrites=getDispatch(rthp->getDumpedChip())->getRegisterWrites();
     for (DivRegWrite& regWrite:regWrites) {
       rthp->write(regWrite.addr,regWrite.val);
     }
     regWrites.clear();
-    getDispatch(0)->toggleRegisterDump(false);
+    getDispatch(rthp->getDumpedChip())->toggleRegisterDump(false);
   }
 #endif
 

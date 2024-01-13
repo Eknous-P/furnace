@@ -2374,6 +2374,7 @@ class FurnaceGUI {
   std::vector<String> RTHPAvailPorts;
   String RTHPPort;
   bool RTHPInitialized;
+  int dumpedChip;
 #endif
 
   void drawExportAudio(bool onWindow=false);
