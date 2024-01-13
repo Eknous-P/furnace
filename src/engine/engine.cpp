@@ -3851,11 +3851,6 @@ bool DivEngine::init() {
   reset();
   active=true;
 
-#ifdef WITH_RTHP
-  rthp.init(RTHP_ERTHP);
-#endif
-
-
   if (!haveAudio) {
     return false;
   } else {

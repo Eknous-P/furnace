@@ -40,6 +40,7 @@ class ERTHP {
     // serial
     int scanAvailPorts();
     std::vector<serial::PortInfo> getAvailPorts();
+    std::vector<std::string> getAvailPortNames();
 
     int initSerial(std::string port, unsigned int baudrate, unsigned int timeout);
     int sendSerial(std::string msg);
@@ -75,6 +76,12 @@ int ERTHP::scanAvailPorts() {
 
 std::vector<serial::PortInfo> ERTHP::getAvailPorts() {
   return erthp_serial.availPorts;
+}
+
+std::vector<std::string> ERTHP::getAvailPortNames() {
+  std::vector<std::string> ret{};
+  for (serial::PortInfo i:erthp_serial.availPorts) ret.push_back(i.port);
+  return ret;
 }
 
 int ERTHP::initSerial(std::string port, unsigned int baudrate, unsigned int timeout) {

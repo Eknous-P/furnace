@@ -2367,6 +2367,14 @@ class FurnaceGUI {
   int audioExportType;
   FurnaceGUIExportTypes curExportType;
 
+  // RTHP stuff
+#ifdef WITH_RTHP
+    int RTHPImplementation;
+    std::vector<String> RTHPAvailPorts;
+    String RTHPPort;
+    bool RTHPInitialized;
+#endif
+
   void drawExportAudio(bool onWindow=false);
   void drawExportVGM(bool onWindow=false);
   void drawExportZSM(bool onWindow=false);

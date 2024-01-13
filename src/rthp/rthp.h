@@ -36,15 +36,18 @@ class RTHPContainer {
     struct container {
       bool initialized;
       RTHPImplementation impl;
-      std::vector<int> deviceIds;
+      String port;
       container():
         initialized(false),
-        impl(RTHP_NONE) {}
+        impl(RTHP_NONE),
+        port("") {}
     } container;
 
-    void init(RTHPImplementation setImpl);
-    std::string getAvailDeviceName();
-    auto getAvailDevice();
+    void setImpl(RTHPImplementation impl);
+    int init(RTHPImplementation setImpl, String setPort);
+    void scanAvailPorts();
+    std::vector<String> getAvailPortNames();
+    auto getAvailPorts();
     void write(unsigned short a, unsigned short v);
 };
 

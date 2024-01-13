@@ -29,10 +29,9 @@ const char* RTHPImplementationNames[]={
 
 ERTHP erthp;
 
-int initERTHP(std::string port) {
-  logI("RTHP: serial ports found: %d", erthp.scanAvailPorts());
+int initERTHP(String port) {
   try {
-    if (erthp.initSerial(port,9600,1000)) { // temporary port
+    if (erthp.initSerial(port,9600,1000)) {
       logE(erthp.getLastLog().c_str());
       return 1;
     }
@@ -45,21 +44,41 @@ int initERTHP(std::string port) {
   return 0;
 }
 
-void RTHPContainer::init(RTHPImplementation setImpl) {
-  container.impl=setImpl;
+void RTHPContainer::scanAvailPorts() {
+  switch (container.impl) {
+    case RTHP_ERTHP: {  
+      logI("RTHP: serial ports found: %d", erthp.scanAvailPorts());
+      return;
+    }
+    default: return;
+  }
+}
+
+std::vector<String> RTHPContainer::getAvailPortNames() {
+  switch (container.impl) {
+    case RTHP_ERTHP: {
+      return erthp.getAvailPortNames();
+    }
+    default: return {""};
+  }
+}
+
+void RTHPContainer::setImpl(RTHPImplementation impl) {container.impl=impl;}
+
+int RTHPContainer::init(RTHPImplementation setImpl, String setPort) {
+  container.port=setPort;
   container.initialized=false;
   logI("RTHP: begin init");
   logI("RTHP: using impl %s", RTHPImplementationNames[setImpl]);
   switch (container.impl) {
     case RTHP_ERTHP: {
-      if(initERTHP("/dev/ttyUSB0")) return;
+      if(initERTHP(container.port)) return 1;
       break;
     }
-    default: {
-      break;
-    }
+    default: return 2;
   }
   container.initialized=true;
+  return 0;
 }
 
 void RTHPContainer::write(unsigned short a,unsigned short v) {
@@ -68,9 +87,8 @@ void RTHPContainer::write(unsigned short a,unsigned short v) {
     // logE("RTHP: not initialized!");
     return;
   }
-  String dump="addr: ";
+  String dump=">";
   dump+=a;
-  dump+=", val: ";
   dump+=v;
   switch (container.impl) {
     case RTHP_ERTHP: {

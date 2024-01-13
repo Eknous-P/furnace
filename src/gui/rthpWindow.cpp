@@ -20,8 +20,12 @@
 #include "gui.h"
 #include "../ta-log.h"
 #include <imgui.h>
+#include "rthp.h"
+
+RTHPContainer rthp;
 
 void FurnaceGUI::drawRTHPWindow(){
+  rthp.setImpl(RTHP_ERTHP);
   if (nextWindow==GUI_WINDOW_RTHP) {
     rthpWindowOpen=true;
     ImGui::SetNextWindowFocus();
@@ -29,9 +33,31 @@ void FurnaceGUI::drawRTHPWindow(){
   }
   if (!rthpWindowOpen) return;
   if (ImGui::Begin("Real-time Hardware Playback",&rthpWindowOpen,globalWinFlags)) {
-    ImGui::Text("hewwo\n");
-    ImGui::Text("  TODO:\nmain rthp stuff\ne-rthp host driver\ne-rthp client driver\ne-rthp protocol...\nmodify each chip to spit reg writes at me???");
+    if (ImGui::Button("Scan ports")) {
+      rthp.scanAvailPorts();
+      RTHPAvailPorts=rthp.getAvailPortNames();
+    }
 
+    if (ImGui::BeginCombo("ports",RTHPPort.c_str())) {
+      for (String i:RTHPAvailPorts) {
+        if (ImGui::Selectable(i.c_str())) RTHPPort=i;
+      }
+      ImGui::EndCombo();
+    }
+    ImGui::BeginDisabled(RTHPInitialized);
+    if (ImGui::Button("Init")) {
+      switch(rthp.init(RTHP_ERTHP,RTHPPort)) {
+        case 0: {
+          RTHPInitialized=true;
+          break;
+        }
+        default: {
+          RTHPInitialized=false;
+          break;
+        }
+      }
+    }
+    ImGui::EndDisabled();
     ImGui::End();
   }
 }
