@@ -7666,7 +7666,7 @@ FurnaceGUI::FurnaceGUI():
   audioExportType(0),
 #ifdef WITH_RTHP
   curExportType(GUI_EXPORT_NONE),
-  RTHPImplementation(RTHP_NONE),
+  RTHPImplementation(RTHP_ERTHP),
   RTHPAvailPorts({}),
   RTHPPort(""),
   RTHPInitialized(false) {

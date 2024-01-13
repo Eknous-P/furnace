@@ -24,7 +24,7 @@
 #include "../ta-log.h"
 #include "../ta-utils.h"
 
-enum RTHPImplementation {
+enum RTHPImplementations {
   RTHP_NONE=0,
   RTHP_ERTHP
 };
@@ -35,7 +35,7 @@ class RTHPContainer {
   public:
     struct container {
       bool initialized;
-      RTHPImplementation impl;
+      RTHPImplementations impl;
       String port;
       container():
         initialized(false),
@@ -43,8 +43,8 @@ class RTHPContainer {
         port("") {}
     } container;
 
-    void setImpl(RTHPImplementation impl);
-    int init(RTHPImplementation setImpl, String setPort);
+    void setImpl(RTHPImplementations impl);
+    int init(RTHPImplementations setImpl, String setPort);
     void scanAvailPorts();
     std::vector<String> getAvailPortNames();
     auto getAvailPorts();

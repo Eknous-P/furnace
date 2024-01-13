@@ -63,9 +63,9 @@ std::vector<String> RTHPContainer::getAvailPortNames() {
   }
 }
 
-void RTHPContainer::setImpl(RTHPImplementation impl) {container.impl=impl;}
+void RTHPContainer::setImpl(RTHPImplementations impl) {container.impl=impl;}
 
-int RTHPContainer::init(RTHPImplementation setImpl, String setPort) {
+int RTHPContainer::init(RTHPImplementations setImpl, String setPort) {
   container.port=setPort;
   container.initialized=false;
   logI("RTHP: begin init");
