@@ -1332,7 +1332,9 @@ void DivEngine::nextRow() {
 bool DivEngine::nextTick(bool noAccum, bool inhibitLowLat) {
   bool ret=false;
 #ifdef WITH_RTHP
-  getDispatch(0)->toggleRegisterDump(true);
+  if (rthp->getRTHPState()) {
+    getDispatch(0)->toggleRegisterDump(true);
+  }
 #endif
   if (divider<1) divider=1;
 
@@ -1621,12 +1623,14 @@ bool DivEngine::nextTick(bool noAccum, bool inhibitLowLat) {
   for (int i=0; i<song.systemLen; i++) disCont[i].dispatch->tick(subticks==tickMult);
 
 #ifdef WITH_RTHP
-  std::vector<DivRegWrite>& regWrites=getDispatch(0)->getRegisterWrites();
-  for (DivRegWrite& regWrite:regWrites) {
-    rthp->write(regWrite.addr,regWrite.val);
+  if (rthp->getRTHPState()) {
+    std::vector<DivRegWrite>& regWrites=getDispatch(0)->getRegisterWrites();
+    for (DivRegWrite& regWrite:regWrites) {
+      rthp->write(regWrite.addr,regWrite.val);
+    }
+    regWrites.clear();
+    getDispatch(0)->toggleRegisterDump(false);
   }
-  regWrites.clear();
-  getDispatch(0)->toggleRegisterDump(false);
 #endif
 
   if (!freelance) {
