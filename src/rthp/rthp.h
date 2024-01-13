@@ -50,6 +50,6 @@ class RTHPContainer {
 
 // implementation-specific helper functions
 
-int initERTHP();
+int initERTHP(std::string port);
 
 #endif

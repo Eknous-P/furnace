@@ -29,12 +29,19 @@ const char* RTHPImplementationNames[]={
 
 ERTHP erthp;
 
-int initERTHP() {
+int initERTHP(std::string port) {
   logI("RTHP: serial ports found: %d", erthp.scanAvailPorts());
-  if (erthp.initSerial("/dev/ttyUSB0",9600,1000)) { // temporary port
-    logE(erthp.getLastLog().c_str());
+  try {
+    if (erthp.initSerial(port,9600,1000)) { // temporary port
+      logE(erthp.getLastLog().c_str());
+      return 1;
+    }
+  } catch (std::exception& xc) {
+    logE("RTHP: falied to connect to %s",port);
+    logE("RTHP exception: %s",xc.what());
     return 1;
   }
+  logI("RTHP: successfully connected to %s",port);
   return 0;
 }
 
@@ -45,7 +52,7 @@ void RTHPContainer::init(RTHPImplementation setImpl) {
   logI("RTHP: using impl %s", RTHPImplementationNames[setImpl]);
   switch (container.impl) {
     case RTHP_ERTHP: {
-      if(initERTHP()) return;
+      if(initERTHP("/dev/ttyUSB0")) return;
       break;
     }
     default: {
