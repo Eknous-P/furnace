@@ -50,6 +50,7 @@ class RTHPContainer {
     auto getAvailPorts();
     void write(unsigned short a, unsigned short v);
     int deinit();
+    bool getRTHPState();
 };
 
 // implementation-specific helper functions

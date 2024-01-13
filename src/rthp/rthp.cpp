@@ -104,8 +104,14 @@ int RTHPContainer::deinit() {
     case RTHP_ERTHP: {
       erthp.closeSerial();
       container.initialized=false;
-      return 0;
+      break;
     }
-    default: return 0;
+    default: break;
   }
+  logI("RTHP: successfully deinited port %s", container.port);
+  return 0;
+}
+
+bool RTHPContainer::getRTHPState() {
+  return container.initialized;
 }

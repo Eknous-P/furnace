@@ -24,6 +24,7 @@
 
 void FurnaceGUI::drawRTHPWindow(){
   rthp.setImpl(RTHP_ERTHP);
+  RTHPInitialized=rthp.getRTHPState();
   if (nextWindow==GUI_WINDOW_RTHP) {
     rthpWindowOpen=true;
     ImGui::SetNextWindowFocus();
@@ -32,7 +33,7 @@ void FurnaceGUI::drawRTHPWindow(){
   if (!rthpWindowOpen) return;
   if (ImGui::Begin("Real-time Hardware Playback",&rthpWindowOpen,globalWinFlags)) {
     ImGui::BeginDisabled(RTHPInitialized);
-    if (ImGui::Button("Scan ports")) {
+    if (ImGui::Button("Scan ports") || RTHPAvailPorts.empty()) {
       rthp.scanAvailPorts();
       RTHPAvailPorts=rthp.getAvailPortNames();
     }
@@ -43,23 +44,11 @@ void FurnaceGUI::drawRTHPWindow(){
       }
       ImGui::EndCombo();
     }
-    if (ImGui::Button("Init")) {
-      switch(rthp.init(RTHP_ERTHP,RTHPPort)) {
-        case 0: {
-          RTHPInitialized=true;
-          break;
-        }
-        default: {
-          RTHPInitialized=false;
-          break;
-        }
-      }
-    }
+    if (ImGui::Button("Init")) rthp.init(RTHP_ERTHP,RTHPPort);
     ImGui::EndDisabled();
     ImGui::BeginDisabled(!RTHPInitialized);
     if (ImGui::Button("Disconnect")) {
       rthp.deinit();
-      RTHPInitialized=false;
     }
     ImGui::EndDisabled();
     ImGui::End();
