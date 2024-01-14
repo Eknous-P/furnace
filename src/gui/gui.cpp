@@ -1049,7 +1049,7 @@ Collapsed=0\n\
 \n\
 [Window][Real-time Hardware Playback]\n\
 Pos=60,60\n\
-Size=300,200\n\
+Size=320,240\n\
 Collapsed=0\n\
 \n\
 [Docking][Data]\n\

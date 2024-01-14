@@ -18,7 +18,6 @@
  */
 
 #include "gui.h"
-#include "../ta-log.h"
 #include <imgui.h>
 #include "rthp.h"
 
