@@ -6564,6 +6564,11 @@ bool FurnaceGUI::init() {
   xyOscIntensity=e->getConfFloat("xyOscIntensity",2.0f);
   xyOscThickness=e->getConfFloat("xyOscThickness",2.0f);
 
+#ifdef WITH_RTHP
+  RTHPImplementation=e->getConfInt("RTHPImplementation",RTHP_ERTHP);
+  RTHPPort=e->getConfString("RTHPPort","");
+#endif
+
   syncSettings();
   syncTutorial();
 
@@ -7121,6 +7126,12 @@ void FurnaceGUI::commitState() {
   e->setConf("xyOscDecayTime",xyOscDecayTime);
   e->setConf("xyOscIntensity",xyOscIntensity);
   e->setConf("xyOscThickness",xyOscThickness);
+
+  // commit rthp stuff
+#ifdef WITH_RTHP
+  e->setConf("RTHPImplementation",RTHPImplementation);
+  e->setConf("RTHPPort",RTHPPort);
+#endif
 
   // commit recent files
   for (int i=0; i<30; i++) {
