@@ -55,6 +55,7 @@ void FurnaceGUI::drawRTHPWindow(){
     ImGui::EndDisabled();
     ImGui::BeginDisabled(!RTHPInitialized);
     if (ImGui::Button("Disconnect")) {
+      stop();
       rthp->deinit();
     }
     if (ImGui::BeginCombo("chip to dump",fmt::sprintf("%d: %s",dumpedChip,e->getSystemName(e->song.system[dumpedChip])).c_str())) {
