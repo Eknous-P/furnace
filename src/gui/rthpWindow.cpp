@@ -63,6 +63,10 @@ void FurnaceGUI::drawRTHPWindow(){
       }
       ImGui::EndCombo();
     }
+    if (dumpedChip>e->song.systemLen-1) {
+      dumpedChip=e->song.systemLen-1;
+      rthp->setDumpedChip(dumpedChip);
+    }
     ImGui::EndDisabled();
     ImGui::End();
   }
