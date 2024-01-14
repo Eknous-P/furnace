@@ -1620,18 +1620,21 @@ bool DivEngine::nextTick(bool noAccum, bool inhibitLowLat) {
   }
 
   // system tick
-  for (int i=0; i<song.systemLen; i++) disCont[i].dispatch->tick(subticks==tickMult);
+  for (int i=0; i<song.systemLen; i++) {
+    disCont[i].dispatch->tick(subticks==tickMult);
 
 #ifdef WITH_RTHP
   if (rthp->getRTHPState()) {
-    std::vector<DivRegWrite>& regWrites=getDispatch(rthp->getDumpedChip())->getRegisterWrites();
+    std::vector<DivRegWrite>& regWrites=getDispatch(i)->getRegisterWrites();
     for (DivRegWrite& regWrite:regWrites) {
+      if (i!=rthp->getDumpedChip()) continue;
       rthp->write(regWrite.addr,regWrite.val);
     }
     regWrites.clear();
-    getDispatch(rthp->getDumpedChip())->toggleRegisterDump(false);
+    getDispatch(i)->toggleRegisterDump(false);
   }
 #endif
+  }
 
   if (!freelance) {
     if (stepPlay!=1) {
