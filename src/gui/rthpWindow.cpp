@@ -58,10 +58,11 @@ void FurnaceGUI::drawRTHPWindow(){
     if (ImGui::Button("Disconnect")) {
       rthp->deinit();
     }
-    if (ImGui::InputInt("chip to dump",&dumpedChip)) {
-      if (dumpedChip<0) dumpedChip=0;
-      if (dumpedChip>e->song.systemLen-1) dumpedChip=e->song.systemLen-1;
-      rthp->setDumpedChip(dumpedChip);
+    if (ImGui::BeginCombo("chip to dump",e->getSystemName(e->song.system[dumpedChip]))) {
+      for (int i=0;i<e->song.systemLen;i++) {
+        if (ImGui::Selectable(e->getSystemName(e->song.system[i]))) rthp->setDumpedChip(i);
+      }
+      ImGui::EndCombo();
     }
     ImGui::EndDisabled();
     ImGui::End();
