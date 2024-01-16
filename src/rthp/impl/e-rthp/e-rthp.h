@@ -16,7 +16,7 @@ class ERTHP {
     std::string portName;
 
     ERTHP_Serial():
-      serialBaudrate(9600),
+      serialBaudrate(1000000),
       serialTimeout(1000),
       portName("") {}
   } erthp_serial;
@@ -38,6 +38,7 @@ class ERTHP {
 
     int initSerial(std::string port, unsigned int baudrate, unsigned int timeout);
     int sendSerial(std::string msg);
+    std::string receiveSerial();
     void closeSerial();
 
     // logging
@@ -102,6 +103,10 @@ int ERTHP::initSerial(std::string port, unsigned int baudrate, unsigned int time
 
 int ERTHP::sendSerial(std::string msg) {
   return (int)serialPort.write(msg);
+}
+
+std::string ERTHP::receiveSerial() {
+  return serialPort.read();
 }
 
 void ERTHP::closeSerial() {

@@ -1629,6 +1629,7 @@ bool DivEngine::nextTick(bool noAccum, bool inhibitLowLat) {
     for (DivRegWrite& regWrite:regWrites) {
       if (i!=rthp->getDumpedChip()) continue;
       rthp->write(regWrite.addr,regWrite.val);
+      rthp->read();
     }
     regWrites.clear();
     getDispatch(i)->toggleRegisterDump(false);

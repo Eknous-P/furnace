@@ -38,6 +38,7 @@ class RTHPContainer {
       RTHPImplementations impl;
       String port;
       int chipToDump;
+      String readBuffer;
       container():
         initialized(false),
         impl(RTHP_NONE),
@@ -51,6 +52,9 @@ class RTHPContainer {
     std::vector<String> getAvailPortNames();
     auto getAvailPorts();
     void write(unsigned short a, unsigned short v);
+    void read();
+    String getReadBuffer();
+    void clearReadBuffer();
     int deinit();
     bool getRTHPState();
     void setDumpedChip(int chip);

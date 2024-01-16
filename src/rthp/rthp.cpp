@@ -99,6 +99,19 @@ void RTHPContainer::write(unsigned short a,unsigned short v) {
   }
 }
 
+void RTHPContainer::read() {
+  switch (container.impl) {
+    case RTHP_ERTHP: {
+      container.readBuffer+=erthp.receiveSerial();
+      return;
+    }
+    default: return;
+  }
+}
+
+String RTHPContainer::getReadBuffer() {return container.readBuffer;}
+void RTHPContainer::clearReadBuffer() {container.readBuffer="";}
+
 int RTHPContainer::deinit() {
   if (!container.initialized) return 0;
   switch (container.impl) {
