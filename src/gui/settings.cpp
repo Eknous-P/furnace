@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2023 tildearrow and contributors
+ * Copyright (C) 2021-2024 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -2754,11 +2754,31 @@ void FurnaceGUI::drawSettings() {
         ImGui::Unindent();
 
         ImGui::Text("Pattern view labels:");
-        if (ImGui::InputTextWithHint("Note off (3-char)","OFF",&settings.noteOffLabel)) settingsChanged=true;
-        if (ImGui::InputTextWithHint("Note release (3-char)","===",&settings.noteRelLabel)) settingsChanged=true;
-        if (ImGui::InputTextWithHint("Macro release (3-char)","REL",&settings.macroRelLabel)) settingsChanged=true;
-        if (ImGui::InputTextWithHint("Empty field (3-char)","...",&settings.emptyLabel)) settingsChanged=true;
-        if (ImGui::InputTextWithHint("Empty field (2-char)","..",&settings.emptyLabel2)) settingsChanged=true;
+        ImGui::PushFont(patFont);
+        if (ImGui::InputTextWithHint("##PVLOff","OFF",&settings.noteOffLabel)) settingsChanged=true;
+        ImGui::PopFont();
+        ImGui::SameLine();
+        ImGui::Text("Note off (3-char)");
+        ImGui::PushFont(patFont);
+        if (ImGui::InputTextWithHint("##PVLRel","===",&settings.noteRelLabel)) settingsChanged=true;
+        ImGui::PopFont();
+        ImGui::SameLine();
+        ImGui::Text("Note release (3-char)");
+        ImGui::PushFont(patFont);
+        if (ImGui::InputTextWithHint("##PVLMacroRel","REL",&settings.macroRelLabel)) settingsChanged=true;
+        ImGui::PopFont();
+        ImGui::SameLine();
+        ImGui::Text("Macro release (3-char)");
+        ImGui::PushFont(patFont);
+        if (ImGui::InputTextWithHint("##PVLE3","...",&settings.emptyLabel)) settingsChanged=true;
+        ImGui::PopFont();
+        ImGui::SameLine();
+        ImGui::Text("Empty field (3-char)");
+        ImGui::PushFont(patFont);
+        if (ImGui::InputTextWithHint("##PVLE2","..",&settings.emptyLabel2)) settingsChanged=true;
+        ImGui::PopFont();
+        ImGui::SameLine();
+        ImGui::Text("Empty field (2-char)");
 
         ImGui::Text("Pattern view spacing after:");
 
@@ -3169,6 +3189,18 @@ void FurnaceGUI::drawSettings() {
         bool roundedMenusB=settings.roundedMenus;
         if (ImGui::Checkbox("Rounded menu corners",&roundedMenusB)) {
           settings.roundedMenus=roundedMenusB;
+          settingsChanged=true;
+        }
+
+        bool roundedTabsB=settings.roundedTabs;
+        if (ImGui::Checkbox("Rounded tabs",&roundedTabsB)) {
+          settings.roundedTabs=roundedTabsB;
+          settingsChanged=true;
+        }
+
+        bool roundedScrollbarsB=settings.roundedScrollbars;
+        if (ImGui::Checkbox("Rounded scrollbars",&roundedScrollbarsB)) {
+          settings.roundedScrollbars=roundedScrollbarsB;
           settingsChanged=true;
         }
 
@@ -3923,6 +3955,8 @@ void FurnaceGUI::readConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
     settings.roundedWindows=conf.getInt("roundedWindows",1);
     settings.roundedButtons=conf.getInt("roundedButtons",1);
     settings.roundedMenus=conf.getInt("roundedMenus",0);
+    settings.roundedTabs=conf.getInt("roundedTabs",1);
+    settings.roundedScrollbars=conf.getInt("roundedScrollbars",1);
 
     settings.separateFMColors=conf.getInt("separateFMColors",0);
     settings.insEditColorize=conf.getInt("insEditColorize",0);
@@ -4088,6 +4122,8 @@ void FurnaceGUI::readConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
   clampSetting(settings.roundedWindows,0,1);
   clampSetting(settings.roundedButtons,0,1);
   clampSetting(settings.roundedMenus,0,1);
+  clampSetting(settings.roundedTabs,0,1);
+  clampSetting(settings.roundedScrollbars,0,1);
   clampSetting(settings.loadJapanese,0,1);
   clampSetting(settings.loadChinese,0,1);
   clampSetting(settings.loadChineseTraditional,0,1);
@@ -4381,6 +4417,8 @@ void FurnaceGUI::writeConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
     conf.set("roundedWindows",settings.roundedWindows);
     conf.set("roundedButtons",settings.roundedButtons);
     conf.set("roundedMenus",settings.roundedMenus);
+    conf.set("roundedTabs",settings.roundedTabs);
+    conf.set("roundedScrollbars",settings.roundedScrollbars);
 
     conf.set("separateFMColors",settings.separateFMColors);
     conf.set("insEditColorize",settings.insEditColorize);
@@ -5155,6 +5193,16 @@ void FurnaceGUI::applyUISettings(bool updateFonts) {
     sty.GrabRounding=6.0f;
   }
   if (settings.roundedMenus) sty.PopupRounding=8.0f;
+  if (settings.roundedTabs) {
+    sty.TabRounding=4.0f;
+  } else {
+    sty.TabRounding=0.0f;
+  }
+  if (settings.roundedScrollbars) {
+    sty.ScrollbarRounding=9.0f;
+  } else {
+    sty.ScrollbarRounding=0.0f;
+  }
 
   if (settings.frameBorders) {
     sty.FrameBorderSize=1.0f;
