@@ -1477,7 +1477,7 @@ void FurnaceGUI::kvsConfig(DivInstrument* ins, bool supportsKVS) {
         ImGui::TableSetupColumn("c2",ImGuiTableColumnFlags_WidthFixed);
         ImGui::TableSetupColumn("c3",ImGuiTableColumnFlags_WidthStretch);
         for (int i=0; i<4; i++) {
-          int o=(opCount==4)?orderedOps[i]:i;
+          int o=(opCount==4 && ins->type!=DIV_INS_ESFM)?orderedOps[i]:i;
           if (!(i&1)) ImGui::TableNextRow();
           const char* label="AUTO##OPKVS";
           if (ins->fm.op[o].kvs==0) {
@@ -2916,7 +2916,11 @@ void FurnaceGUI::drawInsEdit() {
     ImGui::SetNextWindowSizeConstraints(ImVec2(440.0f*dpiScale,400.0f*dpiScale),ImVec2(canvasW,canvasH));
   }
   if (ImGui::Begin("Instrument Editor",&insEditOpen,globalWinFlags|(settings.allowEditDocking?0:ImGuiWindowFlags_NoDocking))) {
-    if (curIns<0 || curIns>=(int)e->song.ins.size()) {
+    if (curIns==-2) {
+      ImGui::SetCursorPosY(ImGui::GetCursorPosY()+(ImGui::GetContentRegionAvail().y-ImGui::GetFrameHeightWithSpacing()+ImGui::GetStyle().ItemSpacing.y)*0.5f);
+      CENTER_TEXT("waiting...");
+      ImGui::Text("waiting...");
+    } else if (curIns<0 || curIns>=(int)e->song.ins.size()) {
       ImGui::SetCursorPosY(ImGui::GetCursorPosY()+(ImGui::GetContentRegionAvail().y-ImGui::GetFrameHeightWithSpacing()*(e->song.ins.empty()?2.0f:3.0f)+ImGui::GetStyle().ItemSpacing.y)*0.5f);
       CENTER_TEXT("no instrument selected");
       ImGui::Text("no instrument selected");

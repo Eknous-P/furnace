@@ -2771,7 +2771,7 @@ void FurnaceGUI::editOptions(bool topMenu) {
       } else if (latchIns==-1) {
         strcpy(id,"..##LatchIns");
       } else {
-        snprintf(id,63,"%.2x##LatchIns",latchIns&0xff);
+        snprintf(id,63,"%.2X##LatchIns",latchIns&0xff);
       }
       if (ImGui::Selectable(id,latchTarget==1,ImGuiSelectableFlags_DontClosePopups)) {
         latchTarget=1;
@@ -2791,7 +2791,7 @@ void FurnaceGUI::editOptions(bool topMenu) {
       if (latchVol==-1) {
         strcpy(id,"..##LatchVol");
       } else {
-        snprintf(id,63,"%.2x##LatchVol",latchVol&0xff);
+        snprintf(id,63,"%.2X##LatchVol",latchVol&0xff);
       }
       if (ImGui::Selectable(id,latchTarget==2,ImGuiSelectableFlags_DontClosePopups)) {
         latchTarget=2;
@@ -2807,7 +2807,7 @@ void FurnaceGUI::editOptions(bool topMenu) {
         ImGui::PushStyleColor(ImGuiCol_Text,uiColors[GUI_COLOR_PATTERN_INACTIVE]);
       } else {
         const unsigned char data=latchEffect;
-        snprintf(id,63,"%.2x##LatchFX",data);
+        snprintf(id,63,"%.2X##LatchFX",data);
         ImGui::PushStyleColor(ImGuiCol_Text,uiColors[fxColors[data]]);
       }
 
@@ -2822,7 +2822,7 @@ void FurnaceGUI::editOptions(bool topMenu) {
       if (latchEffectVal==-1) {
         strcpy(id,"..##LatchFXV");
       } else {
-        snprintf(id,63,"%.2x##LatchFXV",latchEffectVal&0xff);
+        snprintf(id,63,"%.2X##LatchFXV",latchEffectVal&0xff);
       }
       if (ImGui::Selectable(id,latchTarget==4,ImGuiSelectableFlags_DontClosePopups)) {
         latchTarget=4;
@@ -6911,10 +6911,6 @@ bool FurnaceGUI::init() {
   ImGui::GetIO().ConfigFlags|=ImGuiConfigFlags_DockingEnable;
   toggleMobileUI(mobileUI,true);
 
-  for (int i=0; i<DIV_MAX_CHANS; i++) {
-    oldPat[i]=new DivPattern;
-  }
-
   firstFrame=true;
 
   userEvents=SDL_RegisterEvents(1);
@@ -7170,10 +7166,6 @@ bool FurnaceGUI::finish() {
       delete[] oscValues[i];
       oscValues[i]=NULL;
     }
-  }
-
-  for (int i=0; i<DIV_MAX_CHANS; i++) {
-    delete oldPat[i];
   }
 
   if (backupTask.valid()) {
