@@ -1638,7 +1638,6 @@ bool DivEngine::nextTick(bool noAccum, bool inhibitLowLat) {
       rthp->read();
     }
     regWrites.clear();
-    getDispatch(i)->toggleRegisterDump(false);
   }
 #endif
   }
