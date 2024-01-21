@@ -102,11 +102,21 @@ int ERTHP::initSerial(std::string port, unsigned int baudrate, unsigned int time
 }
 
 int ERTHP::sendSerial(std::string msg) {
-  return (int)serialPort.write(msg);
+  try {
+    return (int)serialPort.write(msg);
+  } catch (std::exception& xc) {
+    ERTHP::writeLog(xc.what());
+    return -1;
+  }
 }
 
 std::string ERTHP::receiveSerial() {
-  return serialPort.read();
+  try {
+    return serialPort.read();
+  } catch (std::exception& xc) {
+    ERTHP::writeLog(xc.what());
+    return "";
+  }
 }
 
 void ERTHP::closeSerial() {

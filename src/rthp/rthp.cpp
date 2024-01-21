@@ -92,7 +92,10 @@ void RTHPContainer::write(unsigned short a,unsigned short v) {
   dump+=v;
   switch (container.impl) {
     case RTHP_ERTHP: {
-      erthp.sendSerial(dump);
+      if (erthp.sendSerial(dump)==-1) {
+        logE("RTHP: %s",erthp.getLastLog());
+        RTHPContainer::deinit();
+      }
       break;
     }
     default: break;

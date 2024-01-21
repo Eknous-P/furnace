@@ -14,7 +14,6 @@ once you have done all of this (maybe not the first one), release 0.6.1
 
 ## unrelated rthp todo:
 
-- fix (catch) crash when unplugging erthp client
 - fix vgm exports
 - do something about streamed pcm chips
 - abstract impl
