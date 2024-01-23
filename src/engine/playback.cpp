@@ -1339,6 +1339,7 @@ bool DivEngine::nextTick(bool noAccum, bool inhibitLowLat) {
   bool ret=false;
 #ifdef WITH_RTHP
   if (rthp->getRTHPState()) {
+    for (int i=0; i<song.systemLen; i++) getDispatch(i)->toggleRegisterDump(false);
     getDispatch(rthp->getDumpedChip())->toggleRegisterDump(true);
   }
 #endif
