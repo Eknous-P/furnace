@@ -20,7 +20,7 @@
 #include "rthp.h"
 
 // implementations
-#include "impl/e-rthp/e-rthp.h"
+#include "impl/e-rthp.h"
 
 const char* RTHPImplementationNames[]={
   "*NONE*",
