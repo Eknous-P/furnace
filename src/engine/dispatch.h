@@ -250,6 +250,9 @@ enum DivDispatchCmds {
 
   DIV_CMD_MACRO_RESTART, // (which)
 
+  DIV_CMD_POWERNOISE_COUNTER_LOAD, // (which, val)
+  DIV_CMD_POWERNOISE_IO_WRITE, // (port, value)
+
   DIV_CMD_MAX
 };
 

@@ -247,6 +247,9 @@ const char* cmdName[]={
   "ESFM_MODIN",
   "ESFM_ENV_DELAY",
 
+  "POWERNOISE_COUNTER_LOAD",
+  "POWERNOISE_IO_WRITE",
+
   "MACRO_RESTART",
 };
 
