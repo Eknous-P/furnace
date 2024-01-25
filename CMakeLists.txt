@@ -468,6 +468,8 @@ endif()
 
 set(RTHP_SOURCES
 src/rthp/rthp.cpp
+
+src/rthp/impl/e-rthp.cpp
 )
 
 list(APPEND RTHP_SOURCES ${SERIAL_SOURCES})
