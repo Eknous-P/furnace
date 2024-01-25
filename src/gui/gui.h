@@ -2395,6 +2395,7 @@ class FurnaceGUI {
   String RTHPPort;
   bool RTHPInitialized;
   int dumpedChip;
+  String RTHPSend;
 #endif
 
   void drawExportAudio(bool onWindow=false);

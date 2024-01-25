@@ -83,10 +83,22 @@ int RTHPContainer::init(RTHPImplementations setImpl, String setPort) {
   return 0;
 }
 
-void RTHPContainer::write(unsigned short a, unsigned short v) {
-  if (!container.initialized) {
-    return;
+void RTHPContainer::writePlain(String s) {
+  if (!container.initialized) return;
+  switch (container.impl) {
+    case RTHP_ERTHP: {
+      if (erthp.sendSerial(s)==-1) {
+        logE("RTHP: %s",erthp.getLastLog());
+        RTHPContainer::deinit();
+      }
+      break;
+    }
+    default: break;
   }
+}
+
+void RTHPContainer::write(unsigned short a, unsigned short v) {
+  if (!container.initialized) return;
   String dump=">";
   dump+=a;
   dump+=v;

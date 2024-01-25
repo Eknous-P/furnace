@@ -51,6 +51,7 @@ class RTHPContainer {
     void scanAvailPorts();
     std::vector<String> getAvailPortNames();
     auto getAvailPorts();
+    void writePlain(String s);
     void write(unsigned short a, unsigned short v);
     void read();
     String getReadBuffer();

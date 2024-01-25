@@ -7679,16 +7679,15 @@ FurnaceGUI::FurnaceGUI():
   curTutorial(-1),
   curTutorialStep(0),
   audioExportType(0),
+  curExportType(GUI_EXPORT_NONE)
 #ifdef WITH_RTHP
-  curExportType(GUI_EXPORT_NONE),
-  RTHPImplementation(RTHP_ERTHP),
+  ,RTHPImplementation(RTHP_ERTHP),
   RTHPAvailPorts({}),
   RTHPPort(""),
   RTHPInitialized(false),
-  dumpedChip(0) {
-#else
-  curExportType(GUI_EXPORT_NONE) {
+  dumpedChip(0)
 #endif
+  {
   // value keys
   valueKeys[SDLK_0]=0;
   valueKeys[SDLK_1]=1;

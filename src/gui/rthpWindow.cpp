@@ -20,6 +20,7 @@
 #include "gui.h"
 #include <imgui.h>
 #include "rthp.h"
+#include "misc/cpp/imgui_stdlib.h"
 
 void FurnaceGUI::drawRTHPWindow(){
   rthp->setImpl(RTHP_ERTHP);
@@ -64,6 +65,10 @@ void FurnaceGUI::drawRTHPWindow(){
       }
       ImGui::EndCombo();
     }
+    ImGui::InputText("##RTHPManualSend",&RTHPSend);
+    ImGui::SameLine();
+    if (ImGui::Button("Send")) rthp->writePlain(RTHPSend);
+
     if (dumpedChip>e->song.systemLen-1) {
       dumpedChip=e->song.systemLen-1;
       rthp->setDumpedChip(dumpedChip);
