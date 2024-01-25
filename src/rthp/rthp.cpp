@@ -63,7 +63,9 @@ std::vector<String> RTHPContainer::getAvailPortNames() {
   }
 }
 
-void RTHPContainer::setImpl(RTHPImplementations impl) {container.impl=impl;}
+void RTHPContainer::setImpl(RTHPImplementations impl) {
+  container.impl=impl;
+}
 
 int RTHPContainer::init(RTHPImplementations setImpl, String setPort) {
   container.port=setPort;
@@ -81,10 +83,8 @@ int RTHPContainer::init(RTHPImplementations setImpl, String setPort) {
   return 0;
 }
 
-void RTHPContainer::write(unsigned short a,unsigned short v) {
-  // get reg wirte
+void RTHPContainer::write(unsigned short a, unsigned short v) {
   if (!container.initialized) {
-    // logE("RTHP: not initialized!");
     return;
   }
   String dump=">";
@@ -112,8 +112,12 @@ void RTHPContainer::read() {
   }
 }
 
-String RTHPContainer::getReadBuffer() {return container.readBuffer;}
-void RTHPContainer::clearReadBuffer() {container.readBuffer="";}
+String RTHPContainer::getReadBuffer() {
+  return container.readBuffer;
+}
+void RTHPContainer::clearReadBuffer() {
+  container.readBuffer="";
+}
 
 int RTHPContainer::deinit() {
   if (!container.initialized) return 0;
