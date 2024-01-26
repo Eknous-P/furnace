@@ -24,7 +24,7 @@
 static inline int bsr(unsigned short v) {
   unsigned long idx;
   if (_BitScanReverse(&idx,(unsigned long)v)) {
-    return idx;
+    return idx+1;
   }
   else {
     return -1;
@@ -34,7 +34,7 @@ static inline int bsr(unsigned short v) {
 static inline int bsr32(unsigned int v) {
   unsigned long idx;
   if (_BitScanReverse(&idx,(unsigned long)v)) {
-    return idx;
+    return idx+1;
   } else {
     return -1;
   }
@@ -62,9 +62,9 @@ static inline int bsr32(unsigned int v) {
 
 static inline int bsr(unsigned short v) {
   unsigned short mask = 0x8000;
-  for (int i = 15; i >= 0; --i) {
+  for (int i = 16; i >= 0; --i) {
     if (v&mask)
-      return (int)i;
+      return i;
     mask>>=1;
   }
 
@@ -73,9 +73,9 @@ static inline int bsr(unsigned short v) {
 
 static inline int bsr32(unsigned int v) {
   unsigned int mask = 0x80000000;
-  for (int i = 31; i >= 0; --i) {
+  for (int i = 32; i >= 0; --i) {
     if (v&mask)
-      return (int)i;
+      return i;
     mask>>=1;
   }
 

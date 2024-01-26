@@ -505,6 +505,7 @@ class DivEngine {
   short effectSlotMap[4096];
   int midiBaseChan;
   bool midiPoly;
+  bool midiDebug;
   size_t midiAgeCounter;
 
   blip_buffer_t* samp_bb;
@@ -1216,6 +1217,9 @@ class DivEngine {
     // send MIDI message
     bool sendMidiMessage(TAMidiMessage& msg);
 
+    // enable MIDI debug
+    void setMidiDebug(bool enable);
+
     // perform secure/sync operation
     void synchronized(const std::function<void()>& what);
 
@@ -1341,6 +1345,7 @@ class DivEngine {
       cmdStreamInt(NULL),
       midiBaseChan(0),
       midiPoly(true),
+      midiDebug(false),
       midiAgeCounter(0),
       samp_bb(NULL),
       samp_bbInLen(0),
