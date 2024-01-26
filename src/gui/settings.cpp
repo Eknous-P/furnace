@@ -3493,6 +3493,10 @@ void FurnaceGUI::drawSettings() {
           UI_COLOR_CONFIG(GUI_COLOR_INSTR_PV1000,"PV-1000");
           UI_COLOR_CONFIG(GUI_COLOR_INSTR_K053260,"K053260");
           UI_COLOR_CONFIG(GUI_COLOR_INSTR_C140,"C140");
+          UI_COLOR_CONFIG(GUI_COLOR_INSTR_C219,"C219");
+          UI_COLOR_CONFIG(GUI_COLOR_INSTR_ESFM,"ESFM");
+          UI_COLOR_CONFIG(GUI_COLOR_INSTR_POWERNOISE,"PowerNoise (noise)");
+          UI_COLOR_CONFIG(GUI_COLOR_INSTR_POWERNOISE_SLOPE,"PowerNoise (slope)");
           UI_COLOR_CONFIG(GUI_COLOR_INSTR_UNKNOWN,"Other/Unknown");
           ImGui::TreePop();
         }
@@ -4756,18 +4760,17 @@ bool FurnaceGUI::importLayout(String path) {
     fclose(f);
     return false;
   }
-  unsigned char* file=new unsigned char[len];
-  if (fread(file,1,(size_t)len,f)!=(size_t)len) {
+  pendingLayoutImport=new unsigned char[len];
+  if (fread(pendingLayoutImport,1,(size_t)len,f)!=(size_t)len) {
     perror("read error");
     lastError=fmt::sprintf("on read: %s",strerror(errno));
     fclose(f);
-    delete[] file;
+    delete[] pendingLayoutImport;
     return false;
   }
   fclose(f);
 
-  ImGui::LoadIniSettingsFromMemory((const char*)file,len);
-  delete[] file;
+  pendingLayoutImportLen=len;
   return true;
 }
 

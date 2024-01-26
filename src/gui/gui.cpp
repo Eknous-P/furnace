@@ -2760,7 +2760,7 @@ void FurnaceGUI::editOptions(bool topMenu) {
       } else if (latchIns==-1) {
         strcpy(id,"..##LatchIns");
       } else {
-        snprintf(id,63,"%.2x##LatchIns",latchIns&0xff);
+        snprintf(id,63,"%.2X##LatchIns",latchIns&0xff);
       }
       if (ImGui::Selectable(id,latchTarget==1,ImGuiSelectableFlags_DontClosePopups)) {
         latchTarget=1;
@@ -2780,7 +2780,7 @@ void FurnaceGUI::editOptions(bool topMenu) {
       if (latchVol==-1) {
         strcpy(id,"..##LatchVol");
       } else {
-        snprintf(id,63,"%.2x##LatchVol",latchVol&0xff);
+        snprintf(id,63,"%.2X##LatchVol",latchVol&0xff);
       }
       if (ImGui::Selectable(id,latchTarget==2,ImGuiSelectableFlags_DontClosePopups)) {
         latchTarget=2;
@@ -2796,7 +2796,7 @@ void FurnaceGUI::editOptions(bool topMenu) {
         ImGui::PushStyleColor(ImGuiCol_Text,uiColors[GUI_COLOR_PATTERN_INACTIVE]);
       } else {
         const unsigned char data=latchEffect;
-        snprintf(id,63,"%.2x##LatchFX",data);
+        snprintf(id,63,"%.2X##LatchFX",data);
         ImGui::PushStyleColor(ImGuiCol_Text,uiColors[fxColors[data]]);
       }
 
@@ -2811,7 +2811,7 @@ void FurnaceGUI::editOptions(bool topMenu) {
       if (latchEffectVal==-1) {
         strcpy(id,"..##LatchFXV");
       } else {
-        snprintf(id,63,"%.2x##LatchFXV",latchEffectVal&0xff);
+        snprintf(id,63,"%.2X##LatchFXV",latchEffectVal&0xff);
       }
       if (ImGui::Selectable(id,latchTarget==4,ImGuiSelectableFlags_DontClosePopups)) {
         latchTarget=4;
@@ -4001,11 +4001,23 @@ bool FurnaceGUI::loop() {
 
     layoutTimeBegin=SDL_GetPerformanceCounter();
 
+    if (pendingLayoutImport!=NULL) {
+      ImGui::LoadIniSettingsFromMemory((const char*)pendingLayoutImport,pendingLayoutImportLen);
+    }
+
     if (!rend->newFrame()) {
       fontsFailed=true;
     }
     ImGui_ImplSDL2_NewFrame(sdlWin);
     ImGui::NewFrame();
+
+    if (pendingLayoutImport!=NULL) {
+      WAKE_UP;
+      ImGui::Render();
+      delete[] pendingLayoutImport;
+      pendingLayoutImport=NULL;
+      continue;
+    }
 
     // one second counter
     secondTimer+=ImGui::GetIO().DeltaTime;
@@ -6880,10 +6892,6 @@ bool FurnaceGUI::init() {
   ImGui::GetIO().ConfigFlags|=ImGuiConfigFlags_DockingEnable;
   toggleMobileUI(mobileUI,true);
 
-  for (int i=0; i<DIV_MAX_CHANS; i++) {
-    oldPat[i]=new DivPattern;
-  }
-
   firstFrame=true;
 
   userEvents=SDL_RegisterEvents(1);
@@ -7132,10 +7140,6 @@ bool FurnaceGUI::finish() {
     }
   }
 
-  for (int i=0; i<DIV_MAX_CHANS; i++) {
-    delete oldPat[i];
-  }
-
   if (backupTask.valid()) {
     backupTask.get();
   }
@@ -7271,6 +7275,8 @@ FurnaceGUI::FurnaceGUI():
   headFont(NULL),
   fontRange(NULL),
   prevInsData(NULL),
+  pendingLayoutImport(NULL),
+  pendingLayoutImportLen(0),
   curIns(0),
   curWave(0),
   curSample(0),
