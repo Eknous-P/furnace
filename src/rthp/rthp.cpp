@@ -31,7 +31,7 @@ ERTHP erthp;
 
 int initERTHP(String port) {
   try {
-    if (erthp.initSerial(port,1000000,1000)) {
+    if (erthp.initSerial(port,1000000,10)) {
       logE(erthp.getLastLog().c_str());
       return 1;
     }
@@ -99,11 +99,11 @@ void RTHPContainer::writePlain(String s) {
 
 void RTHPContainer::write(unsigned short a, unsigned short v) {
   if (!container.initialized) return;
-  String dump=">";
-  dump+=a;
-  dump+=v;
   switch (container.impl) {
     case RTHP_ERTHP: {
+      String dump=">";
+      dump+=a&0xff;
+      dump+=v&0xff;
       if (erthp.sendSerial(dump)==-1) {
         logE("RTHP: %s",erthp.getLastLog());
         RTHPContainer::deinit();
