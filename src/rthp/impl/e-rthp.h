@@ -55,7 +55,7 @@ class ERTHP {
 
     int initSerial(std::string port, unsigned int baudrate, unsigned int timeout);
     int sendSerial(std::string msg);
-    std::string receiveSerial();
+    std::string receiveSerial(size_t s);
     void closeSerial();
 
     // logging

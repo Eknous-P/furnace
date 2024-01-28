@@ -61,7 +61,7 @@ int ERTHP::initSerial(std::string port, unsigned int baudrate, unsigned int time
   try {
     serialPort.setPort(erthp_serial.portName.c_str());
     serialPort.setBaudrate(erthp_serial.serialBaudrate);
-    serialPort.setTimeout(erthp_serial.serialTimeout,erthp_serial.serialTimeout,0,erthp_serial.serialTimeout,0);
+    serialPort.setTimeout(serial::Timeout::max(),erthp_serial.serialTimeout,0,erthp_serial.serialTimeout,0);
   } catch (std::exception& xc) {
     ERTHP::writeLog(xc.what());
     return 1;
@@ -85,9 +85,10 @@ int ERTHP::sendSerial(std::string msg) {
   }
 }
 
-std::string ERTHP::receiveSerial() {
+std::string ERTHP::receiveSerial(size_t s) {
   try {
-    return serialPort.read();
+    if (serialPort.available()) return serialPort.read(s);
+    return "";
   } catch (std::exception& xc) {
     ERTHP::writeLog(xc.what());
     return "";

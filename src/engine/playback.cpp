@@ -1635,12 +1635,14 @@ bool DivEngine::nextTick(bool noAccum, bool inhibitLowLat) {
 
 #ifdef WITH_RTHP
   if (rthp->getRTHPState()) {
+    if (i!=rthp->getDumpedChip()) continue;
     std::vector<DivRegWrite>& regWrites=getDispatch(i)->getRegisterWrites();
     for (DivRegWrite& regWrite:regWrites) {
-      if (i!=rthp->getDumpedChip()) continue;
       rthp->write(regWrite.addr,regWrite.val);
-      // rthp->read();
     }
+    
+    if (regWrites.size()>0) rthp->read();
+    
     regWrites.clear();
   }
 #endif

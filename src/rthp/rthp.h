@@ -53,7 +53,7 @@ class RTHPContainer {
     auto getAvailPorts();
     void writePlain(String s);
     void write(unsigned short a, unsigned short v);
-    void read();
+    String read();
     String getReadBuffer();
     void clearReadBuffer();
     int deinit();
