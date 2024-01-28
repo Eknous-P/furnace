@@ -16,9 +16,7 @@ once you have done all of this (maybe not the first one), release 0.6.1
 
 - fix vgm exports
 - do something about streamed pcm chips
-- abstract impl
 - docs?
 - more gui work
 - - show error messages
-- - "manual" io (a la debug playground)
 - desubmodulize `serial`
