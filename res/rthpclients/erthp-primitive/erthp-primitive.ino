@@ -45,11 +45,14 @@ void setup() {
 void loop() {
   digitalWrite(CS,1);
   if (Serial.available()) {
+    char ch[64];
     buf=Serial.readString();
+    // buf=ch;
+    Serial.println(buf);
     for (int i=0; i<buf.length();i+=4) { // read "packets"
       PW(AD,1);
 
-      if (buf[i]==">") ;
+      if (buf[i]==">") Serial.print("!");
       v=buf[i+1];
       a=buf[i+2]|(buf[i+3]<<8);
 
@@ -66,7 +69,7 @@ void loop() {
         PW(AD,1);
       }
     }
-    Serial.print("#");
+    Serial.println("#");
   }
 
 }

@@ -7748,7 +7748,9 @@ FurnaceGUI::FurnaceGUI():
   RTHPAvailPorts({}),
   RTHPPort(""),
   RTHPInitialized(false),
-  dumpedChip(0)
+  dumpedChip(0),
+  RTHPSend(""),
+  lastWrite("")
 #endif
   {
   // value keys

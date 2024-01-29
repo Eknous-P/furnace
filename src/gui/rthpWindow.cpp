@@ -69,6 +69,13 @@ void FurnaceGUI::drawRTHPWindow(){
     ImGui::SameLine();
     if (ImGui::Button("Send")) rthp->writePlain(RTHPSend);
 
+    lastWrite=rthp->getLastWrite();
+    ImGui::Text("last write: %ld bytes",lastWrite.length());
+    for (int i:lastWrite) {
+      ImGui::Text("%.2x",i);
+      ImGui::SameLine();
+    }
+
     if (dumpedChip>e->song.systemLen-1) {
       dumpedChip=e->song.systemLen-1;
       rthp->setDumpedChip(dumpedChip);

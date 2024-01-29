@@ -16,7 +16,6 @@
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
-// #pragma once
 
 #ifndef _RTHP_H
 #define _RTHP_H
@@ -39,11 +38,14 @@ class RTHPContainer {
       String port;
       int chipToDump;
       String readBuffer;
+      String lastWrite;
       container():
         initialized(false),
         impl(RTHP_NONE),
         port(""),
-        chipToDump(0) {}
+        chipToDump(0),
+        readBuffer(""),
+        lastWrite("") {}
     } container;
 
     void setImpl(RTHPImplementations impl);
@@ -60,6 +62,7 @@ class RTHPContainer {
     bool getRTHPState();
     void setDumpedChip(int chip);
     int getDumpedChip();
+    String getLastWrite();
 };
 
 // implementation-specific helper functions

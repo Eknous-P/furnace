@@ -101,12 +101,14 @@ void RTHPContainer::write(unsigned short a, unsigned short v) {
   if (!container.initialized) return;
   switch (container.impl) {
     case RTHP_ERTHP: {
-      String dump=">";
-      dump+=(unsigned char)v&0xff;
-      dump+=(unsigned char)a&0xff;
-      dump+=(unsigned char)((a&0xff00)>>8);
+      char dump[4];
+      dump[0]='>'; 
+      dump[1]=(v&0xff);
+      dump[2]=(a&0xff);
+      dump[3]=((a&0xff00)>>8);
+      container.lastWrite=dump;
       // just to be sure each "packet" is exactly 4 bytes (>DAA)
-      if (erthp.sendSerial(dump)==-1) {
+      if (erthp.sendSerial(container.lastWrite)==-1) {
         logE("RTHP: %s",erthp.getLastLog());
         RTHPContainer::deinit();
       }
@@ -158,4 +160,8 @@ void RTHPContainer::setDumpedChip(int chip) {
 
 int RTHPContainer::getDumpedChip() {
   return container.chipToDump;
+}
+
+String RTHPContainer::getLastWrite() {
+  return container.lastWrite;
 }
