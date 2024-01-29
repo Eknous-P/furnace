@@ -110,7 +110,7 @@ void RTHPContainer::write(unsigned short a, unsigned short v) {
       logI("dump: %s",dump);
       container.lastWrite=dump;
       // just to be sure each "packet" is exactly 4 bytes (>DAA)
-      if (erthp.sendSerial(container.lastWrite)==-1) {
+      if (erthp.sendSerial(dump)==-1) {
         logE("RTHP: %s",erthp.getLastLog());
         RTHPContainer::deinit();
       }
