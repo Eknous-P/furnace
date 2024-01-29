@@ -27,6 +27,7 @@
 #include "imgui_impl_sdl2.h"
 #include <SDL.h>
 #include <fftw3.h>
+#include <stdint.h>
 #include <initializer_list>
 #include <future>
 #include <memory>
@@ -765,6 +766,7 @@ enum FurnaceGUIActions {
   GUI_ACTION_SAMPLE_LIST_PREVIEW,
   GUI_ACTION_SAMPLE_LIST_STOP_PREVIEW,
   GUI_ACTION_SAMPLE_LIST_DIR_VIEW,
+  GUI_ACTION_SAMPLE_LIST_MAKE_MAP,
   GUI_ACTION_SAMPLE_LIST_MAX,
 
   GUI_ACTION_SAMPLE_MIN,
@@ -1986,6 +1988,8 @@ class FurnaceGUI {
 
   unsigned char* pendingLayoutImport;
   size_t pendingLayoutImportLen;
+  int pendingLayoutImportStep;
+  FixedQueue<bool*,64> pendingLayoutImportReopen;
 
   int curIns, curWave, curSample, curOctave, curOrder, playOrder, prevIns, oldRow, editStep, exportLoops, soloChan, orderEditMode, orderCursor;
   int loopOrder, loopRow, loopEnd, isClipping, newSongCategory, latchTarget;
@@ -2173,10 +2177,10 @@ class FurnaceGUI {
   ImVec2 orderScrollRealOrigin;
   ImVec2 dragMobileMenuOrigin;
 
-  int layoutTimeBegin, layoutTimeEnd, layoutTimeDelta;
-  int renderTimeBegin, renderTimeEnd, renderTimeDelta;
-  int drawTimeBegin, drawTimeEnd, drawTimeDelta;
-  int eventTimeBegin, eventTimeEnd, eventTimeDelta;
+  uint64_t layoutTimeBegin, layoutTimeEnd, layoutTimeDelta;
+  uint64_t renderTimeBegin, renderTimeEnd, renderTimeDelta;
+  uint64_t drawTimeBegin, drawTimeEnd, drawTimeDelta;
+  uint64_t eventTimeBegin, eventTimeEnd, eventTimeDelta;
 
   FurnaceGUIPerfMetric perfMetrics[64];
   int perfMetricsLen;
