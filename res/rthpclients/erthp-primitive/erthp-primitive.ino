@@ -39,14 +39,6 @@ void setup() {
   pinMode(AD, OUTPUT);
   pinMode(CS, OUTPUT);
 
-  // wait for init
-  while (!Serial.available()) {
-    delay(400);
-    PW(13,0);
-    delay(400);
-    PW(13,1);
-  }
-
   PW(RS,1);
 }
 
