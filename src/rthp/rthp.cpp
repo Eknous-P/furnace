@@ -98,14 +98,16 @@ void RTHPContainer::writePlain(String s) {
 }
 
 void RTHPContainer::write(unsigned short a, unsigned short v) {
+  logV("write: %.4x:%.4x",a,v);
   if (!container.initialized) return;
   switch (container.impl) {
     case RTHP_ERTHP: {
-      char dump[4];
-      dump[0]='>'; 
-      dump[1]=(v&0xff);
-      dump[2]=(a&0xff);
-      dump[3]=((a&0xff00)>>8);
+      String dump;
+      dump+='>'; 
+      dump+=(v&0xff);
+      dump+=(a&0xff);
+      dump+=((a&0xff00)>>8)&0xff;
+      logI("dump: %s",dump);
       container.lastWrite=dump;
       // just to be sure each "packet" is exactly 4 bytes (>DAA)
       if (erthp.sendSerial(container.lastWrite)==-1) {

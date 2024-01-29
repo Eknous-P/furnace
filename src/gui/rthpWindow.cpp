@@ -71,7 +71,7 @@ void FurnaceGUI::drawRTHPWindow(){
 
     lastWrite=rthp->getLastWrite();
     ImGui::Text("last write: %ld bytes",lastWrite.length());
-    for (int i:lastWrite) {
+    for (char i:lastWrite) {
       ImGui::Text("%.2x",i);
       ImGui::SameLine();
     }
