@@ -1,3 +1,8 @@
+// primitive ERTHP client
+// for Arduino Nano (and compatible) boards
+// TODO: test
+// no pinout yet btw
+
 #define RS 10 // chip reset
 #define CS 12 // chip select
 #define AD 13 // address write
@@ -33,6 +38,14 @@ void setup() {
 
   pinMode(AD, OUTPUT);
   pinMode(CS, OUTPUT);
+
+  // wait for init
+  while (!Serial.available()) {
+    delay(400);
+    PW(13,0);
+    delay(400);
+    PW(13,1);
+  }
 
   PW(RS,1);
 }
