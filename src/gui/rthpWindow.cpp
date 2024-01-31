@@ -88,6 +88,8 @@ void FurnaceGUI::drawRTHPWindow(){
     }
     ImGui::PopFont();
 
+    if (ImGui::Button("Clear")) rthp->clearLastWrites();
+
     if (dumpedChip>e->song.systemLen-1) {
       dumpedChip=e->song.systemLen-1;
       rthp->setDumpedChip(dumpedChip);

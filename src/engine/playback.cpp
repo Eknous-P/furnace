@@ -1636,7 +1636,6 @@ bool DivEngine::nextTick(bool noAccum, bool inhibitLowLat) {
 #ifdef WITH_RTHP
   if (rthp->getRTHPState()) {
     if (i!=rthp->getDumpedChip()) continue;
-    rthp->clearLastWrites();
     std::vector<DivRegWrite>& regWrites=getDispatch(i)->getRegisterWrites();
     for (DivRegWrite& regWrite:regWrites) {
       rthp->write(regWrite.addr,regWrite.val);

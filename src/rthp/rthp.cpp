@@ -105,6 +105,7 @@ void RTHPContainer::write(unsigned short a, unsigned short v) {
       lastWrite.data=(v&0xff);
       lastWrite.addrlow=(a&0xff);
       lastWrite.addrhigh=((a>>8)&0xff);
+      if (container.lastWrites.size()>256) container.lastWrites.erase(container.lastWrites.begin());
       container.lastWrites.push_back(lastWrite);
       if (writeERTHP(lastWrite)) {
         logE("RTHP: %s",erthp.getLastLog());
