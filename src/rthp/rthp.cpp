@@ -44,6 +44,16 @@ int initERTHP(String port) {
   return 0;
 }
 
+bool writeERTHP(RTHPWrite w) {
+  bool serialerr=false;
+  if (erthp.sendSerial(w.key)==-1) serialerr=true;
+  if (erthp.sendSerial(w.data)==-1) serialerr=true;
+  if (erthp.sendSerial(w.addrlow)==-1) serialerr=true;
+  if (erthp.sendSerial(w.addrhigh)==-1) serialerr=true;
+  // just to be sure each "packet" is exactly 4 bytes (>DAA)
+  return serialerr;
+}
+
 void RTHPContainer::scanAvailPorts() {
   switch (container.impl) {
     case RTHP_ERTHP: {  
@@ -83,34 +93,20 @@ int RTHPContainer::init(RTHPImplementations setImpl, String setPort) {
   return 0;
 }
 
-void RTHPContainer::writePlain(String s) {
-  if (!container.initialized) return;
-  switch (container.impl) {
-    case RTHP_ERTHP: {
-      if (erthp.sendSerial(s)==-1) {
-        logE("RTHP: %s",erthp.getLastLog());
-        RTHPContainer::deinit();
-      }
-      break;
-    }
-    default: break;
-  }
-}
-
 void RTHPContainer::write(unsigned short a, unsigned short v) {
+  if (container.writing) return;
+  container.writing=true;
   logV("write: %.4x:%.4x",a,v);
   if (!container.initialized) return;
   switch (container.impl) {
     case RTHP_ERTHP: {
-      String dump;
-      dump+='>'; 
-      dump+=(v&0xff);
-      dump+=(a&0xff);
-      dump+=((a&0xff00)>>8)&0xff;
-      logI("dump: %s",dump);
-      container.lastWrite=dump;
-      // just to be sure each "packet" is exactly 4 bytes (>DAA)
-      if (erthp.sendSerial(dump)==-1) {
+      RTHPWrite lastWrite;
+      lastWrite.key='>';
+      lastWrite.data=(v&0xff);
+      lastWrite.addrlow=(a&0xff);
+      lastWrite.addrhigh=((a>>8)&0xff);
+      container.lastWrites.push_back(lastWrite);
+      if (writeERTHP(lastWrite)) {
         logE("RTHP: %s",erthp.getLastLog());
         RTHPContainer::deinit();
       }
@@ -118,6 +114,7 @@ void RTHPContainer::write(unsigned short a, unsigned short v) {
     }
     default: break;
   }
+  container.writing=false;
 }
 
 String RTHPContainer::read() {
@@ -164,6 +161,10 @@ int RTHPContainer::getDumpedChip() {
   return container.chipToDump;
 }
 
-String RTHPContainer::getLastWrite() {
-  return container.lastWrite;
+std::vector<RTHPWrite> RTHPContainer::getLastWrites() {
+  return container.lastWrites;
+}
+
+void RTHPContainer::clearLastWrites() {
+  container.lastWrites.clear();
 }

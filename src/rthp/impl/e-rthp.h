@@ -54,7 +54,7 @@ class ERTHP {
     std::vector<std::string> getAvailPortNames();
 
     int initSerial(std::string port, unsigned int baudrate, unsigned int timeout);
-    int sendSerial(std::string msg);
+    int sendSerial(unsigned char chr);
     std::string receiveSerial(size_t s);
     void closeSerial();
 

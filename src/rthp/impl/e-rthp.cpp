@@ -76,9 +76,9 @@ int ERTHP::initSerial(std::string port, unsigned int baudrate, unsigned int time
   return 0;
 }
 
-int ERTHP::sendSerial(std::string msg) {
+int ERTHP::sendSerial(unsigned char chr) {
   try {
-    return (int)serialPort.write(msg);
+    return (int)serialPort.write(&chr,1);
   } catch (std::exception& xc) {
     ERTHP::writeLog(xc.what());
     return -1;

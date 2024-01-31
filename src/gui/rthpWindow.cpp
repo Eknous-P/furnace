@@ -65,16 +65,28 @@ void FurnaceGUI::drawRTHPWindow(){
       }
       ImGui::EndCombo();
     }
-    ImGui::InputText("##RTHPManualSend",&RTHPSend);
-    ImGui::SameLine();
-    if (ImGui::Button("Send")) rthp->writePlain(RTHPSend);
 
-    lastWrite=rthp->getLastWrite();
-    ImGui::Text("last write: %ld bytes",lastWrite.length());
-    for (unsigned char i:lastWrite) {
-      ImGui::Text("%.02x",i);
-      ImGui::SameLine();
+    ImGui::Text("RTHP writes:");
+    ImGui::PushFont(patFont);
+    if (ImGui::BeginTable("##RTHPWrites",4)) {
+      ImGui::TableSetupColumn("##RTHPWriteCol0",ImGuiTableColumnFlags_WidthFixed);
+      ImGui::TableSetupColumn("##RTHPWriteCol1",ImGuiTableColumnFlags_WidthFixed);
+      ImGui::TableSetupColumn("##RTHPWriteCol2",ImGuiTableColumnFlags_WidthFixed);
+      ImGui::TableSetupColumn("##RTHPWriteCol3",ImGuiTableColumnFlags_WidthFixed);
+      for (RTHPWrite lastWrite:rthp->getLastWrites()) {
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        ImGui::Text("%.2x",lastWrite.key);
+        ImGui::TableNextColumn();
+        ImGui::Text("%.2x",lastWrite.data);
+        ImGui::TableNextColumn();
+        ImGui::Text("%.2x",lastWrite.addrlow);
+        ImGui::TableNextColumn();
+        ImGui::Text("%.2x",lastWrite.addrhigh);
+      }
+      ImGui::EndTable();
     }
+    ImGui::PopFont();
 
     if (dumpedChip>e->song.systemLen-1) {
       dumpedChip=e->song.systemLen-1;

@@ -30,6 +30,13 @@ enum RTHPImplementations {
 
 extern const char* RTHPImplementationNames[];
 
+struct RTHPWrite {
+  unsigned char key;
+  unsigned char data;
+  unsigned char addrlow;
+  unsigned char addrhigh;
+};
+
 class RTHPContainer {
   public:
     struct container {
@@ -38,14 +45,15 @@ class RTHPContainer {
       String port;
       int chipToDump;
       String readBuffer;
-      String lastWrite;
+      std::vector<RTHPWrite> lastWrites;
+      bool writing;
       container():
         initialized(false),
         impl(RTHP_NONE),
         port(""),
         chipToDump(0),
         readBuffer(""),
-        lastWrite("") {}
+        writing(false) {}
     } container;
 
     void setImpl(RTHPImplementations impl);
@@ -53,7 +61,6 @@ class RTHPContainer {
     void scanAvailPorts();
     std::vector<String> getAvailPortNames();
     auto getAvailPorts();
-    void writePlain(String s);
     void write(unsigned short a, unsigned short v);
     String read();
     String getReadBuffer();
@@ -62,11 +69,13 @@ class RTHPContainer {
     bool getRTHPState();
     void setDumpedChip(int chip);
     int getDumpedChip();
-    String getLastWrite();
+    std::vector<RTHPWrite> getLastWrites();
+    void clearLastWrites();
 };
 
 // implementation-specific helper functions
 
 int initERTHP(std::string port);
+bool writeERTHP(RTHPWrite w);
 
 #endif
