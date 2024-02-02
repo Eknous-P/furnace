@@ -31,7 +31,7 @@ ERTHP erthp;
 
 int initERTHP(String port) {
   try {
-    if (erthp.initSerial(port,1000000,10)) {
+    if (erthp.initSerial(port,57600,10)) {
       logE(erthp.getLastLog().c_str());
       return 1;
     }

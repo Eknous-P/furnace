@@ -3,6 +3,8 @@
 // TODO: test
 // no pinout yet btw
 
+#define SBAUD 57600 // serial baudrate
+
 #define RS 10 // chip reset
 #define CS 12 // chip select
 #define AD 13 // address write
@@ -27,7 +29,7 @@ void setup() {
   pinMode(RS, OUTPUT);
   PW(RS,0);
 
-  Serial.begin(1000000);
+  Serial.begin(SBAUD);
   Serial.setTimeout(10); // 100Hz max?
 
   pinMode(CT, INPUT_PULLUP);
