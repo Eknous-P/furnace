@@ -21,7 +21,7 @@
 #define BUSW(i,d) for (int z=0; z<8; z++) PW(z+i, (d&(1<<z)) )
 
 
-String buf;
+char *buf;
 unsigned short a,v;
 bool chipType;
 
@@ -42,14 +42,22 @@ void setup() {
   pinMode(CS, OUTPUT);
 
   PW(RS,1);
+  PW(CS,1);
 }
 
 void loop() {
-  digitalWrite(CS,1);
   if (Serial.available()) {
-    buf=Serial.readString();
-    Serial.print(buf);
-    for (int i=0; i<buf.length();i+=4) { // read "packets"
+    Serial.readBytes(buf,Serial.available());
+    int i=0;
+    while (i<sizeof(buf)) { // read "packets"
+      Serial.write(buf[i]);
+      Serial.write(buf[i+1]);
+      Serial.write(buf[i+2]);
+      Serial.write(buf[i+3]);
+      if (buf[i]!='>') { // invalid / error in transmission
+        i++;
+        continue;
+      }
       PW(AD,1);
 
       // if (buf[i]==">") Serial.print("!");
@@ -68,6 +76,9 @@ void loop() {
         BUSW(ABI,(a&0xff00)>>8);
         PW(AD,1);
       }
+
+      PW(CS,1);
+      i+=4;
     }
     // Serial.println("#");
   }

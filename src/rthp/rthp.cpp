@@ -96,7 +96,6 @@ int RTHPContainer::init(RTHPImplementations setImpl, String setPort) {
 void RTHPContainer::write(unsigned short a, unsigned short v) {
   if (container.writing) return;
   container.writing=true;
-  logV("write: %.4x:%.4x",a,v);
   if (!container.initialized) return;
   switch (container.impl) {
     case RTHP_ERTHP: {
