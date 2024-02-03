@@ -177,7 +177,7 @@ const char* insTypes[DIV_INS_MAX+1][3]={
   {"C219",ICON_FA_VOLUME_UP,ICON_FUR_INS_C219},
   {"FM (ESFM)",ICON_FA_AREA_CHART,ICON_FUR_INS_ESFM},
   {"PowerNoise (noise)",ICON_FUR_NOISE,ICON_FUR_INS_POWERNOISE},
-  {"PowerNoise (slope)",ICON_FUR_SAW,ICON_FUR_INS_POWERNOISE},
+  {"PowerNoise (slope)",ICON_FUR_SAW,ICON_FUR_INS_POWERNOISE_SAW},
   {NULL,ICON_FA_QUESTION,ICON_FA_QUESTION}
 };
 
@@ -730,6 +730,7 @@ const FurnaceGUIActionDef guiActions[GUI_ACTION_MAX]={
   D("SAMPLE_LIST_PREVIEW", "Preview", 0),
   D("SAMPLE_LIST_STOP_PREVIEW", "Stop preview", 0),
   D("SAMPLE_LIST_DIR_VIEW", "Toggle folders/standard view", FURKMOD_CMD|SDLK_v),
+  D("SAMPLE_LIST_MAKE_MAP", "Make me a drum kit", 0),
   D("SAMPLE_LIST_MAX", "", NOT_AN_ACTION),
 
   D("SAMPLE_MIN", "---Sample editor", NOT_AN_ACTION),
