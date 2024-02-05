@@ -3672,10 +3672,7 @@ bool FurnaceGUI::loop() {
           // used for MIDI wake up
           break;
         case SDL_QUIT:
-          if (modified) {
-            showWarning("Unsaved changes! Save changes before quitting?",GUI_WARN_QUIT);
-          } else {
-            quit=true;
+          if (requestQuit()) {
             return true;
           }
           break;
@@ -4316,18 +4313,19 @@ bool FurnaceGUI::loop() {
             ImGui::EndMenu();
           }
         }
+#if defined(FURNACE_DATADIR) && defined(SHOW_OPEN_ASSETS_MENU_ENTRY)
+        if (ImGui::MenuItem("open built-in assets directory")) {
+          SDL_OpenURL("file://" FURNACE_DATADIR);
+        }
+#endif
         ImGui::BeginDisabled(exitDisabledTimer);
         ImGui::Separator();
         if (ImGui::MenuItem("restore backup",BIND_FOR(GUI_ACTION_OPEN_BACKUP))) {
           doAction(GUI_ACTION_OPEN_BACKUP);
         }
         ImGui::Separator();
-        if (ImGui::MenuItem("exit")) {
-          if (modified) {
-            showWarning("Unsaved changes! Save before quitting?",GUI_WARN_QUIT);
-          } else {
-            quit=true;
-          }
+        if (ImGui::MenuItem("exit...",BIND_FOR(GUI_ACTION_QUIT))) {
+          requestQuit();
         }
         ImGui::EndDisabled();
         ImGui::EndMenu();
@@ -7248,8 +7246,13 @@ bool FurnaceGUI::finish() {
   return true;
 }
 
-void FurnaceGUI::requestQuit() {
-  quit=true;
+bool FurnaceGUI::requestQuit() {
+  if (modified) {
+    showWarning("Unsaved changes! Save changes before quitting?",GUI_WARN_QUIT);
+  } else {
+    quit=true;
+  }
+  return quit;
 }
 
 FurnaceGUI::FurnaceGUI():
