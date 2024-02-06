@@ -17,29 +17,4 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef _RTHP_H
-#define _RTHP_H
-
-#include "../ta-log.h"
-#include "../ta-utils.h"
-
-enum RTHPImplementations {
-  RTHP_NONE=0,
-  RTHP_ERTHP
-};
-
-extern const char* RTHPImplementationNames[];
-
-struct RTHPWrite {
-  unsigned char key;
-  unsigned char data;
-  unsigned char addrlow;
-  unsigned char addrhigh;
-};
-
-// implementation-specific helper functions
-
-int initERTHP(std::string port);
-bool writeERTHP(RTHPWrite w);
-
-#endif
+#include "engine.h"

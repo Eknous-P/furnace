@@ -247,6 +247,44 @@ struct DivDispatchContainer {
   }
 };
 
+#ifdef WITH_RTHP // TODO: rewrite this
+class RTHPContainer {
+  public:
+    struct container {
+      bool initialized;
+      RTHPImplementations impl;
+      String port;
+      int chipToDump;
+      String readBuffer;
+      std::vector<RTHPWrite> lastWrites;
+      bool writing;
+      container():
+        initialized(false),
+        impl(RTHP_NONE),
+        port(""),
+        chipToDump(0),
+        readBuffer(""),
+        writing(false) {}
+    } container;
+
+    void setImpl(RTHPImplementations impl);
+    int init(RTHPImplementations setImpl, String setPort);
+    void scanAvailPorts();
+    std::vector<String> getAvailPortNames();
+    auto getAvailPorts();
+    void write(unsigned short a, unsigned short v);
+    String read();
+    String getReadBuffer();
+    void clearReadBuffer();
+    int deinit();
+    bool getRTHPState();
+    void setDumpedChip(int chip);
+    int getDumpedChip();
+    std::vector<RTHPWrite> getLastWrites();
+    void clearLastWrites();
+};
+#endif
+
 struct DivEffectContainer {
   DivEffect* effect;
   float* in[DIV_MAX_OUTPUTS];
