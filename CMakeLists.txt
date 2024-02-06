@@ -441,19 +441,30 @@ if (USE_RTMIDI)
 else()
   message(STATUS "Building without RtMidi")
 endif()
+set(RTHP_SOURCES
+src/rthp/rthp.cpp
+
+src/rthp/impl/abstract.cpp
+
+# src/rthp/impl/e-rthp.cpp
+
+extern/serial/src/serial.cc
+extern/serial/include/serial/serial.h
+extern/serial/include/serial/v8stdint.h
+)
 
 if(APPLE)
   # If OSX
-  list(APPEND SERIAL_SOURCES extern/serial/src/impl/unix.cc)
-  list(APPEND SERIAL_SOURCES extern/serial/src/impl/list_ports/list_ports_osx.cc)
+  list(APPEND RTHP_SOURCES extern/serial/src/impl/unix.cc)
+  list(APPEND RTHP_SOURCES extern/serial/src/impl/list_ports/list_ports_osx.cc)
 elseif(UNIX)
   # If unix
-  list(APPEND SERIAL_SOURCES extern/serial/src/impl/unix.cc)
-  list(APPEND SERIAL_SOURCES extern/serial/src/impl/list_ports/list_ports_linux.cc)
+  list(APPEND RTHP_SOURCES extern/serial/src/impl/unix.cc)
+  list(APPEND RTHP_SOURCES extern/serial/src/impl/list_ports/list_ports_linux.cc)
 else()
   # If windows
-  list(APPEND SERIAL_SOURCES extern/serial/src/impl/win.cc)
-  list(APPEND SERIAL_SOURCES extern/serial/src/impl/list_ports/list_ports_win.cc)
+  list(APPEND RTHP_SOURCES extern/serial/src/impl/win.cc)
+  list(APPEND RTHP_SOURCES extern/serial/src/impl/list_ports/list_ports_win.cc)
 endif()
 # hey, if serial hadn't used some weird build system, then parts of it's CMake wouldn't've ended up here!
 if (WITH_RTHP)
@@ -462,17 +473,6 @@ if (WITH_RTHP)
   list(APPEND DEPENDENCIES_INCLUDE_DIRS src/rthp)
 endif()
 
-set(RTHP_SOURCES
-src/rthp/rthp.cpp
-
-src/rthp/impl/abstract.cpp
-
-src/rthp/impl/e-rthp.cpp
-
-extern/serial/src/serial.cc
-extern/serial/include/serial/serial.h
-extern/serial/include/serial/v8stdint.h
-)
 
 set(ENGINE_SOURCES
 src/log.cpp

@@ -22,6 +22,15 @@
 String RTHP::getImplDescription() {
   return ""; // haha good luck localizing
 }
+bool RTHP::getOSCompat() {
+#ifdef _WIN32
+  return true;
+#elseif __APPLE__
+  return true;
+#else
+  return true;
+#endif
+}
 
 void RTHP::setDeviceId(int id) {
   deviceId=id;

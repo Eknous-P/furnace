@@ -57,9 +57,15 @@ class RTHP {
   public:
     /**
      * get the impl description (can be multiline).
-     * @return the description
+     * @return the description.
      */
     virtual String getImplDescription();
+
+    /**
+     * get the OS compatibility.
+     * @return a bool. true if compatible.
+     */
+    virtual bool getOSCompat();
 
     /**
      * set the devide id.
@@ -80,7 +86,7 @@ class RTHP {
     virtual String getDeviceName();
 
     /**
-     * initialize the implementation
+     * initialize the implementation.
      */
     virtual void init();
 };
