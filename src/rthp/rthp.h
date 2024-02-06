@@ -52,6 +52,7 @@ class RTHP {
      * some impls may not operate based on ports) of the impl.
      */
     int deviceId;
+    std::vector<String> deviceNames;
 
   public:
     /**

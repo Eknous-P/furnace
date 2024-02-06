@@ -442,11 +442,6 @@ else()
   message(STATUS "Building without RtMidi")
 endif()
 
-set(SERIAL_SOURCES
-extern/serial/src/serial.cc
-extern/serial/include/serial/serial.h
-extern/serial/include/serial/v8stdint.h
-)
 if(APPLE)
   # If OSX
   list(APPEND SERIAL_SOURCES extern/serial/src/impl/unix.cc)
@@ -470,10 +465,14 @@ endif()
 set(RTHP_SOURCES
 src/rthp/rthp.cpp
 
-src/rthp/impl/e-rthp.cpp
-)
+src/rthp/impl/abstract.cpp
 
-list(APPEND RTHP_SOURCES ${SERIAL_SOURCES})
+src/rthp/impl/e-rthp.cpp
+
+extern/serial/src/serial.cc
+extern/serial/include/serial/serial.h
+extern/serial/include/serial/v8stdint.h
+)
 
 set(ENGINE_SOURCES
 src/log.cpp
