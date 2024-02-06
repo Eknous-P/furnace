@@ -25,21 +25,32 @@
 
 enum RTHPImplementations {
   RTHP_NONE=0,
+
   RTHP_ERTHP
 };
 
-extern const char* RTHPImplementationNames[];
-
-struct RTHPWrite {
+struct RTHPPacketShort {
+  // 4 bytes long
   unsigned char key;
   unsigned char data;
   unsigned char addrlow;
   unsigned char addrhigh;
 };
 
-// implementation-specific helper functions
+struct RTHPPacketLong {
+  // 8 bytes long
+  unsigned char key;
+  unsigned short data;
+  unsigned short addr;
+  unsigned char res1,res,res3; // reserved. i currently dont have plans for these bytes
+};
 
-int initERTHP(std::string port);
-bool writeERTHP(RTHPWrite w);
+class RTHP {
+  protected: // comment everything
+    int deviceId;
+
+  public:
+    virtual 
+};
 
 #endif
