@@ -46,11 +46,42 @@ struct RTHPPacketLong {
 };
 
 class RTHP {
-  protected: // comment everything
+  protected: // (totally not dispatch.h)
+    /**
+     * the "device id" (a very vague way of saying "port" because
+     * some impls may not operate based on ports) of the impl.
+     */
     int deviceId;
 
   public:
-    virtual 
+    /**
+     * get the impl description (can be multiline).
+     * @return the description
+     */
+    virtual String getImplDescription();
+
+    /**
+     * set the devide id.
+     * @param id the id to set to.
+     */
+    virtual void setDeviceId(int id);
+
+    /**
+     * get the devide id.
+     * @return the id.
+     */
+    virtual int getDeviceId();
+
+    /**
+     * get the device name.
+     * @return the name as a string.
+     */
+    virtual String getDeviceName();
+
+    /**
+     * initialize the implementation
+     */
+    virtual void init();
 };
 
 #endif
