@@ -54,23 +54,36 @@ String ERTHP::getDeviceName() {
 }
 
 void ERTHP::init() {
-  
+  p.port=deviceId;
+  p.baudrate=57600;
+  p.timeout=10;
+  try {
+    p.sp.setPort(deviceNames[p.port].c_str());
+    p.sp.setBaudrate(p.baudrate);
+    p.sp.setTimeout(serial::Timeout::max(),p.timeout,0,p.timeout,0);
+    p.sp.open();
+  } catch (std::exception& xc) {
+
+  }
+
 }
 
-void ERTHP::send(RTHPPacketShort p) {
-
+void ERTHP::send(RTHPPacketShort pac) {
+  p.sp.write(&pac.key,1);
+  p.sp.write(&pac.data,1);
+  p.sp.write(&pac.addrlow,1);
+  p.sp.write(&pac.addrhigh,1);
 }
 
-void ERTHP::send(RTHPPacketLong p) {
-
+void ERTHP::send(RTHPPacketLong pac) {
 }
 
 void ERTHP::send(unsigned char c) {
-
+  p.sp.write(&c,1);
 }
 
 void ERTHP::send(String s) {
-
+  p.sp.write(s);
 }
 
 void ERTHP::quit() {

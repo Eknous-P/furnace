@@ -25,6 +25,7 @@
 
 class ERTHP: public RTHP {
   struct Port {
+    serial::Serial sp;
     std::vector<serial::PortInfo> availPorts;
     unsigned long int baudrate, timeout;
     int port;
@@ -47,8 +48,8 @@ class ERTHP: public RTHP {
     std::string getDeviceName();
 
     void init();
-    void send(RTHPPacketShort p);
-    void send(RTHPPacketLong p);
+    void send(RTHPPacketShort pac);
+    void send(RTHPPacketLong pac);
     void send(unsigned char c);
     void send(String s);
     void quit();

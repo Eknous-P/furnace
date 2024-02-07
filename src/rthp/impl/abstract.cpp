@@ -22,13 +22,13 @@
 String RTHP::getImplDescription() {
   return ""; // haha good luck localizing
 }
-bool RTHP::getOSCompat() {
-#ifdef _WIN32 // Windows
-  return true;
-#elseif __APPLE__ // Mac
-  return true;
-#else // Linux
-  return true;
+bool RTHP::getOSCompat() { // i dont care if its compatible with everything
+#ifdef _WIN32              // make 'em separate!
+  return true; // Windows
+#elseif __APPLE__
+  return true; // Mac
+#else
+  return true; // Linux
 #endif
 }
 

@@ -107,13 +107,13 @@ class RTHP { // (totally not dispatch.h)
      * send a short reg write.
      * @param a RTHPPacketShort.
      */
-     virtual void send(RTHPPacketShort p);
+     virtual void send(RTHPPacketShort pac);
 
     /**
      * send a long reg write.
      * @param a RTHPPacketShort.
      */
-     virtual void send(RTHPPacketLong p);
+     virtual void send(RTHPPacketLong pac);
 
     /**
      * send a plain unsigned char.
