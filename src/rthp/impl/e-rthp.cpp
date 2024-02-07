@@ -87,5 +87,5 @@ void ERTHP::send(String s) {
 }
 
 void ERTHP::quit() {
-
+  p.sp.close();
 }

@@ -251,13 +251,17 @@ struct DivDispatchContainer {
 struct RTHPContainer {
   RTHP* RTHPImpl;
 
-  unsigned char state;
   // RTHP states:
   // 0x00: initialized
   // 0xff: not initialized
+  unsigned char state;
 
-  void init(RTHPImplementations impl, int deviceId);
+
+  void preinit(RTHPImplementations impl, int deviceId);
+  void init();
   void quit();
+
+  unsigned char getState();
 
 
 

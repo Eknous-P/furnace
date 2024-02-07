@@ -442,7 +442,7 @@ else()
   message(STATUS "Building without RtMidi")
 endif()
 set(RTHP_SOURCES
-src/rthp/rthp.cpp
+src/engine/rthpContainer.cpp
 
 src/rthp/impl/abstract.cpp
 
