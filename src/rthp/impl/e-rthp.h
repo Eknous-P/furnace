@@ -24,42 +24,16 @@
 #include <vector>
 #include "serial/serial.h"
 
-class ERTHP {
-  serial::Serial serialPort;
-  struct ERTHP_Serial {
+class ERTHP: public RTHP {
+  struct Port {
     std::vector<serial::PortInfo> availPorts;
-
-    unsigned long int serialBaudrate, serialTimeout;
+    unsigned long int baudrate, timeout;
     std::string portName;
 
-    ERTHP_Serial():
-      serialBaudrate(1000000),
-      serialTimeout(1000),
+    Port():
+      baudrate(0),
+      timeout(0),
       portName("") {}
-  } erthp_serial;
-  struct ERTHP_Log {
-    std::string logBuffer[64]; // cyclical buffer, not intended as a main log buffer
-    std::string lastLog;
-    unsigned char lastLogNum;
-
-    ERTHP_Log():
-      lastLog(""),
-      lastLogNum(0) {}
-  } erthp_log;
-
-  public:
-    // serial
-    int scanAvailPorts();
-    std::vector<serial::PortInfo> getAvailPorts();
-    std::vector<std::string> getAvailPortNames();
-
-    int initSerial(std::string port, unsigned int baudrate, unsigned int timeout);
-    int sendSerial(unsigned char chr);
-    std::string receiveSerial(size_t s);
-    void closeSerial();
-
-    // logging
-    void clearLog();
-    void writeLog(std::string log);
-    std::string getLastLog();
-};
+  } port;
+  
+}

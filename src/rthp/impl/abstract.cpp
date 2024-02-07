@@ -23,11 +23,11 @@ String RTHP::getImplDescription() {
   return ""; // haha good luck localizing
 }
 bool RTHP::getOSCompat() {
-#ifdef _WIN32
+#ifdef _WIN32 // Windows
   return true;
-#elseif __APPLE__
+#elseif __APPLE__ // Mac
   return true;
-#else
+#else // Linux
   return true;
 #endif
 }
