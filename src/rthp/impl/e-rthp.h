@@ -20,20 +20,41 @@
 // E-RTHP VERSION 0
 // REAL-TIME HARDWARE PLAYBACK HOST IMPLEMENTATION
 
-#include <string>
-#include <vector>
 #include "serial/serial.h"
+#include "rthp.h"
 
 class ERTHP: public RTHP {
   struct Port {
     std::vector<serial::PortInfo> availPorts;
     unsigned long int baudrate, timeout;
-    std::string portName;
+    int port;
 
     Port():
       baudrate(0),
       timeout(0),
-      portName("") {}
+      port(0) {}
   } port;
-  
-}
+
+  Port p;
+
+  public:
+    String getImplDescription();
+    bool getOSCompat();
+
+    int scanDevices();
+    void setDeviceId(int id);
+    int getDeviceId();
+    std::string getDeviceName();
+
+    void init();
+    void send(RTHPPacketShort p);
+    void send(RTHPPacketLong p);
+    void send(unsigned char c);
+    void send(String s);
+    void quit();
+
+    void writeLog(std::string log);
+    std::string getLog();
+
+    ~ERTHP();
+};

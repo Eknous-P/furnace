@@ -17,7 +17,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "../rthp.h"
+#include "rthp.h"
 
 String RTHP::getImplDescription() {
   return ""; // haha good luck localizing
@@ -30,6 +30,10 @@ bool RTHP::getOSCompat() {
 #else // Linux
   return true;
 #endif
+}
+
+int RTHP::scanDevices() {
+  return 0;
 }
 
 void RTHP::setDeviceId(int id) {
@@ -46,4 +50,24 @@ String RTHP::getDeviceName() {
 
 void RTHP::init() {
   
+}
+
+void RTHP::send(RTHPPacketShort p) {
+
+}
+
+void RTHP::send(RTHPPacketLong p) {
+
+}
+
+void RTHP::send(unsigned char c) {
+
+}
+
+void RTHP::send(String s) {
+
+}
+
+void RTHP::quit() {
+
 }

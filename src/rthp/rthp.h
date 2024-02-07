@@ -45,8 +45,9 @@ struct RTHPPacketLong {
   unsigned char res1,res,res3; // reserved. i currently dont have plans for these bytes
 };
 
-class RTHP {
-  protected: // (totally not dispatch.h)
+class RTHP { // (totally not dispatch.h)
+  // protected:
+  public:
     /**
      * the "device id" (a very vague way of saying "port" because
      * some impls may not operate based on ports) of the impl.
@@ -54,7 +55,13 @@ class RTHP {
     int deviceId;
     std::vector<String> deviceNames;
 
-  public:
+    /**
+     * keep at least one log entry from whatever code
+     * assisting/running the impl.
+     */
+    std::string lastLog;
+
+  // public:
     /**
      * get the impl description (can be multiline).
      * @return the description.
@@ -66,6 +73,12 @@ class RTHP {
      * @return a bool. true if compatible.
      */
     virtual bool getOSCompat();
+
+    /**
+     * scan for available devices.
+     * @return the amount of devices found.
+     */
+    virtual int scanDevices();
 
     /**
      * set the devide id.
@@ -89,6 +102,35 @@ class RTHP {
      * initialize the implementation.
      */
     virtual void init();
+
+    /**
+     * send a short reg write.
+     * @param a RTHPPacketShort.
+     */
+     virtual void send(RTHPPacketShort p);
+
+    /**
+     * send a long reg write.
+     * @param a RTHPPacketShort.
+     */
+     virtual void send(RTHPPacketLong p);
+
+    /**
+     * send a plain unsigned char.
+     * @param an unsigned char.
+     */
+     virtual void send(unsigned char c);
+
+    /**
+     * send a string.
+     * @param a string.
+     */
+     virtual void send(String s);
+
+    /**
+     * quit the impl.
+     */
+    virtual void quit();
 };
 
 #endif

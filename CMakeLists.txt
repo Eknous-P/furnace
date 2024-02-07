@@ -446,7 +446,7 @@ src/rthp/rthp.cpp
 
 src/rthp/impl/abstract.cpp
 
-# src/rthp/impl/e-rthp.cpp
+src/rthp/impl/e-rthp.cpp
 
 extern/serial/src/serial.cc
 extern/serial/include/serial/serial.h
