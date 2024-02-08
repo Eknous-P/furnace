@@ -91,9 +91,9 @@ void FurnaceGUI::bindEngine(DivEngine* eng) {
 }
 
 #ifdef WITH_RTHP
-// void FurnaceGUI::bindRTHP(RTHPContainer* rthpi) {
-//   rthp=rthpi;
-// }
+void FurnaceGUI::bindRTHP(RTHPContainer* rthpi) {
+  rthp=rthpi;
+}
 #endif
 
 void FurnaceGUI::enableSafeMode() {
@@ -6681,8 +6681,8 @@ bool FurnaceGUI::init() {
   xyOscThickness=e->getConfFloat("xyOscThickness",2.0f);
 
 #ifdef WITH_RTHP
-  // RTHPImplementation=e->getConfInt("RTHPImplementation",RTHP_ERTHP);
-  // RTHPPort=e->getConfString("RTHPPort","");
+  RTHPImplementation=e->getConfInt("RTHPImplementation",RTHP_ERTHP);
+  RTHPDevice=e->getConfString("RTHPDevice","");
 #endif
 
   syncSettings();
@@ -7148,7 +7148,7 @@ void FurnaceGUI::commitState() {
   e->setConf("findOpen",findOpen);
   e->setConf("spoilerOpen",spoilerOpen);
 #ifdef WITH_RTHP
-  // e->setConf("rthpWindowOpen",rthpWindowOpen);
+  e->setConf("rthpWindowOpen",rthpWindowOpen);
 #endif
   e->setConf("basicMode",basicMode);
 
@@ -7241,8 +7241,8 @@ void FurnaceGUI::commitState() {
 
   // commit rthp stuff
 #ifdef WITH_RTHP
-  // e->setConf("RTHPImplementation",RTHPImplementation);
-  // e->setConf("RTHPPort",RTHPPort);
+  e->setConf("RTHPImplementation",RTHPImplementation);
+  e->setConf("RTHPDevice",RTHPDevice);
 #endif
 
   // commit recent files
@@ -7798,11 +7798,10 @@ FurnaceGUI::FurnaceGUI():
   audioExportType(0),
   curExportType(GUI_EXPORT_NONE)
 #ifdef WITH_RTHP
-  // ,RTHPImplementation(RTHP_ERTHP),
-  // RTHPAvailPorts({}),
-  // RTHPPort(""),
-  // RTHPInitialized(false),
-  // dumpedChip(0)
+  ,RTHPImplementation(RTHP_NONE),
+  RTHPDevices({}),
+  RTHPDevice(""),
+  RTHPState(0xff)
 #endif
   {
   // value keys

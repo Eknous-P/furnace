@@ -751,13 +751,13 @@ int main(int argc, char** argv) {
   }
 
 #ifdef WITH_RTHP
-  // e.bindRTHP(&rthp);
+  e.bindRTHP(&rthp);
 #endif
 #ifdef HAVE_GUI
   if (safeMode) g.enableSafeMode();
   g.bindEngine(&e);
 #ifdef WITH_RTHP
-  // g.bindRTHP(&rthp);
+  g.bindRTHP(&rthp);
 #endif
   if (!g.init()) {
     reportError(g.getLastError());

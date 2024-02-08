@@ -2403,11 +2403,11 @@ class FurnaceGUI {
 
   // RTHP stuff
 #ifdef WITH_RTHP
-  // RTHPContainer* rthp;
-  // int RTHPImplementation;
-  // std::vector<String> RTHPAvailPorts;
-  // String RTHPPort;
-  // bool RTHPInitialized;
+  RTHPContainer* rthp;
+  int RTHPImplementation;
+  std::vector<String> RTHPDevices;
+  String RTHPDevice;
+  unsigned char RTHPState;
   // int dumpedChip;
   // RTHPWrite lastWrite;
 #endif
@@ -2675,7 +2675,7 @@ class FurnaceGUI {
     bool decodeNote(const char* what, short& note, short& octave);
     void bindEngine(DivEngine* eng);
 #ifdef WITH_RTHP
-    // void bindRTHP(RTHPContainer* rthp);
+    void bindRTHP(RTHPContainer* rthp);
 #endif
     void enableSafeMode();
     void updateScroll(int amount);

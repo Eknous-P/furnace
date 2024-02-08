@@ -26,7 +26,9 @@
 enum RTHPImplementations {
   RTHP_NONE=0,
 
-  RTHP_ERTHP
+  RTHP_ERTHP,
+
+  RTHP_IMPL_LEN
 };
 
 struct RTHPPacketShort {
