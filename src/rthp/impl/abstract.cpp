@@ -49,25 +49,19 @@ String RTHP::getDeviceName() {
 }
 
 void RTHP::init() {
-  
 }
 
-void RTHP::send(RTHPPacketShort p) {
-
+void RTHP::send(RTHPPacketShort pac) {
 }
 
-void RTHP::send(RTHPPacketLong p) {
-
+void RTHP::send(RTHPPacketLong pac) {
 }
 
 void RTHP::send(unsigned char c) {
-
 }
 
 void RTHP::send(String s) {
-
 }
 
 void RTHP::quit() {
-
 }

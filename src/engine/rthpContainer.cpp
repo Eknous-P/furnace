@@ -24,10 +24,11 @@
 #include "../rthp/impl/e-rthp.h"
 
 void RTHPContainer::preinit(RTHPImplementations impl, int deviceId) {
+  RTHPImpl=NULL;
   switch (impl) {
     case RTHP_ERTHP:
       RTHPImpl=new ERTHP;
-      state=0x00;
+      state=0x01;
       break;
     case RTHP_NONE: default:
       state=0xff;

@@ -253,6 +253,7 @@ struct RTHPContainer {
 
   // RTHP states:
   // 0x00: initialized
+  // 0x01: ready (to init)
   // 0xff: not initialized
   unsigned char state;
 
@@ -262,8 +263,6 @@ struct RTHPContainer {
   void quit();
 
   unsigned char getState();
-
-
 
   RTHPContainer():
     RTHPImpl(NULL),
