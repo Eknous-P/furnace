@@ -39,3 +39,8 @@ void RTHPContainer::preinit(RTHPImplementations impl, int deviceId) {
 unsigned char RTHPContainer::getState() {
   return state;
 }
+
+void RTHPContainer::quit() {
+  RTHPImpl=NULL;
+  state=0xff;
+}

@@ -2674,9 +2674,6 @@ class FurnaceGUI {
     const char* noteName(short note, short octave);
     bool decodeNote(const char* what, short& note, short& octave);
     void bindEngine(DivEngine* eng);
-#ifdef WITH_RTHP
-    void bindRTHP(RTHPContainer* rthp);
-#endif
     void enableSafeMode();
     void updateScroll(int amount);
     void addScroll(int amount);

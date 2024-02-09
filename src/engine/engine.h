@@ -257,13 +257,14 @@ struct RTHPContainer {
   // 0xff: not initialized
   unsigned char state;
 
-
-  void preinit(RTHPImplementations impl, int deviceId);
-  void init();
-  void quit();
-
-  unsigned char getState();
-
+  public:
+  
+    void preinit(RTHPImplementations impl, int deviceId);
+    void init();
+    void quit();
+  
+    unsigned char getState();
+  
   RTHPContainer():
     RTHPImpl(NULL),
     state(0xff) {}
@@ -416,6 +417,9 @@ extern const char* cmdName[];
 
 class DivEngine {
   DivDispatchContainer disCont[DIV_MAX_CHIPS];
+#ifdef WITH_RTHP
+  RTHPContainer rthp;
+#endif
   TAAudio* output;
   TAAudioDesc want, got;
   String exportPath;
@@ -496,10 +500,6 @@ class DivEngine {
   static DivSystem sysFileMapDMF[DIV_MAX_CHIP_DEFS];
 
   DivCSPlayer* cmdStreamInt;
-
-#ifdef WITH_RTHP
-  RTHPContainer* rthp;
-#endif
 
   struct SamplePreview {
     double rate;
@@ -653,6 +653,9 @@ class DivEngine {
     DivWavetable* getWave(int index);
     DivSample* getSample(int index);
     DivDispatch* getDispatch(int index);
+#ifdef WITH_RTHP
+    RTHPContainer* getRTHP();
+#endif
     // parse old system setup description
     String decodeSysDesc(String desc);
     // start fresh
@@ -1263,6 +1266,14 @@ class DivEngine {
 
     // quit dispatch
     void quitDispatch();
+  
+#ifdef WITH_RTHP
+    // init RTHP
+    void initRTHP(RTHPImplementations impl, int deviceId);
+
+    // quit RTHP
+    void quitRTHP();
+#endif
 
     // pre-initialize the engine. returns whether Furnace should run in safe mode.
     bool preInit(bool noSafeMode=true);
@@ -1275,10 +1286,6 @@ class DivEngine {
 
     // terminate the engine.
     bool quit();
-
-#ifdef WITH_RTHP // bind rthp
-    void bindRTHP(RTHPContainer* rthpi);
-#endif
 
     unsigned char* yrw801ROM;
     unsigned char* tg100ROM;

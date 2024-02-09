@@ -23,7 +23,7 @@
 #include "misc/cpp/imgui_stdlib.h"
 
 void FurnaceGUI::drawRTHPWindow(){
-  RTHPState=rthp->getState();
+  RTHPState=e->getRTHP()->getState();
   if (nextWindow==GUI_WINDOW_RTHP) {
     rthpWindowOpen=true;
     ImGui::SetNextWindowFocus();
@@ -38,15 +38,16 @@ void FurnaceGUI::drawRTHPWindow(){
       }
       ImGui::EndCombo();
     }
-    ImGui::BeginDisabled(!(RTHPState==0x01));
+    // ImGui::BeginDisabled(!(RTHPState==0x01));
+
     // if (ImGui::Button("Scan ports") || RTHPDevices.empty()) {
     //   RTHPDevices.clear();
     //   for (int i=0; i<rthp->RTHPImpl->scanDevices(); i++) {
     //     RTHPDevices.push_back(rthp->RTHPImpl->getDeviceName());
     //   }
     // }
-    ImGui::EndDisabled();
-    ImGui::BeginDisabled(!RTHPState);
+    // ImGui::EndDisabled();
+    // ImGui::BeginDisabled(!RTHPState);
 
     if (ImGui::BeginCombo("Devices","x")) { // RTHPDevice.c_str()
       for (String i:RTHPDevices) {
@@ -54,9 +55,9 @@ void FurnaceGUI::drawRTHPWindow(){
       }
       ImGui::EndCombo();
     }
-    if (ImGui::Button("Init")) rthp->RTHPImpl->init();
-    ImGui::EndDisabled();
-    ImGui::BeginDisabled(RTHPState);
+    if (ImGui::Button("Init")) e->getRTHP()->RTHPImpl->init();
+    // ImGui::EndDisabled();
+    // ImGui::BeginDisabled(RTHPState);
     if (ImGui::Button("Disconnect")) {
       stop();
       // rthp->RTHPImpl->deinit();
@@ -66,7 +67,7 @@ void FurnaceGUI::drawRTHPWindow(){
     //   dumpedChip=e->song.systemLen-1;
     //   rthp->RTHPImpl->setDumpedChip(dumpedChip);
     // }
-    ImGui::EndDisabled();
+    // ImGui::EndDisabled();
     ImGui::End();
   }
 }
