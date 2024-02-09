@@ -6676,7 +6676,7 @@ bool FurnaceGUI::init() {
 
 #ifdef WITH_RTHP
   RTHPImplementation=e->getConfInt("RTHPImplementation",RTHP_ERTHP);
-  RTHPDevice=e->getConfString("RTHPDevice","");
+  RTHPDevice=e->getConfInt("RTHPDevice",0);
 #endif
 
   syncSettings();
@@ -7794,7 +7794,7 @@ FurnaceGUI::FurnaceGUI():
 #ifdef WITH_RTHP
   ,RTHPImplementation(RTHP_NONE),
   RTHPDevices({}),
-  RTHPDevice(""),
+  RTHPDevice(0),
   RTHPState(0xff)
 #endif
   {

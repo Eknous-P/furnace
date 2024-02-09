@@ -250,6 +250,7 @@ struct DivDispatchContainer {
 #ifdef WITH_RTHP // TODO: rewrite this
 struct RTHPContainer {
   RTHP* RTHPImpl;
+  int impln;
 
   // RTHP states:
   // 0x00: initialized
@@ -258,13 +259,15 @@ struct RTHPContainer {
   unsigned char state;
 
   public:
-  
+    const char* getImplName(int i);
+
     void preinit(RTHPImplementations impl, int deviceId);
+    int getImplId();
     void init();
     void quit();
-  
+
     unsigned char getState();
-  
+
   RTHPContainer():
     RTHPImpl(NULL),
     state(0xff) {}

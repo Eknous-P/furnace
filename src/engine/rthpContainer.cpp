@@ -23,12 +23,34 @@
 
 #include "../rthp/impl/e-rthp.h"
 
+const char* RTHPContainer::getImplName(int i) {
+  switch (i) {
+    case RTHP_NONE: return "*NONE*";
+    case RTHP_ERTHP: return "E-RTHP";
+  }
+}
+
 void RTHPContainer::preinit(RTHPImplementations impl, int deviceId) {
   RTHPImpl=NULL;
+  impln=impl;
   switch (impl) {
     case RTHP_ERTHP:
       RTHPImpl=new ERTHP;
+      RTHPImpl->setDeviceId(deviceId);
+      RTHPImpl->scanDevices();
       state=0x01;
+      break;
+    case RTHP_NONE: default:
+      state=0xff;
+      break;
+  }
+}
+
+void RTHPContainer::init() {
+  switch (impln) {
+    case RTHP_ERTHP:
+      RTHPImpl->init();
+      state=0x00;
       break;
     case RTHP_NONE: default:
       state=0xff;
@@ -40,7 +62,12 @@ unsigned char RTHPContainer::getState() {
   return state;
 }
 
+int RTHPContainer::getImplId() {
+  return impln;
+}
+
 void RTHPContainer::quit() {
+  RTHPImpl->quit();
   RTHPImpl=NULL;
   state=0xff;
 }

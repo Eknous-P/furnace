@@ -2406,7 +2406,7 @@ class FurnaceGUI {
   RTHPContainer* rthp;
   int RTHPImplementation;
   std::vector<String> RTHPDevices;
-  String RTHPDevice;
+  int RTHPDevice;
   unsigned char RTHPState;
   // int dumpedChip;
   // RTHPWrite lastWrite;

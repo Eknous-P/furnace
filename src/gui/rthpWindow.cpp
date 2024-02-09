@@ -31,31 +31,36 @@ void FurnaceGUI::drawRTHPWindow(){
   }
   if (!rthpWindowOpen) return;
   if (ImGui::Begin("Real-time Hardware Playback",&rthpWindowOpen,globalWinFlags)) {
-    if (ImGui::BeginCombo("Implementation","x")) { // RTHPDevices[RTHPImplementation].c_str()
+    if (ImGui::BeginCombo("Implementation",e->getRTHP()->getImplName(RTHPImplementation))) { // RTHPDevices[RTHPImplementation].c_str()
       for (int i=0; i<RTHP_IMPL_LEN;i++) {
         if (i==RTHP_NONE) continue;
-        if (ImGui::Selectable("x")) RTHPImplementation=i; // RTHPDevices[i].c_str()
+        if (ImGui::Selectable(e->getRTHP()->getImplName(i))) {
+          RTHPImplementation=i;
+          e->getRTHP()->preinit(RTHPImplementations(i),RTHPDevice);
+        }
       }
       ImGui::EndCombo();
     }
-    // ImGui::BeginDisabled(!(RTHPState==0x01));
+    // ImGui::BeginDisabled((RTHPState==0x01));
 
     // if (ImGui::Button("Scan ports") || RTHPDevices.empty()) {
     //   RTHPDevices.clear();
-    //   for (int i=0; i<rthp->RTHPImpl->scanDevices(); i++) {
-    //     RTHPDevices.push_back(rthp->RTHPImpl->getDeviceName());
+    //   for (int i=0; i<e->getRTHP()->RTHPImpl->scanDevices(); i++) {
+    //     RTHPDevices.push_back(e->getRTHP()->RTHPImpl->getDeviceName());
     //   }
     // }
     // ImGui::EndDisabled();
     // ImGui::BeginDisabled(!RTHPState);
 
     if (ImGui::BeginCombo("Devices","x")) { // RTHPDevice.c_str()
-      for (String i:RTHPDevices) {
+      for (int i=0;i<RTHPDevices.size();i++) {
         if (ImGui::Selectable("x")) RTHPDevice=i; // i.c_str()
       }
       ImGui::EndCombo();
     }
-    if (ImGui::Button("Init")) e->getRTHP()->RTHPImpl->init();
+    if (ImGui::Button("Init")) {
+      e->getRTHP()->RTHPImpl->init();
+    }
     // ImGui::EndDisabled();
     // ImGui::BeginDisabled(RTHPState);
     if (ImGui::Button("Disconnect")) {
