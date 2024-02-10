@@ -7080,6 +7080,10 @@ bool FurnaceGUI::init() {
   cpuCores=SDL_GetCPUCount();
   if (cpuCores<1) cpuCores=1;
 
+#ifdef WITH_RTHP
+  e->getRTHP()->preinit(RTHPImplementations(RTHPImplementation),RTHPDevice);
+#endif
+
   logI("done!");
   return true;
 }

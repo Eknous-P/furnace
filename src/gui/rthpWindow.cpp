@@ -41,20 +41,20 @@ void FurnaceGUI::drawRTHPWindow(){
       }
       ImGui::EndCombo();
     }
-    // ImGui::BeginDisabled((RTHPState==0x01));
+    ImGui::BeginDisabled((RTHPState==0x01));
 
-    // if (ImGui::Button("Scan ports") || RTHPDevices.empty()) {
-    //   RTHPDevices.clear();
-    //   for (int i=0; i<e->getRTHP()->RTHPImpl->scanDevices(); i++) {
-    //     RTHPDevices.push_back(e->getRTHP()->RTHPImpl->getDeviceName());
-    //   }
-    // }
-    // ImGui::EndDisabled();
+    if (ImGui::Button("Scan ports") || (RTHPDevices.empty() && (RTHPState==0x01))) {
+      RTHPDevices.clear();
+      for (int i=0; i<e->getRTHP()->RTHPImpl->scanDevices(); i++) {
+        RTHPDevices.push_back(e->getRTHP()->RTHPImpl->getDeviceName());
+      }
+    }
+    ImGui::EndDisabled();
     // ImGui::BeginDisabled(!RTHPState);
 
-    if (ImGui::BeginCombo("Devices","x")) { // RTHPDevice.c_str()
+    if (ImGui::BeginCombo("Devices",RTHPDevices[RTHPDevice].c_str())) { // 
       for (int i=0;i<RTHPDevices.size();i++) {
-        if (ImGui::Selectable("x")) RTHPDevice=i; // i.c_str()
+        if (ImGui::Selectable(RTHPDevices[i].c_str())) RTHPDevice=i; // 
       }
       ImGui::EndCombo();
     }
