@@ -1,86 +1,95 @@
-// primitive ERTHP client
+// primitive ERTHP client V0.1
 // for Arduino Nano (and compatible) boards
 // TODO: test
 // no pinout yet btw
 
-#define SBAUD 57600 // serial baudrate
+// defines
 
 #define RS 10 // chip reset
 #define CS 12 // chip select
 #define AD 13 // address write
-#define CT 11 // chip type sense
+#define CT 11 // chip / bus type sense
               // HIGH/FLOATING - separate address/data buses (only allows an 8 bit long addr bus!)
               // LOW - unified address/data bus
 
 #define DBI 2 // data bus index (1st bit)
 #define ABI 14 // addr bus index
 
+#define KEYCHR '>'
+
 // function macros
 
 #define PW(p,v) digitalWrite(p,v)
 #define BUSW(i,d) for (int z=0; z<8; z++) PW(z+i, (d&(1<<z)) )
 
+// variables
 
-char *buf;
-unsigned short a,v;
-bool chipType;
+int avail=0;
+bool busType=false;
+
+// 0 - key
+// 1 - data
+// 2 - address low
+// 3 - address high
+unsigned char whichByte=0;
 
 void setup() {
-  pinMode(RS, OUTPUT);
+  pinMode(RS, OUTPUT); // reset the chip for the init duration
   PW(RS,0);
 
-  Serial.begin(SBAUD);
+  Serial.begin(57600);   // init serial
   Serial.setTimeout(10); // 100Hz max?
 
-  pinMode(CT, INPUT_PULLUP);
-  chipType=digitalRead(CT);
+  pinMode(CT, INPUT_PULLUP); // chip type sense
+  busType=digitalRead(CT);  // sense
                                             // chip type: separate | unified
-  for (int i=ABI; i<ABI+8; i++) pinMode (i, OUTPUT); // addr range | bus range low byte
-  for (int i=DBI; i<DBI+8; i++) pinMode(i, OUTPUT);  // data range | bus range high byte
+  for (int i=ABI; i<ABI+8; i++) pinMode (i, OUTPUT); // addr range | bus range high byte
+  for (int i=DBI; i<DBI+8; i++) pinMode(i, OUTPUT);  // data range | bus range low byte
 
-  pinMode(AD, OUTPUT);
-  pinMode(CS, OUTPUT);
+  pinMode(AD, OUTPUT); // address write pin
+  pinMode(CS, OUTPUT); // chip select pin
 
-  PW(RS,1);
-  PW(CS,1);
+  PW(RS,1); // unreset
 }
 
+char buffer[256];
+
 void loop() {
-  if (Serial.available()) {
-    Serial.readBytes(buf,Serial.available());
-    int i=0;
-    while (i<sizeof(buf)) { // read "packets"
-      Serial.write(buf[i]);
-      Serial.write(buf[i+1]);
-      Serial.write(buf[i+2]);
-      Serial.write(buf[i+3]);
-      if (buf[i]!='>') { // invalid / error in transmission
-        i++;
+  if (Serial.available()>0) {
+    avail=Serial.available();
+    Serial.readBytes(buffer,avail);
+    for (int i=0; i<avail; i++) {
+      if (buffer[i]==KEYCHR && whichByte==0) { // pls work correctly
+        whichByte=1;
         continue;
       }
-      PW(AD,1);
-
-      // if (buf[i]==">") Serial.print("!");
-      v=buf[i+1];
-      a=buf[i+2]|(buf[i+3]<<8);
-
       PW(CS,0);
-
-      if (chipType) {
-        BUSW(DBI,v);
-        BUSW(ABI,a);
-      } else {
-        BUSW(DBI,v);
-        PW(AD,0);
-        BUSW(DBI,a&0xff);
-        BUSW(ABI,(a&0xff00)>>8);
-        PW(AD,1);
+      switch (whichByte) {
+        case 1:
+          BUSW(DBI,buffer[i]);
+          break;
+        case 2:
+          if (busType) { // separate
+            BUSW(ABI,buffer[i]);
+          } else {       // unified
+            PW(AD,0);
+            BUSW(DBI,buffer[i]);
+          }
+          break;
+        case 3:
+          if (busType) { // separate
+            continue;    // separate 8 bits only!
+          } else {       // unified
+            PW(AD,0);
+            BUSW(ABI,buffer[i]);
+          }
+          break;
       }
-
       PW(CS,1);
-      i+=4;
+      whichByte++; whichByte&=0b11;
+      PW(AD,1);
+      Serial.write(buffer[i]);
     }
-    // Serial.println("#");
+    free(buffer);
   }
-
 }
