@@ -4428,10 +4428,8 @@ bool FurnaceGUI::loop() {
         if (ImGui::MenuItem("statistics",BIND_FOR(GUI_ACTION_WINDOW_STATS),statsOpen)) statsOpen=!statsOpen;
         if (spoilerOpen) if (ImGui::MenuItem("spoiler",NULL,spoilerOpen)) spoilerOpen=!spoilerOpen;
 #ifdef WITH_RTHP
-        if (!basicMode) {
-          ImGui::Separator();
-          if (ImGui::MenuItem("real-time hardware playback",BIND_FOR(GUI_ACTION_WINDOW_RTHP),rthpWindowOpen)) rthpWindowOpen=!rthpWindowOpen;
-        }
+        ImGui::Separator();
+        if (ImGui::MenuItem("real-time hardware playback",BIND_FOR(GUI_ACTION_WINDOW_RTHP),rthpWindowOpen)) rthpWindowOpen=!rthpWindowOpen;
 #endif
 
         ImGui::EndMenu();
