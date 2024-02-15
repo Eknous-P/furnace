@@ -48,10 +48,18 @@ struct sigaction termsa;
 #include "gui/gui.h"
 #endif
 
+#ifdef WITH_RTHP
+#include "rthp.h"
+#endif
+
 DivEngine e;
 
 #ifdef HAVE_GUI
 FurnaceGUI g;
+#endif
+
+#ifdef WITH_RTHP
+RTHPContainer rthp;
 #endif
 
 FurnaceCLI cli;
@@ -79,6 +87,10 @@ bool safeMode=false;
 bool safeModeWithAudio=false;
 
 bool infoMode=false;
+
+#ifdef WITH_RTHP
+#include "rthp/rthp.h"
+#endif
 
 std::vector<TAParam> params;
 
@@ -738,9 +750,15 @@ int main(int argc, char** argv) {
     }
   }
 
+#ifdef WITH_RTHP
+  e.bindRTHP(&rthp);
+#endif
 #ifdef HAVE_GUI
   if (safeMode) g.enableSafeMode();
   g.bindEngine(&e);
+#ifdef WITH_RTHP
+  g.bindRTHP(&rthp);
+#endif
   if (!g.init()) {
     reportError(g.getLastError());
     finishLogFile();
@@ -773,6 +791,9 @@ int main(int argc, char** argv) {
 
   logI("stopping engine.");
   e.quit();
+#ifdef WITH_RTHP
+  rthp.deinit();
+#endif
 
   finishLogFile();
 

@@ -15,3 +15,6 @@
 [submodule "extern/portaudio"]
 	path = extern/portaudio
 	url = https://github.com/PortAudio/portaudio.git
+[submodule "extern/serial"]
+	path = extern/serial
+	url = https://github.com/wjwwood/serial.git

@@ -35,7 +35,9 @@ void FurnaceGUI::drawStats() {
     ImGui::AlignTextToFramePadding();
     ImGui::Text("Audio load");
     ImGui::SameLine();
+    if (settings.flashOnOverload && (double)lastProcTime/maxGot>1.0f) ImGui::PushStyleColor(ImGuiCol_PlotHistogram, (ImVec4)ImColor::HSV(0.0f,1.0f,1.0f));
     ImGui::ProgressBar((double)lastProcTime/maxGot,ImVec2(-FLT_MIN,0),procStr.c_str());
+    if (settings.flashOnOverload && (double)lastProcTime/maxGot>1.0f) ImGui::PopStyleColor();
     ImGui::Separator();
     for (int i=0; i<e->song.systemLen; i++) {
       DivDispatch* dispatch=e->getDispatch(i);
