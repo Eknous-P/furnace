@@ -554,7 +554,6 @@ enum FurnaceGUIWarnings {
   GUI_WARN_SUBSONG_DEL,
   GUI_WARN_SYSTEM_DEL,
   GUI_WARN_CLEAR_HISTORY,
-  GUI_WARN_BASIC_MODE,
   GUI_WARN_GENERIC
 };
 
@@ -1441,7 +1440,9 @@ class FurnaceGUIRender {
     virtual void destroyFontsTexture();
     virtual void renderGUI();
     virtual void wipe(float alpha);
+    virtual void drawOsc(float* data, size_t len, ImVec2 pos0, ImVec2 pos1, ImVec4 color, ImVec2 canvasSize, float lineWidth);
     virtual void present();
+    virtual bool supportsDrawOsc();
     virtual bool getOutputSize(int& w, int& h);
     virtual int getWindowFlags();
     virtual void preInit();
@@ -1451,6 +1452,22 @@ class FurnaceGUIRender {
     virtual bool quit();
     virtual bool isDead();
     virtual ~FurnaceGUIRender();
+};
+
+struct PendingDrawOsc {
+  void* gui;
+  float* data;
+  size_t len;
+  ImVec2 pos0;
+  ImVec2 pos1;
+  ImVec4 color;
+  PendingDrawOsc():
+    gui(NULL),
+    data(NULL),
+    len(0),
+    pos0(0,0),
+    pos1(0,0),
+    color(0,0,0,0) {}
 };
 
 class FurnaceGUI {
@@ -1496,6 +1513,7 @@ class FurnaceGUI {
   bool safeMode;
   bool midiWakeUp;
   bool makeDrumkitMode;
+  bool newOscCode;
   bool audioEngineChanged, settingsChanged, debugFFT;
   bool willExport[DIV_MAX_CHIPS];
   int vgmExportVersion;
@@ -1510,7 +1528,7 @@ class FurnaceGUI {
   int wheelCalmDown;
   int shallDetectScale;
   int cpuCores;
-  float secondTimer;
+  float secondTimer, newOscLineWidth;
   unsigned int userEvents;
   float mobileMenuPos, autoButtonSize, mobileEditAnim;
   ImVec2 mobileEditButtonPos, mobileEditButtonSize;
@@ -1763,6 +1781,7 @@ class FurnaceGUI {
     int fontAntiAlias;
     int selectAssetOnLoad;
     int basicColors;
+    int playbackTime;
     int flashOnOverload;
     unsigned int maxUndoSteps;
     String mainFontPath;
@@ -1963,6 +1982,7 @@ class FurnaceGUI {
       fontAntiAlias(1),
       selectAssetOnLoad(1),
       basicColors(1),
+      playbackTime(1),
       flashOnOverload(0),
       maxUndoSteps(100),
       mainFontPath(""),
@@ -2028,7 +2048,7 @@ class FurnaceGUI {
   bool rthpWindowOpen;
 #endif
 
-  bool basicMode, shortIntro;
+  bool shortIntro;
   bool insListDir, waveListDir, sampleListDir;
 
   bool clockShowReal, clockShowRow, clockShowBeat, clockShowMetro, clockShowTime;
@@ -2266,6 +2286,7 @@ class FurnaceGUI {
   // oscilloscope
   int oscTotal, oscWidth;
   float* oscValues[DIV_MAX_OUTPUTS];
+  float* oscValuesAverage;
   float oscZoom;
   float oscWindowSize;
   float oscInput, oscInput1;
@@ -2300,6 +2321,8 @@ class FurnaceGUI {
     bool ready, loudEnough, waveCorr;
     fftw_plan plan;
     fftw_plan planI;
+    PendingDrawOsc drawOp;
+    float oscTex[2048];
     ChanOscStatus():
       inBuf(NULL),
       outBuf(NULL),
@@ -2697,6 +2720,7 @@ class FurnaceGUI {
     void runBackupThread();
     void pushPartBlend();
     void popPartBlend();
+    void runPendingDrawOsc(PendingDrawOsc* which);
     bool detectOutOfBoundsWindow(SDL_Rect& failing);
     int processEvent(SDL_Event* ev);
     bool loop();
