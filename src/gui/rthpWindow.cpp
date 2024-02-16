@@ -23,9 +23,7 @@
 #include "misc/cpp/imgui_stdlib.h"
 
 void FurnaceGUI::drawRTHPWindow(){
-  rthp->setImpl(RTHP_ERTHP);
-  RTHPInitialized=rthp->getRTHPState();
-  dumpedChip=rthp->getDumpedChip();
+  RTHPState=e->getRTHP()->getState();
   if (nextWindow==GUI_WINDOW_RTHP) {
     rthpWindowOpen=true;
     ImGui::SetNextWindowFocus();
@@ -33,68 +31,48 @@ void FurnaceGUI::drawRTHPWindow(){
   }
   if (!rthpWindowOpen) return;
   if (ImGui::Begin("Real-time Hardware Playback",&rthpWindowOpen,globalWinFlags)) {
-    if (ImGui::BeginCombo("implementation",RTHPImplementationNames[RTHPImplementation])) {
-      for (int i=0; i<2;i++) {
+    if (ImGui::BeginCombo("Implementation",e->getRTHP()->getImplName(RTHPImplementation))) { // RTHPDevices[RTHPImplementation].c_str()
+      for (int i=0; i<RTHP_IMPL_LEN;i++) {
         if (i==RTHP_NONE) continue;
-        if (ImGui::Selectable(RTHPImplementationNames[i])) RTHPImplementation=i;
+        if (ImGui::Selectable(e->getRTHP()->getImplName(i))) {
+          RTHPImplementation=i;
+          e->getRTHP()->preinit(RTHPImplementations(i),RTHPDevice);
+        }
       }
       ImGui::EndCombo();
     }
-    if (ImGui::Button("Scan ports") || RTHPAvailPorts.empty()) {
-      rthp->scanAvailPorts();
-      RTHPAvailPorts=rthp->getAvailPortNames();
-    }
-    ImGui::BeginDisabled(RTHPInitialized);
+    ImGui::BeginDisabled((RTHPState==0x01));
 
-    if (ImGui::BeginCombo("ports",RTHPPort.c_str())) {
-      for (String i:RTHPAvailPorts) {
-        if (ImGui::Selectable(i.c_str())) RTHPPort=i;
+    if (ImGui::Button("Scan ports") || (RTHPDevices.empty() && (RTHPState==0x01))) {
+      RTHPDevices.clear();
+      for (int i=0; i<e->getRTHP()->RTHPImpl->scanDevices(); i++) {
+        RTHPDevices.push_back(e->getRTHP()->RTHPImpl->getDeviceName());
+      }
+    }
+    ImGui::EndDisabled();
+    // ImGui::BeginDisabled(!RTHPState);
+
+    if (ImGui::BeginCombo("Devices",RTHPDevices[RTHPDevice].c_str())) { // 
+      for (int i=0;i<RTHPDevices.size();i++) {
+        if (ImGui::Selectable(RTHPDevices[i].c_str())) RTHPDevice=i; // 
       }
       ImGui::EndCombo();
     }
-    if (ImGui::Button("Init")) rthp->init(RTHPImplementations(RTHPImplementation),RTHPPort);
-    ImGui::EndDisabled();
-    ImGui::BeginDisabled(!RTHPInitialized);
+    if (ImGui::Button("Init")) {
+      e->getRTHP()->RTHPImpl->init();
+    }
+    // ImGui::EndDisabled();
+    // ImGui::BeginDisabled(RTHPState);
     if (ImGui::Button("Disconnect")) {
       stop();
-      rthp->deinit();
-    }
-    if (ImGui::BeginCombo("chip to dump",fmt::sprintf("%d: %s",dumpedChip,e->getSystemName(e->song.system[dumpedChip])).c_str())) {
-      for (int i=0;i<e->song.systemLen;i++) {
-        if (ImGui::Selectable(fmt::sprintf("%d: %s",i,e->getSystemName(e->song.system[i])).c_str())) rthp->setDumpedChip(i);
-      }
-      ImGui::EndCombo();
+      // rthp->RTHPImpl->deinit();
     }
 
-    ImGui::Text("RTHP writes:");
-    ImGui::PushFont(patFont);
-    if (ImGui::BeginTable("##RTHPWrites",4)) {
-      ImGui::TableSetupColumn("##RTHPWriteCol0",ImGuiTableColumnFlags_WidthFixed);
-      ImGui::TableSetupColumn("##RTHPWriteCol1",ImGuiTableColumnFlags_WidthFixed);
-      ImGui::TableSetupColumn("##RTHPWriteCol2",ImGuiTableColumnFlags_WidthFixed);
-      ImGui::TableSetupColumn("##RTHPWriteCol3",ImGuiTableColumnFlags_WidthFixed);
-      for (RTHPWrite lastWrite:rthp->getLastWrites()) {
-        ImGui::TableNextRow();
-        ImGui::TableNextColumn();
-        ImGui::Text("%.2x",lastWrite.key);
-        ImGui::TableNextColumn();
-        ImGui::Text("%.2x",lastWrite.data);
-        ImGui::TableNextColumn();
-        ImGui::Text("%.2x",lastWrite.addrlow);
-        ImGui::TableNextColumn();
-        ImGui::Text("%.2x",lastWrite.addrhigh);
-      }
-      ImGui::EndTable();
-    }
-    ImGui::PopFont();
-
-    if (ImGui::Button("Clear")) rthp->clearLastWrites();
-
-    if (dumpedChip>e->song.systemLen-1) {
-      dumpedChip=e->song.systemLen-1;
-      rthp->setDumpedChip(dumpedChip);
-    }
-    ImGui::EndDisabled();
+    // if (dumpedChip>e->song.systemLen-1) {
+    //   dumpedChip=e->song.systemLen-1;
+    //   rthp->RTHPImpl->setDumpedChip(dumpedChip);
+    // }
+    // ImGui::EndDisabled();
     ImGui::End();
   }
 }

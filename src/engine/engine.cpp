@@ -3559,6 +3559,22 @@ void DivEngine::quitDispatch() {
   BUSY_END;
 }
 
+#ifdef WITH_RTHP
+  void DivEngine::initRTHP(RTHPImplementations impl, int deviceId) {
+    logV("initializing RTHP...");
+    rthp.preinit(impl,deviceId);
+  }
+
+  void DivEngine::quitRTHP() {
+    logV("quitting RTHP...");
+    rthp.quit();
+  }
+
+  RTHPContainer* DivEngine::getRTHP() {
+    return &rthp;
+  }
+#endif
+
 bool DivEngine::initAudioBackend() {
   // load values
   logI("initializing audio.");
@@ -3906,9 +3922,3 @@ bool DivEngine::quit() {
   song.unload();
   return true;
 }
-
-#ifdef WITH_RTHP
-void DivEngine::bindRTHP(RTHPContainer* rthpi) {
-  rthp=rthpi;
-}
-#endif

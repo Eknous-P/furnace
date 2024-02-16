@@ -90,12 +90,6 @@ void FurnaceGUI::bindEngine(DivEngine* eng) {
   wavePreview.setEngine(e);
 }
 
-#ifdef WITH_RTHP
-void FurnaceGUI::bindRTHP(RTHPContainer* rthpi) {
-  rthp=rthpi;
-}
-#endif
-
 void FurnaceGUI::enableSafeMode() {
   safeMode=true;
 }
@@ -6686,7 +6680,7 @@ bool FurnaceGUI::init() {
 
 #ifdef WITH_RTHP
   RTHPImplementation=e->getConfInt("RTHPImplementation",RTHP_ERTHP);
-  RTHPPort=e->getConfString("RTHPPort","");
+  RTHPDevice=e->getConfInt("RTHPDevice",0);
 #endif
 
   syncSettings();
@@ -7092,6 +7086,10 @@ bool FurnaceGUI::init() {
   cpuCores=SDL_GetCPUCount();
   if (cpuCores<1) cpuCores=1;
 
+#ifdef WITH_RTHP
+  e->getRTHP()->preinit(RTHPImplementations(RTHPImplementation),RTHPDevice);
+#endif
+
   logI("done!");
   return true;
 }
@@ -7247,7 +7245,7 @@ void FurnaceGUI::commitState() {
   // commit rthp stuff
 #ifdef WITH_RTHP
   e->setConf("RTHPImplementation",RTHPImplementation);
-  e->setConf("RTHPPort",RTHPPort);
+  e->setConf("RTHPDevice",RTHPDevice);
 #endif
 
   // commit recent files
@@ -7812,11 +7810,10 @@ FurnaceGUI::FurnaceGUI():
   audioExportType(0),
   curExportType(GUI_EXPORT_NONE)
 #ifdef WITH_RTHP
-  ,RTHPImplementation(RTHP_ERTHP),
-  RTHPAvailPorts({}),
-  RTHPPort(""),
-  RTHPInitialized(false),
-  dumpedChip(0)
+  ,RTHPImplementation(RTHP_NONE),
+  RTHPDevices({}),
+  RTHPDevice(0),
+  RTHPState(0xff)
 #endif
   {
   // value keys

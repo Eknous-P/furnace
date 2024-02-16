@@ -17,45 +17,51 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-// E-RTHP VERSION 0
-// REAL-TIME HARDWARE PLAYBACK HOST IMPLEMENTATION
-
-#include "serial/serial.h"
 #include "rthp.h"
 
-class ERTHP: public RTHP {
-  struct Port {
-    serial::Serial sp;
-    std::vector<serial::PortInfo> availPorts;
-    unsigned long int baudrate, timeout;
-    int port;
+String RTHP::getImplDescription() {
+  return ""; // haha good luck localizing
+}
+bool RTHP::getOSCompat() { // i dont care if its compatible with everything
+#ifdef _WIN32              // make 'em separate!
+  return true; // Windows
+#elseif __APPLE__
+  return true; // Mac
+#else
+  return true; // Linux
+#endif
+}
 
-    Port():
-      baudrate(0),
-      timeout(0),
-      port(0) {}
-  } port;
+int RTHP::scanDevices() {
+  return 0;
+}
 
-  Port p;
+void RTHP::setDeviceId(int id) {
+  deviceId=id;
+}
 
-  public:
-    String getImplDescription();
-    bool getOSCompat();
+int RTHP::getDeviceId() {
+  return deviceId;
+}
 
-    int scanDevices();
-    void setDeviceId(int id);
-    int getDeviceId();
-    std::string getDeviceName();
+String RTHP::getDeviceName() {
+  return deviceNames[deviceId];
+}
 
-    void init();
-    void send(RTHPPacketShort pac);
-    void send(RTHPPacketLong pac);
-    void send(unsigned char c);
-    void send(String s);
-    void quit();
+void RTHP::init() {
+}
 
-    void writeLog(std::string log);
-    std::string getLog();
+void RTHP::send(RTHPPacketShort pac) {
+}
 
-    ~ERTHP();
-};
+void RTHP::send(RTHPPacketLong pac) {
+}
+
+void RTHP::send(unsigned char c) {
+}
+
+void RTHP::send(String s) {
+}
+
+void RTHP::quit() {
+}

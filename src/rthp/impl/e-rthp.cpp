@@ -17,84 +17,75 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-// E-RTHP VERSION 0
-// REAL-TIME HARDWARE PLAYBACK HOST IMPLEMENTATION
-
 #include "e-rthp.h"
 
-void ERTHP::clearLog() {
-  for (unsigned char i=0; i<64; i++) {
-    erthp_log.logBuffer[i]="";
-  }
+String ERTHP::getImplDescription() {
+  return "ERTHP Version 1.\n"
+         "for sending regwrites via a serial port\n";
 }
 
-void ERTHP::writeLog(std::string logm) {
-  erthp_log.lastLog=logm;
-  erthp_log.lastLogNum++;
-  erthp_log.lastLogNum%=64;
-  erthp_log.logBuffer[erthp_log.lastLogNum]=erthp_log.lastLog;
+bool ERTHP::getOSCompat() {
+#ifdef _WIN32 // Windows
+  return true;
+#elseif __APPLE__ // Mac
+  return true;
+#else // Linux
+  return true;
+#endif
 }
 
-std::string ERTHP::getLastLog() {
-  return erthp_log.lastLog;
+int ERTHP::scanDevices() {
+  deviceNames.clear();
+  p.availPorts=serial::list_ports();
+  for (serial::PortInfo p:p.availPorts) deviceNames.push_back(p.port);
+  return p.availPorts.size();
 }
 
-int ERTHP::scanAvailPorts() {
-  erthp_serial.availPorts=serial::list_ports();
-  return (erthp_serial.availPorts.end() - erthp_serial.availPorts.begin());
+void ERTHP::setDeviceId(int id) {
+  deviceId=id;
 }
 
-std::vector<serial::PortInfo> ERTHP::getAvailPorts() {
-  return erthp_serial.availPorts;
+int ERTHP::getDeviceId() {
+  return deviceId;
 }
 
-std::vector<std::string> ERTHP::getAvailPortNames() {
-  std::vector<std::string> ret{};
-  for (serial::PortInfo i:erthp_serial.availPorts) ret.push_back(i.port);
-  return ret;
+String ERTHP::getDeviceName() {
+  return deviceNames[deviceId];
 }
 
-int ERTHP::initSerial(std::string port, unsigned int baudrate, unsigned int timeout) {
-  erthp_serial.portName=port;
-  erthp_serial.serialBaudrate=baudrate;
-  erthp_serial.serialTimeout=timeout;
+void ERTHP::init() {
+  p.port=deviceId;
+  p.baudrate=57600;
+  p.timeout=10;
   try {
-    serialPort.setPort(erthp_serial.portName.c_str());
-    serialPort.setBaudrate(erthp_serial.serialBaudrate);
-    serialPort.setTimeout(serial::Timeout::max(),erthp_serial.serialTimeout,0,erthp_serial.serialTimeout,0);
+    p.sp.setPort(deviceNames[p.port].c_str());
+    p.sp.setBaudrate(p.baudrate);
+    p.sp.setTimeout(serial::Timeout::max(),p.timeout,0,p.timeout,0);
+    p.sp.open();
   } catch (std::exception& xc) {
-    ERTHP::writeLog(xc.what());
-    return 1;
-  }
-  serialPort.open();
 
-  if (!serialPort.isOpen()) {
-    ERTHP::writeLog("ERTHP: could not open serial port!");
-    return 1;
   }
-  serialPort.write("RTHP");
-  return 0;
+
 }
 
-int ERTHP::sendSerial(unsigned char chr) {
-  try {
-    return (int)serialPort.write(&chr,1);
-  } catch (std::exception& xc) {
-    ERTHP::writeLog(xc.what());
-    return -1;
-  }
+void ERTHP::send(RTHPPacketShort pac) {
+  p.sp.write(&pac.key,1);
+  p.sp.write(&pac.data,1);
+  p.sp.write(&pac.addrlow,1);
+  p.sp.write(&pac.addrhigh,1);
 }
 
-std::string ERTHP::receiveSerial(size_t s) {
-  try {
-    if (serialPort.available()) return serialPort.read(s);
-    return "";
-  } catch (std::exception& xc) {
-    ERTHP::writeLog(xc.what());
-    return "";
-  }
+void ERTHP::send(RTHPPacketLong pac) {
 }
 
-void ERTHP::closeSerial() {
-  return serialPort.close();
+void ERTHP::send(unsigned char c) {
+  p.sp.write(&c,1);
+}
+
+void ERTHP::send(String s) {
+  p.sp.write(s);
+}
+
+void ERTHP::quit() {
+  p.sp.close();
 }

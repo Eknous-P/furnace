@@ -1347,10 +1347,10 @@ void DivEngine::nextRow() {
 bool DivEngine::nextTick(bool noAccum, bool inhibitLowLat) {
   bool ret=false;
 #ifdef WITH_RTHP
-  if (rthp->getRTHPState()) {
-    for (int i=0; i<song.systemLen; i++) getDispatch(i)->toggleRegisterDump(false);
-    getDispatch(rthp->getDumpedChip())->toggleRegisterDump(true);
-  }
+  // if (rthp->getRTHPState()) {
+  //   for (int i=0; i<song.systemLen; i++) getDispatch(i)->toggleRegisterDump(false);
+  //   getDispatch(rthp->getDumpedChip())->toggleRegisterDump(true);
+  // }
 #endif
   if (divider<1) divider=1;
 
@@ -1639,18 +1639,18 @@ bool DivEngine::nextTick(bool noAccum, bool inhibitLowLat) {
   for (int i=0; i<song.systemLen; i++) {
     disCont[i].dispatch->tick(subticks==tickMult);
 
-#ifdef WITH_RTHP
-  if (rthp->getRTHPState()) {
-    if (i!=rthp->getDumpedChip()) continue;
-    std::vector<DivRegWrite>& regWrites=getDispatch(i)->getRegisterWrites();
-    for (DivRegWrite& regWrite:regWrites) {
-      rthp->write(regWrite.addr,regWrite.val);
-    }
+// #ifdef WITH_RTHP
+//   if (rthp->getRTHPState()) {
+//     if (i!=rthp->getDumpedChip()) continue;
+//     std::vector<DivRegWrite>& regWrites=getDispatch(i)->getRegisterWrites();
+//     for (DivRegWrite& regWrite:regWrites) {
+//       rthp->write(regWrite.addr,regWrite.val);
+//     }
     
-    if (regWrites.size()>0) rthp->read();
-    regWrites.clear();
-  }
-#endif
+//     if (regWrites.size()>0) rthp->read();
+//     regWrites.clear();
+//   }
+// #endif
   }
 
   if (!freelance) {

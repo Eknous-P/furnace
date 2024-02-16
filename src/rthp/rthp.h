@@ -25,57 +25,114 @@
 
 enum RTHPImplementations {
   RTHP_NONE=0,
-  RTHP_ERTHP
+
+  RTHP_ERTHP,
+
+  RTHP_IMPL_LEN
 };
 
-extern const char* RTHPImplementationNames[];
-
-struct RTHPWrite {
+struct RTHPPacketShort {
+  // 4 bytes long
   unsigned char key;
   unsigned char data;
   unsigned char addrlow;
   unsigned char addrhigh;
 };
 
-class RTHPContainer {
-  public:
-    struct container {
-      bool initialized;
-      RTHPImplementations impl;
-      String port;
-      int chipToDump;
-      String readBuffer;
-      std::vector<RTHPWrite> lastWrites;
-      bool writing;
-      container():
-        initialized(false),
-        impl(RTHP_NONE),
-        port(""),
-        chipToDump(0),
-        readBuffer(""),
-        writing(false) {}
-    } container;
-
-    void setImpl(RTHPImplementations impl);
-    int init(RTHPImplementations setImpl, String setPort);
-    void scanAvailPorts();
-    std::vector<String> getAvailPortNames();
-    auto getAvailPorts();
-    void write(unsigned short a, unsigned short v);
-    String read();
-    String getReadBuffer();
-    void clearReadBuffer();
-    int deinit();
-    bool getRTHPState();
-    void setDumpedChip(int chip);
-    int getDumpedChip();
-    std::vector<RTHPWrite> getLastWrites();
-    void clearLastWrites();
+struct RTHPPacketLong {
+  // 8 bytes long
+  unsigned char key;
+  unsigned short data;
+  unsigned short addr;
+  unsigned char res1,res,res3; // reserved. i currently dont have plans for these bytes
 };
 
-// implementation-specific helper functions
+class RTHP { // (totally not dispatch.h)
+  // protected:
+  public:
+    /**
+     * the "device id" (a very vague way of saying "port" because
+     * some impls may not operate based on ports) of the impl.
+     */
+    int deviceId;
+    std::vector<String> deviceNames;
 
-int initERTHP(std::string port);
-bool writeERTHP(RTHPWrite w);
+    /**
+     * keep at least one log entry from whatever code
+     * assisting/running the impl.
+     */
+    std::string lastLog;
+
+  // public:
+    /**
+     * get the impl description (can be multiline).
+     * @return the description.
+     */
+    virtual String getImplDescription();
+
+    /**
+     * get the OS compatibility.
+     * @return a bool. true if compatible.
+     */
+    virtual bool getOSCompat();
+
+    /**
+     * scan for available devices.
+     * @return the amount of devices found.
+     */
+    virtual int scanDevices();
+
+    /**
+     * set the devide id.
+     * @param id the id to set to.
+     */
+    virtual void setDeviceId(int id);
+
+    /**
+     * get the devide id.
+     * @return the id.
+     */
+    virtual int getDeviceId();
+
+    /**
+     * get the device name.
+     * @return the name as a string.
+     */
+    virtual String getDeviceName();
+
+    /**
+     * initialize the implementation.
+     */
+    virtual void init();
+
+    /**
+     * send a short reg write.
+     * @param a RTHPPacketShort.
+     */
+     virtual void send(RTHPPacketShort pac);
+
+    /**
+     * send a long reg write.
+     * @param a RTHPPacketShort.
+     */
+     virtual void send(RTHPPacketLong pac);
+
+    /**
+     * send a plain unsigned char.
+     * @param an unsigned char.
+     */
+     virtual void send(unsigned char c);
+
+    /**
+     * send a string.
+     * @param a string.
+     */
+     virtual void send(String s);
+
+    /**
+     * quit the impl.
+     */
+    virtual void quit();
+};
 
 #endif
