@@ -66,30 +66,6 @@ void FurnaceGUI::drawRTHPWindow(){
       ImGui::EndCombo();
     }
 
-    ImGui::Text("RTHP writes:");
-    ImGui::PushFont(patFont);
-    if (ImGui::BeginTable("##RTHPWrites",4)) {
-      ImGui::TableSetupColumn("##RTHPWriteCol0",ImGuiTableColumnFlags_WidthFixed);
-      ImGui::TableSetupColumn("##RTHPWriteCol1",ImGuiTableColumnFlags_WidthFixed);
-      ImGui::TableSetupColumn("##RTHPWriteCol2",ImGuiTableColumnFlags_WidthFixed);
-      ImGui::TableSetupColumn("##RTHPWriteCol3",ImGuiTableColumnFlags_WidthFixed);
-      for (RTHPWrite lastWrite:rthp->getLastWrites()) {
-        ImGui::TableNextRow();
-        ImGui::TableNextColumn();
-        ImGui::Text("%.2x",lastWrite.key);
-        ImGui::TableNextColumn();
-        ImGui::Text("%.2x",lastWrite.data);
-        ImGui::TableNextColumn();
-        ImGui::Text("%.2x",lastWrite.addrlow);
-        ImGui::TableNextColumn();
-        ImGui::Text("%.2x",lastWrite.addrhigh);
-      }
-      ImGui::EndTable();
-    }
-    ImGui::PopFont();
-
-    if (ImGui::Button("Clear")) rthp->clearLastWrites();
-
     if (dumpedChip>e->song.systemLen-1) {
       dumpedChip=e->song.systemLen-1;
       rthp->setDumpedChip(dumpedChip);
