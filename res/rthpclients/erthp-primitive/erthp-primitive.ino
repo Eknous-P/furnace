@@ -1,8 +1,22 @@
 // primitive ERTHP client V0.1
 // for Arduino Nano (and compatible) boards
 // TODO: test
-// no pinout yet btw
 
+// PINOUT(S?)
+
+/* YM2413
+             +----o----+
+         GND-|GND    D1|-D3
+          D4-|D2     D0|-D2
+          D5-|D3    VCC|-5V   R0,R1
+          D6-|D4     RO|------[10K]-+
+          D7-|D5     MO|------[10K]-+--> audio out
+          D8-|D6    /IC|-D10
+          D9-|D7    /CS|-D12
+     XTAL ||-|XIN   /WE|-GND
+3.579545M ||-|XOUT   AO|-D13
+             +---------+
+*/
 // defines
 
 #define RS 10 // chip reset
@@ -34,7 +48,7 @@ bool busType=false;
 unsigned char whichByte=0;
 
 void setup() {
-  pinMode(RS, OUTPUT); // reset the chip for the init duration
+  pinMode(RS, OUTPUT); // reset the chip until inited
   PW(RS,0);
 
   Serial.begin(57600);   // init serial
@@ -48,14 +62,13 @@ void setup() {
 
   pinMode(AD, OUTPUT); // address write pin
   pinMode(CS, OUTPUT); // chip select pin
-
-  PW(RS,1); // unreset
 }
 
 char buffer[256];
 
 void loop() {
   if (Serial.available()>0) {
+    PW(RS,1); // unreset
     avail=Serial.available();
     Serial.readBytes(buffer,avail);
     for (int i=0; i<avail; i++) {
