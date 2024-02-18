@@ -17,6 +17,7 @@
 3.579545M ||-|XOUT   AO|-D13
              +---------+
 */
+
 // defines
 
 #define RS 10 // chip reset
