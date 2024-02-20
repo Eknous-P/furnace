@@ -5692,6 +5692,18 @@ bool FurnaceGUI::loop() {
             ImGui::CloseCurrentPopup();
           }
           break;
+        case GUI_WARN_RESET_SETTINGS:
+          if (ImGui::Button("Yes")) {
+            ImGui::CloseCurrentPopup();
+            syncSettings();
+            settingsChanged=false;
+          }
+          ImGui::SameLine();
+          if (ImGui::Button("No")) {
+            ImGui::CloseCurrentPopup();
+            settingsChanged=true;
+          }
+          break;
         case GUI_WARN_CLEAR:
           if (ImGui::BeginTable("EraseOpt",2,ImGuiTableFlags_BordersInnerV)) {
             ImGui::TableSetupColumn("c0",ImGuiTableColumnFlags_WidthStretch,0.5f);

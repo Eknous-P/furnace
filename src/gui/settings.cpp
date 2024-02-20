@@ -470,12 +470,14 @@ void FurnaceGUI::drawSettings() {
         ImGui::Indent();
         if (ImGui::RadioButton("ImGui line plot",settings.shaderOsc==0)) {
           settings.shaderOsc=0;
+          SETTINGS_CHANGED
         }
         if (ImGui::IsItemHovered()) {
           ImGui::SetTooltip("render using Dear ImGui's built-in line drawing functions.");
         }
         if (ImGui::RadioButton("GLSL/HLSL (if available)",settings.shaderOsc==1)) {
           settings.shaderOsc=1;
+          SETTINGS_CHANGED
         }
         if (ImGui::IsItemHovered()) {
           ImGui::SetTooltip("render using shaders that run on the graphics card.\nonly available in OpenGL render backend.");
@@ -3760,6 +3762,9 @@ void FurnaceGUI::drawSettings() {
       willCommit=true;
       settingsChanged=false;
     }
+    ImGui::SameLine();
+    if (ImGui::Button("Reset##SettingsReset")) showWarning("Do you want to reset your changes?",GUI_WARN_RESET_SETTINGS);
+
     ImGui::EndDisabled();
   }
   if (ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows)) curWindow=GUI_WINDOW_SETTINGS;
