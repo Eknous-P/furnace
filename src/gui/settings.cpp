@@ -35,6 +35,7 @@
 #include <fmt/printf.h>
 
 #define DEFAULT_NOTE_KEYS "5:7;6:4;7:3;8:16;10:6;11:8;12:24;13:10;16:11;17:9;18:26;19:28;20:12;21:17;22:1;23:19;24:23;25:5;26:14;27:2;28:21;29:0;30:100;31:13;32:15;34:18;35:20;36:22;38:25;39:27;43:100;46:101;47:29;48:31;53:102;"
+#define SETTINGS_CHANGED settingsChanged=true;
 
 #if defined(_WIN32) || defined(__APPLE__) || defined(IS_MOBILE)
 #define POWER_SAVE_DEFAULT 1
@@ -241,25 +242,25 @@ const char* specificControls[18]={
 #define SAMPLE_RATE_SELECTABLE(x) \
   if (ImGui::Selectable(#x,settings.audioRate==x)) { \
     settings.audioRate=x; \
-    settingsChanged=true; \
+    SETTINGS_CHANGED \
   }
 
 #define BUFFER_SIZE_SELECTABLE(x) \
   if (ImGui::Selectable(#x,settings.audioBufSize==x)) { \
     settings.audioBufSize=x; \
-    settingsChanged=true; \
+    SETTINGS_CHANGED \
   }
 
 #define CHANS_SELECTABLE(x) \
   if (ImGui::Selectable(nonProAudioOuts[x-1],settings.audioChans==x)) { \
     settings.audioChans=x; \
-    settingsChanged=true; \
+    SETTINGS_CHANGED \
   }
 
 #define UI_COLOR_CONFIG(what,label) \
   if (ImGui::ColorEdit4(label "##CC_" #what,(float*)&uiColors[what])) { \
     applyUISettings(false); \
-    settingsChanged=true; \
+    SETTINGS_CHANGED \
   }
 
 #define KEYBIND_CONFIG_BEGIN(id) \
@@ -277,7 +278,7 @@ const char* specificControls[18]={
   ImGui::TableNextColumn(); \
   if (ImGui::Button(fmt::sprintf("%s##KC_" #what,(bindSetPending && bindSetTarget==what)?"Press key...":getKeyName(actionKeys[what])).c_str())) { \
     promptKey(what); \
-    settingsChanged=true; \
+    SETTINGS_CHANGED \
   } \
   if (ImGui::IsItemClicked(ImGuiMouseButton_Right)) actionKeys[what]=0;
 
@@ -365,19 +366,19 @@ void FurnaceGUI::drawSettings() {
 #ifdef HAVE_RENDER_SDL
           if (ImGui::Selectable("SDL Renderer",curRenderBackend=="SDL")) {
             settings.renderBackend="SDL";
-            settingsChanged=true;
+            SETTINGS_CHANGED
           }
 #endif
 #ifdef HAVE_RENDER_DX11
           if (ImGui::Selectable("DirectX 11",curRenderBackend=="DirectX 11")) {
             settings.renderBackend="DirectX 11";
-            settingsChanged=true;
+            SETTINGS_CHANGED
           }
 #endif
 #ifdef HAVE_RENDER_GL
           if (ImGui::Selectable("OpenGL",curRenderBackend=="OpenGL")) {
             settings.renderBackend="OpenGL";
-            settingsChanged=true;
+            SETTINGS_CHANGED
           }
 #endif
           ImGui::EndCombo();
@@ -389,12 +390,12 @@ void FurnaceGUI::drawSettings() {
           if (ImGui::BeginCombo("Render driver",settings.renderDriver.empty()?"Automatic":settings.renderDriver.c_str())) {
             if (ImGui::Selectable("Automatic",settings.renderDriver.empty())) {
               settings.renderDriver="";
-              settingsChanged=true;
+              SETTINGS_CHANGED
             }
             for (String& i: availRenderDrivers) {
               if (ImGui::Selectable(i.c_str(),i==settings.renderDriver)) {
                 settings.renderDriver=i;
-                settingsChanged=true;
+                SETTINGS_CHANGED
               }
             }
             ImGui::EndCombo();
@@ -407,7 +408,7 @@ void FurnaceGUI::drawSettings() {
         bool renderClearPosB=settings.renderClearPos;
         if (ImGui::Checkbox("Late render clear",&renderClearPosB)) {
           settings.renderClearPos=renderClearPosB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::IsItemHovered()) {
           ImGui::SetTooltip("calls rend->clear() after rend->present(). might reduce UI latency by one frame in some drivers.");
@@ -416,7 +417,7 @@ void FurnaceGUI::drawSettings() {
         bool powerSaveB=settings.powerSave;
         if (ImGui::Checkbox("Power-saving mode",&powerSaveB)) {
           settings.powerSave=powerSaveB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::IsItemHovered()) {
           ImGui::SetTooltip("saves power by lowering the frame rate to 2fps when idle.\nmay cause issues under Mesa drivers!");
@@ -426,7 +427,7 @@ void FurnaceGUI::drawSettings() {
         bool noThreadedInputB=settings.noThreadedInput;
         if (ImGui::Checkbox("Disable threaded input (restart after changing!)",&noThreadedInputB)) {
           settings.noThreadedInput=noThreadedInputB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::IsItemHovered()) {
           ImGui::SetTooltip("threaded input processes key presses for note preview on a separate thread (on supported platforms), which reduces latency.\nhowever, crashes have been reported when threaded input is on. enable this option if that is the case.");
@@ -436,7 +437,7 @@ void FurnaceGUI::drawSettings() {
         bool eventDelayB=settings.eventDelay;
         if (ImGui::Checkbox("Enable event delay",&eventDelayB)) {
           settings.eventDelay=eventDelayB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
           applyUISettings(false);
         }
         if (ImGui::IsItemHovered()) {
@@ -448,7 +449,7 @@ void FurnaceGUI::drawSettings() {
           if (settings.chanOscThreads<0) settings.chanOscThreads=0;
           if (settings.chanOscThreads>(cpuCores*3)) settings.chanOscThreads=cpuCores*3;
           if (settings.chanOscThreads>256) settings.chanOscThreads=256;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (settings.chanOscThreads>=(cpuCores*3)) {
           if (ImGui::IsItemHovered()) {
@@ -487,19 +488,19 @@ void FurnaceGUI::drawSettings() {
         bool sysFileDialogB=settings.sysFileDialog;
         if (ImGui::Checkbox("Use system file picker",&sysFileDialogB)) {
           settings.sysFileDialog=sysFileDialogB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         if (ImGui::InputInt("Number of recent files",&settings.maxRecentFile,1,5)) {
           if (settings.maxRecentFile<0) settings.maxRecentFile=0;
           if (settings.maxRecentFile>30) settings.maxRecentFile=30;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         bool compressB=settings.compress;
         if (ImGui::Checkbox("Compress when saving",&compressB)) {
           settings.compress=compressB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::IsItemHovered()) {
           ImGui::SetTooltip("use zlib to compress saved songs.");
@@ -508,13 +509,13 @@ void FurnaceGUI::drawSettings() {
         bool saveUnusedPatternsB=settings.saveUnusedPatterns;
         if (ImGui::Checkbox("Save unused patterns",&saveUnusedPatternsB)) {
           settings.saveUnusedPatterns=saveUnusedPatternsB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         bool newPatternFormatB=settings.newPatternFormat;
         if (ImGui::Checkbox("Use new pattern format when saving",&newPatternFormatB)) {
           settings.newPatternFormat=newPatternFormatB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::IsItemHovered()) {
           ImGui::SetTooltip("use a packed format which saves space when saving songs.\ndisable if you need compatibility with older Furnace and/or tools\nwhich do not support this format.");
@@ -523,7 +524,7 @@ void FurnaceGUI::drawSettings() {
         bool noDMFCompatB=settings.noDMFCompat;
         if (ImGui::Checkbox("Don't apply compatibility flags when loading .dmf",&noDMFCompatB)) {
           settings.noDMFCompat=noDMFCompatB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::IsItemHovered()) {
           ImGui::SetTooltip("do not report any issues arising from the use of this option!");
@@ -533,15 +534,15 @@ void FurnaceGUI::drawSettings() {
         ImGui::Indent();
         if (ImGui::RadioButton("No##pol0",settings.playOnLoad==0)) {
           settings.playOnLoad=0;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Only if already playing##pol1",settings.playOnLoad==1)) {
           settings.playOnLoad=1;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Yes##pol0",settings.playOnLoad==2)) {
           settings.playOnLoad=2;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         ImGui::Unindent();
 
@@ -549,32 +550,32 @@ void FurnaceGUI::drawSettings() {
         ImGui::Indent();
         if (ImGui::RadioButton("Set to these values on start-up:##fot0",settings.persistFadeOut==0)) {
           settings.persistFadeOut=0;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         ImGui::BeginDisabled(settings.persistFadeOut);
         ImGui::Indent();
         if (ImGui::InputInt("Loops",&settings.exportLoops,1,2)) {
           if (exportLoops<0) exportLoops=0;
           exportLoops=settings.exportLoops;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::InputDouble("Fade out (seconds)",&settings.exportFadeOut,1.0,2.0,"%.1f")) {
           if (exportFadeOut<0.0) exportFadeOut=0.0;
           exportFadeOut=settings.exportFadeOut;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         ImGui::Unindent();
         ImGui::EndDisabled();
         if (ImGui::RadioButton("Remember last values##fot1",settings.persistFadeOut==1)) {
           settings.persistFadeOut=1;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         ImGui::Unindent();
 
         bool writeInsNamesB=settings.writeInsNames;
         if (ImGui::Checkbox("Store instrument name in .fui",&writeInsNamesB)) {
           settings.writeInsNames=writeInsNamesB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::IsItemHovered()) {
           ImGui::SetTooltip("when enabled, saving an instrument will store its name.\nthis may increase file size.");
@@ -583,7 +584,7 @@ void FurnaceGUI::drawSettings() {
         bool readInsNamesB=settings.readInsNames;
         if (ImGui::Checkbox("Load instrument name from .fui",&readInsNamesB)) {
           settings.readInsNames=readInsNamesB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::IsItemHovered()) {
           ImGui::SetTooltip("when enabled, loading an instrument will use the stored name (if present).\notherwise, it will use the file name.");
@@ -604,7 +605,7 @@ void FurnaceGUI::drawSettings() {
             settings.initialSys.set(fmt::sprintf("flags%d",i),e->song.systemFlags[i].toBase64());
           }
           settings.initialSysName=e->song.systemName;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         ImGui::SameLine();
         if (ImGui::Button("Randomize")) {
@@ -654,7 +655,7 @@ void FurnaceGUI::drawSettings() {
             settings.initialSysName+=wordPool[i][rand()%wordPool[i].size()];
             settings.initialSysName+=" ";
           }
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         ImGui::SameLine();
         if (ImGui::Button("Reset to defaults")) {
@@ -670,14 +671,14 @@ void FurnaceGUI::drawSettings() {
           settings.initialSys.set("fr1",0.0f);
           settings.initialSys.set("flags1","");
           settings.initialSysName="Sega Genesis/Mega Drive";
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         ImGui::AlignTextToFramePadding();
         ImGui::Text("Name");
         ImGui::SameLine();
         ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-        if (ImGui::InputText("##InitSysName",&settings.initialSysName)) settingsChanged=true;
+        if (ImGui::InputText("##InitSysName",&settings.initialSysName)) SETTINGS_CHANGED
 
         int sysCount=0;
         int doRemove=-1;
@@ -701,7 +702,7 @@ void FurnaceGUI::drawSettings() {
                 sysID=(DivSystem)availableSystems[j];
                 settings.initialSys.set(fmt::sprintf("id%d",i),(int)e->systemToFileFur(sysID));
                 settings.initialSys.set(fmt::sprintf("flags%d",i),"");
-                settingsChanged=true;
+                SETTINGS_CHANGED
               }
             }
             ImGui::EndCombo();
@@ -711,14 +712,14 @@ void FurnaceGUI::drawSettings() {
           if (ImGui::Checkbox("Invert",&doInvert)) {
             sysVol=-sysVol;
             settings.initialSys.set(fmt::sprintf("vol%d",i),sysVol);
-            settingsChanged=true;
+            SETTINGS_CHANGED
           }
           ImGui::SameLine();
           //ImGui::BeginDisabled(settings.initialSys.size()<=4);
           pushDestColor();
           if (ImGui::Button(ICON_FA_MINUS "##InitSysRemove")) {
             doRemove=i;
-            settingsChanged=true;
+            SETTINGS_CHANGED
           }
           popDestColor();
           //ImGui::EndDisabled();
@@ -731,21 +732,21 @@ void FurnaceGUI::drawSettings() {
             if (vol>10) vol=10;
             sysVol=doInvert?-vol:vol;
             settings.initialSys.set(fmt::sprintf("vol%d",i),(float)sysVol);
-            settingsChanged=true;
+            SETTINGS_CHANGED
           } rightClickable
           ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x-ImGui::GetFrameHeightWithSpacing()*2.0-ImGui::GetStyle().ItemSpacing.x*2.0);
           if (CWSliderFloat("Panning",&sysPan,-1.0f,1.0f)) {
             if (sysPan<-1.0f) sysPan=-1.0f;
             if (sysPan>1.0f) sysPan=1.0f;
             settings.initialSys.set(fmt::sprintf("pan%d",i),(float)sysPan);
-            settingsChanged=true;
+            SETTINGS_CHANGED
           } rightClickable
           ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x-ImGui::GetFrameHeightWithSpacing()*2.0-ImGui::GetStyle().ItemSpacing.x*2.0);
           if (CWSliderFloat("Front/Rear",&sysPanFR,-1.0f,1.0f)) {
             if (sysPanFR<-1.0f) sysPanFR=-1.0f;
             if (sysPanFR>1.0f) sysPanFR=1.0f;
             settings.initialSys.set(fmt::sprintf("fr%d",i),(float)sysPanFR);
-            settingsChanged=true;
+            SETTINGS_CHANGED
           } rightClickable
 
           // oh please MSVC don't cry
@@ -757,7 +758,7 @@ void FurnaceGUI::drawSettings() {
               settings.initialSys.set(fmt::sprintf("flags%d",i),sysFlags.toBase64());
             }
             ImGui::TreePop();
-            settingsChanged=true;
+            SETTINGS_CHANGED
           }
 
           ImGui::PopID();
@@ -796,13 +797,13 @@ void FurnaceGUI::drawSettings() {
         ImGui::Indent();
         if (ImGui::RadioButton("Display system preset selector##NSB0",settings.newSongBehavior==0)) {
           settings.newSongBehavior=0;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Start with initial system##NSB1",settings.newSongBehavior==1)) {
           settings.newSongBehavior=1;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
-        if (ImGui::InputText("Default author name", &settings.defaultAuthorName)) settingsChanged=true;
+        if (ImGui::InputText("Default author name", &settings.defaultAuthorName)) SETTINGS_CHANGED
         ImGui::Unindent();
 
         // SUBSECTION START-UP
@@ -811,32 +812,32 @@ void FurnaceGUI::drawSettings() {
         ImGui::Indent();
         if (ImGui::RadioButton("No##pis0",settings.alwaysPlayIntro==0)) {
           settings.alwaysPlayIntro=0;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Short##pis1",settings.alwaysPlayIntro==1)) {
           settings.alwaysPlayIntro=1;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Full (short when loading song)##pis2",settings.alwaysPlayIntro==2)) {
           settings.alwaysPlayIntro=2;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Full (always)##pis3",settings.alwaysPlayIntro==3)) {
           settings.alwaysPlayIntro=3;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         ImGui::Unindent();
 
         bool disableFadeInB=settings.disableFadeIn;
         if (ImGui::Checkbox("Disable fade-in during start-up",&disableFadeInB)) {
           settings.disableFadeIn=disableFadeInB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         bool partyTimeB=settings.partyTime;
         if (ImGui::Checkbox("About screen party time",&partyTimeB)) {
           settings.partyTime=partyTimeB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::IsItemHovered()) {
           ImGui::SetTooltip("Warning: may cause epileptic seizures.");
@@ -847,7 +848,7 @@ void FurnaceGUI::drawSettings() {
         bool blankInsB=settings.blankIns;
         if (ImGui::Checkbox("New instruments are blank",&blankInsB)) {
           settings.blankIns=blankInsB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         END_SECTION;
@@ -869,17 +870,17 @@ void FurnaceGUI::drawSettings() {
 #ifdef HAVE_JACK
             if (ImGui::Selectable("JACK",settings.audioEngine==DIV_AUDIO_JACK)) {
               settings.audioEngine=DIV_AUDIO_JACK;
-              settingsChanged=true;
+              SETTINGS_CHANGED
             }
 #endif
             if (ImGui::Selectable("SDL",settings.audioEngine==DIV_AUDIO_SDL)) {
               settings.audioEngine=DIV_AUDIO_SDL;
-              settingsChanged=true;
+              SETTINGS_CHANGED
             }
 #ifdef HAVE_PA
             if (ImGui::Selectable("PortAudio",settings.audioEngine==DIV_AUDIO_PORTAUDIO)) {
               settings.audioEngine=DIV_AUDIO_PORTAUDIO;
-              settingsChanged=true;
+              SETTINGS_CHANGED
             }
 #endif
             if (settings.audioEngine!=prevAudioEngine) {
@@ -900,12 +901,12 @@ void FurnaceGUI::drawSettings() {
             if (ImGui::BeginCombo("##SDLADriver",settings.sdlAudioDriver.empty()?"Automatic":settings.sdlAudioDriver.c_str())) {
               if (ImGui::Selectable("Automatic",settings.sdlAudioDriver.empty())) {
                 settings.sdlAudioDriver="";
-                settingsChanged=true;
+                SETTINGS_CHANGED
               }
               for (String& i: availAudioDrivers) {
                 if (ImGui::Selectable(i.c_str(),i==settings.sdlAudioDriver)) {
                   settings.sdlAudioDriver=i;
-                  settingsChanged=true;
+                  SETTINGS_CHANGED
                 }
               }
               ImGui::EndCombo();
@@ -936,12 +937,12 @@ void FurnaceGUI::drawSettings() {
             if (ImGui::BeginCombo("##AudioDevice",audioDevName.c_str())) {
               if (ImGui::Selectable("<System default>",settings.audioDevice.empty())) {
                 settings.audioDevice="";
-                settingsChanged=true;
+                SETTINGS_CHANGED
               }
               for (String& i: e->getAudioDevices()) {
                 if (ImGui::Selectable(i.c_str(),i==settings.audioDevice)) {
                   settings.audioDevice=i;
-                  settingsChanged=true;
+                  SETTINGS_CHANGED
                 }
               }
               ImGui::EndCombo();
@@ -976,7 +977,7 @@ void FurnaceGUI::drawSettings() {
             if (ImGui::InputInt("##AudioChansI",&settings.audioChans,1,2)) {
               if (settings.audioChans<1) settings.audioChans=1;
               if (settings.audioChans>16) settings.audioChans=16;
-              settingsChanged=true;
+              SETTINGS_CHANGED
             }
           } else {
             ImGui::AlignTextToFramePadding();
@@ -1019,7 +1020,7 @@ void FurnaceGUI::drawSettings() {
             } else {
               settings.renderPoolThreads=0;
             }
-            settingsChanged=true;
+            SETTINGS_CHANGED
           }
           if (ImGui::IsItemHovered()) {
             ImGui::SetTooltip("runs chip emulation on separate threads.\nmay increase performance when using heavy emulation cores.\n\nwarnings:\n- experimental!\n- only useful on multi-chip songs.");
@@ -1030,7 +1031,7 @@ void FurnaceGUI::drawSettings() {
             if (ImGui::InputInt("Number of threads",&settings.renderPoolThreads)) {
               if (settings.renderPoolThreads<2) settings.renderPoolThreads=2;
               if (settings.renderPoolThreads>32) settings.renderPoolThreads=32;
-              settingsChanged=true;
+              SETTINGS_CHANGED
             }
             if (settings.renderPoolThreads>=DIV_MAX_CHIPS) {
               if (ImGui::IsItemHovered()) {
@@ -1048,7 +1049,7 @@ void FurnaceGUI::drawSettings() {
         bool lowLatencyB=settings.lowLatency;
         if (ImGui::Checkbox("Low-latency mode",&lowLatencyB)) {
           settings.lowLatency=lowLatencyB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::IsItemHovered()) {
           ImGui::SetTooltip("reduces latency by running the engine faster than the tick rate.\nuseful for live playback/jam mode.\n\nwarning: only enable if your buffer size is small (10ms or less).");
@@ -1057,7 +1058,7 @@ void FurnaceGUI::drawSettings() {
         bool forceMonoB=settings.forceMono;
         if (ImGui::Checkbox("Force mono audio",&forceMonoB)) {
           settings.forceMono=forceMonoB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         if (settings.audioEngine==DIV_AUDIO_PORTAUDIO) {
@@ -1065,7 +1066,7 @@ void FurnaceGUI::drawSettings() {
             bool wasapiExB=settings.wasapiEx;
             if (ImGui::Checkbox("Exclusive mode",&wasapiExB)) {
               settings.wasapiEx=wasapiExB;
-              settingsChanged=true;
+              SETTINGS_CHANGED
             }
           }
         }
@@ -1081,18 +1082,18 @@ void FurnaceGUI::drawSettings() {
         ImGui::AlignTextToFramePadding();
         ImGui::Text("Quality");
         ImGui::SameLine();
-        if (ImGui::Combo("##Quality",&settings.audioQuality,audioQualities,2)) settingsChanged=true;
+        if (ImGui::Combo("##Quality",&settings.audioQuality,audioQualities,2)) SETTINGS_CHANGED
         
         bool clampSamplesB=settings.clampSamples;
         if (ImGui::Checkbox("Software clipping",&clampSamplesB)) {
           settings.clampSamples=clampSamplesB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         bool audioHiPassB=settings.audioHiPass;
         if (ImGui::Checkbox("DC offset correction",&audioHiPassB)) {
           settings.audioHiPass=audioHiPassB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         // SUBSECTION METRONOME
@@ -1104,7 +1105,7 @@ void FurnaceGUI::drawSettings() {
           if (settings.metroVol<0) settings.metroVol=0;
           if (settings.metroVol>200) settings.metroVol=200;
           e->setMetronomeVol(((float)settings.metroVol)/100.0f);
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         // SUBSECTION SAMPLE PREVIEW
@@ -1116,7 +1117,7 @@ void FurnaceGUI::drawSettings() {
           if (settings.sampleVol<0) settings.sampleVol=0;
           if (settings.sampleVol>100) settings.sampleVol=100;
           e->setSamplePreviewVol(((float)settings.sampleVol)/100.0f);
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         END_SECTION;
@@ -1133,13 +1134,13 @@ void FurnaceGUI::drawSettings() {
           if (ImGui::Selectable("<disabled>",settings.midiInDevice.empty())) {
             settings.midiInDevice="";
             hasToReloadMidi=true;
-            settingsChanged=true;
+            SETTINGS_CHANGED
           }
           for (String& i: e->getMidiIns()) {
             if (ImGui::Selectable(i.c_str(),i==settings.midiInDevice)) {
               settings.midiInDevice=i;
               hasToReloadMidi=true;
-              settingsChanged=true;
+              SETTINGS_CHANGED
             }
           }
           ImGui::EndCombo();
@@ -1157,71 +1158,71 @@ void FurnaceGUI::drawSettings() {
           midiMap.compile();
         }
 
-        if (ImGui::Checkbox("Note input",&midiMap.noteInput)) settingsChanged=true;
-        if (ImGui::Checkbox("Velocity input",&midiMap.volInput)) settingsChanged=true;
+        if (ImGui::Checkbox("Note input",&midiMap.noteInput)) SETTINGS_CHANGED
+        if (ImGui::Checkbox("Velocity input",&midiMap.volInput)) SETTINGS_CHANGED
         // TODO
         //ImGui::Checkbox("Use raw velocity value (don't map from linear to log)",&midiMap.rawVolume);
         //ImGui::Checkbox("Polyphonic/chord input",&midiMap.polyInput);
         if (ImGui::Checkbox("Map MIDI channels to direct channels",&midiMap.directChannel)) {
           e->setMidiDirect(midiMap.directChannel);
           e->setMidiDirectProgram(midiMap.directChannel && midiMap.directProgram);
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (midiMap.directChannel) {
           if (ImGui::Checkbox("Program change pass-through",&midiMap.directProgram)) {
             e->setMidiDirectProgram(midiMap.directChannel && midiMap.directProgram);
-            settingsChanged=true;
+            SETTINGS_CHANGED
           }
         }
-        if (ImGui::Checkbox("Map Yamaha FM voice data to instruments",&midiMap.yamahaFMResponse)) settingsChanged=true;
+        if (ImGui::Checkbox("Map Yamaha FM voice data to instruments",&midiMap.yamahaFMResponse)) SETTINGS_CHANGED
         if (!(midiMap.directChannel && midiMap.directProgram)) {
-          if (ImGui::Checkbox("Program change is instrument selection",&midiMap.programChange)) settingsChanged=true;
+          if (ImGui::Checkbox("Program change is instrument selection",&midiMap.programChange)) SETTINGS_CHANGED
         }
         //ImGui::Checkbox("Listen to MIDI clock",&midiMap.midiClock);
         //ImGui::Checkbox("Listen to MIDI time code",&midiMap.midiTimeCode);
-        if (ImGui::Combo("Value input style",&midiMap.valueInputStyle,valueInputStyles,7)) settingsChanged=true;
+        if (ImGui::Combo("Value input style",&midiMap.valueInputStyle,valueInputStyles,7)) SETTINGS_CHANGED
         if (midiMap.valueInputStyle>3) {
           if (midiMap.valueInputStyle==6) {
             if (ImGui::InputInt("Control##valueCCS",&midiMap.valueInputControlSingle,1,16)) {
               if (midiMap.valueInputControlSingle<0) midiMap.valueInputControlSingle=0;
               if (midiMap.valueInputControlSingle>127) midiMap.valueInputControlSingle=127;
-              settingsChanged=true;
+              SETTINGS_CHANGED
             }
           } else {
             if (ImGui::InputInt((midiMap.valueInputStyle==4)?"CC of upper nibble##valueCC1":"MSB CC##valueCC1",&midiMap.valueInputControlMSB,1,16)) {
               if (midiMap.valueInputControlMSB<0) midiMap.valueInputControlMSB=0;
               if (midiMap.valueInputControlMSB>127) midiMap.valueInputControlMSB=127;
-              settingsChanged=true;
+              SETTINGS_CHANGED
             }
             if (ImGui::InputInt((midiMap.valueInputStyle==4)?"CC of lower nibble##valueCC2":"LSB CC##valueCC2",&midiMap.valueInputControlLSB,1,16)) {
               if (midiMap.valueInputControlLSB<0) midiMap.valueInputControlLSB=0;
               if (midiMap.valueInputControlLSB>127) midiMap.valueInputControlLSB=127;
-              settingsChanged=true;
+              SETTINGS_CHANGED
             }
           }
         }
         if (ImGui::TreeNode("Per-column control change")) {
           for (int i=0; i<18; i++) {
             ImGui::PushID(i);
-            if (ImGui::Combo(specificControls[i],&midiMap.valueInputSpecificStyle[i],valueSInputStyles,4)) settingsChanged=true;
+            if (ImGui::Combo(specificControls[i],&midiMap.valueInputSpecificStyle[i],valueSInputStyles,4)) SETTINGS_CHANGED
             if (midiMap.valueInputSpecificStyle[i]>0) {
               ImGui::Indent();
               if (midiMap.valueInputSpecificStyle[i]==3) {
                 if (ImGui::InputInt("Control##valueCCS",&midiMap.valueInputSpecificSingle[i],1,16)) {
                   if (midiMap.valueInputSpecificSingle[i]<0) midiMap.valueInputSpecificSingle[i]=0;
                   if (midiMap.valueInputSpecificSingle[i]>127) midiMap.valueInputSpecificSingle[i]=127;
-                  settingsChanged=true;
+                  SETTINGS_CHANGED
                 }
               } else {
                 if (ImGui::InputInt((midiMap.valueInputSpecificStyle[i]==4)?"CC of upper nibble##valueCC1":"MSB CC##valueCC1",&midiMap.valueInputSpecificMSB[i],1,16)) {
                   if (midiMap.valueInputSpecificMSB[i]<0) midiMap.valueInputSpecificMSB[i]=0;
                   if (midiMap.valueInputSpecificMSB[i]>127) midiMap.valueInputSpecificMSB[i]=127;
-                  settingsChanged=true;
+                  SETTINGS_CHANGED
                 }
                 if (ImGui::InputInt((midiMap.valueInputSpecificStyle[i]==4)?"CC of lower nibble##valueCC2":"LSB CC##valueCC2",&midiMap.valueInputSpecificLSB[i],1,16)) {
                   if (midiMap.valueInputSpecificLSB[i]<0) midiMap.valueInputSpecificLSB[i]=0;
                   if (midiMap.valueInputSpecificLSB[i]>127) midiMap.valueInputSpecificLSB[i]=127;
-                  settingsChanged=true;
+                  SETTINGS_CHANGED
                 }
               }
               ImGui::Unindent();
@@ -1234,7 +1235,7 @@ void FurnaceGUI::drawSettings() {
           if (midiMap.volExp<0.01) midiMap.volExp=0.01;
           if (midiMap.volExp>8.0) midiMap.volExp=8.0;
           e->setMidiVolExp(midiMap.volExp);
-          settingsChanged=true;
+          SETTINGS_CHANGED
         } rightClickable
         float curve[128];
         for (int i=0; i<128; i++) {
@@ -1247,13 +1248,13 @@ void FurnaceGUI::drawSettings() {
         ImGui::SameLine();
         if (ImGui::Button(ICON_FA_PLUS "##AddAction")) {
           midiMap.binds.push_back(MIDIBind());
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         ImGui::SameLine();
         if (ImGui::Button(ICON_FA_EXTERNAL_LINK "##AddLearnAction")) {
           midiMap.binds.push_back(MIDIBind());
           learning=midiMap.binds.size()-1;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (learning!=-1) {
           ImGui::SameLine();
@@ -1295,7 +1296,7 @@ void FurnaceGUI::drawSettings() {
               for (int j=8; j<15; j++) {
                 if (ImGui::Selectable(messageTypes[j],bind.type==j)) {
                   bind.type=j;
-                  settingsChanged=true;
+                  SETTINGS_CHANGED
                 }
               }
               ImGui::EndCombo();
@@ -1306,12 +1307,12 @@ void FurnaceGUI::drawSettings() {
             if (ImGui::BeginCombo("##BChannel",messageChannels[bind.channel])) {
               if (ImGui::Selectable(messageChannels[16],bind.channel==16)) {
                 bind.channel=16;
-                settingsChanged=true;
+                SETTINGS_CHANGED
               }
               for (int j=0; j<16; j++) {
                 if (ImGui::Selectable(messageChannels[j],bind.channel==j)) {
                   bind.channel=j;
-                  settingsChanged=true;
+                  SETTINGS_CHANGED
                 }
               }
               ImGui::EndCombo();
@@ -1331,7 +1332,7 @@ void FurnaceGUI::drawSettings() {
             if (ImGui::BeginCombo("##BValue1",bindID)) {
               if (ImGui::Selectable("Any",bind.data1==128)) {
                 bind.data1=128;
-                settingsChanged=true;
+                SETTINGS_CHANGED
               }
               for (int j=0; j<128; j++) {
                 const char* nName="???";
@@ -1341,7 +1342,7 @@ void FurnaceGUI::drawSettings() {
                 snprintf(bindID,1024,"%d (0x%.2X, %s)##BV1_%d",j,j,nName,j);
                 if (ImGui::Selectable(bindID,bind.data1==j)) {
                   bind.data1=j;
-                  settingsChanged=true;
+                  SETTINGS_CHANGED
                 }
               }
               ImGui::EndCombo();
@@ -1357,13 +1358,13 @@ void FurnaceGUI::drawSettings() {
             if (ImGui::BeginCombo("##BValue2",bindID)) {
               if (ImGui::Selectable("Any",bind.data2==128)) {
                 bind.data2=128;
-                settingsChanged=true;
+                SETTINGS_CHANGED
               }
               for (int j=0; j<128; j++) {
                 snprintf(bindID,1024,"%d (0x%.2X)##BV2_%d",j,j,j);
                 if (ImGui::Selectable(bindID,bind.data2==j)) {
                   bind.data2=j;
-                  settingsChanged=true;
+                  SETTINGS_CHANGED
                 }
               }
               ImGui::EndCombo();
@@ -1374,7 +1375,7 @@ void FurnaceGUI::drawSettings() {
             if (ImGui::BeginCombo("##BAction",(bind.action==0)?"--none--":guiActions[bind.action].friendlyName)) {
               if (ImGui::Selectable("--none--",bind.action==0)) {
                 bind.action=0;
-                settingsChanged=true;
+                SETTINGS_CHANGED
               }
               for (int j=0; j<GUI_ACTION_MAX; j++) {
                 if (strcmp(guiActions[j].friendlyName,"")==0) continue;
@@ -1384,7 +1385,7 @@ void FurnaceGUI::drawSettings() {
                   snprintf(bindID,1024,"%s##BA_%d",guiActions[j].friendlyName,j);
                   if (ImGui::Selectable(bindID,bind.action==j)) {
                     bind.action=j;
-                    settingsChanged=true;
+                    SETTINGS_CHANGED
                   }
                 }
               }
@@ -1399,7 +1400,7 @@ void FurnaceGUI::drawSettings() {
               } else {
                 learning=i;
               }
-              settingsChanged=true;
+              SETTINGS_CHANGED
             }
             popToggleColors();
 
@@ -1408,7 +1409,7 @@ void FurnaceGUI::drawSettings() {
               midiMap.binds.erase(midiMap.binds.begin()+i);
               if (learning==(int)i) learning=-1;
               i--;
-              settingsChanged=true;
+              SETTINGS_CHANGED
             }
 
             ImGui::PopID();
@@ -1425,12 +1426,12 @@ void FurnaceGUI::drawSettings() {
         if (ImGui::BeginCombo("##MidiOutDevice",midiOutName.c_str())) {
           if (ImGui::Selectable("<disabled>",settings.midiOutDevice.empty())) {
             settings.midiOutDevice="";
-            settingsChanged=true;
+            SETTINGS_CHANGED
           }
           for (String& i: e->getMidiIns()) {
             if (ImGui::Selectable(i.c_str(),i==settings.midiOutDevice)) {
               settings.midiOutDevice=i;
-              settingsChanged=true;
+              SETTINGS_CHANGED
             }
           }
           ImGui::EndCombo();
@@ -1440,11 +1441,11 @@ void FurnaceGUI::drawSettings() {
         ImGui::Indent();
         if (ImGui::RadioButton("Off (use for TX81Z)",settings.midiOutMode==0)) {
           settings.midiOutMode=0;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Melodic",settings.midiOutMode==1)) {
           settings.midiOutMode=1;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         /*
         if (ImGui::RadioButton("Light Show (use for Launchpad)",settings.midiOutMode==2)) {
@@ -1455,19 +1456,19 @@ void FurnaceGUI::drawSettings() {
         bool midiOutProgramChangeB=settings.midiOutProgramChange;
         if (ImGui::Checkbox("Send Program Change",&midiOutProgramChangeB)) {
           settings.midiOutProgramChange=midiOutProgramChangeB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         bool midiOutClockB=settings.midiOutClock;
         if (ImGui::Checkbox("Send MIDI clock",&midiOutClockB)) {
           settings.midiOutClock=midiOutClockB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         bool midiOutTimeB=settings.midiOutTime;
         if (ImGui::Checkbox("Send MIDI timecode",&midiOutTimeB)) {
           settings.midiOutTime=midiOutTimeB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         if (settings.midiOutTime) {
@@ -1475,23 +1476,23 @@ void FurnaceGUI::drawSettings() {
           ImGui::Indent();
           if (ImGui::RadioButton("Closest to Tick Rate",settings.midiOutTimeRate==0)) {
             settings.midiOutTimeRate=0;
-            settingsChanged=true;
+            SETTINGS_CHANGED
           }
           if (ImGui::RadioButton("Film (24fps)",settings.midiOutTimeRate==1)) {
             settings.midiOutTimeRate=1;
-            settingsChanged=true;
+            SETTINGS_CHANGED
           }
           if (ImGui::RadioButton("PAL (25fps)",settings.midiOutTimeRate==2)) {
             settings.midiOutTimeRate=2;
-            settingsChanged=true;
+            SETTINGS_CHANGED
           }
           if (ImGui::RadioButton("NTSC drop (29.97fps)",settings.midiOutTimeRate==3)) {
             settings.midiOutTimeRate=3;
-            settingsChanged=true;
+            SETTINGS_CHANGED
           }
           if (ImGui::RadioButton("NTSC non-drop (30fps)",settings.midiOutTimeRate==4)) {
             settings.midiOutTimeRate=4;
-            settingsChanged=true;
+            SETTINGS_CHANGED
           }
           ImGui::Unindent();
         }
@@ -1525,10 +1526,10 @@ void FurnaceGUI::drawSettings() {
           ImGui::Text("YM2151");
           ImGui::TableNextColumn();
           ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-          if (ImGui::Combo("##ArcadeCore",&settings.arcadeCore,arcadeCores,2)) settingsChanged=true;
+          if (ImGui::Combo("##ArcadeCore",&settings.arcadeCore,arcadeCores,2)) SETTINGS_CHANGED
           ImGui::TableNextColumn();
           ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-          if (ImGui::Combo("##ArcadeCoreRender",&settings.arcadeCoreRender,arcadeCores,2)) settingsChanged=true;
+          if (ImGui::Combo("##ArcadeCoreRender",&settings.arcadeCoreRender,arcadeCores,2)) SETTINGS_CHANGED
 
           ImGui::TableNextRow();
           ImGui::TableNextColumn();
@@ -1536,10 +1537,10 @@ void FurnaceGUI::drawSettings() {
           ImGui::Text("YM2612");
           ImGui::TableNextColumn();
           ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-          if (ImGui::Combo("##YM2612Core",&settings.ym2612Core,ym2612Cores,2)) settingsChanged=true;
+          if (ImGui::Combo("##YM2612Core",&settings.ym2612Core,ym2612Cores,2)) SETTINGS_CHANGED
           ImGui::TableNextColumn();
           ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-          if (ImGui::Combo("##YM2612CoreRender",&settings.ym2612CoreRender,ym2612Cores,2)) settingsChanged=true;
+          if (ImGui::Combo("##YM2612CoreRender",&settings.ym2612CoreRender,ym2612Cores,2)) SETTINGS_CHANGED
 
           ImGui::TableNextRow();
           ImGui::TableNextColumn();
@@ -1547,10 +1548,10 @@ void FurnaceGUI::drawSettings() {
           ImGui::Text("SN76489");
           ImGui::TableNextColumn();
           ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-          if (ImGui::Combo("##SNCore",&settings.snCore,snCores,2)) settingsChanged=true;
+          if (ImGui::Combo("##SNCore",&settings.snCore,snCores,2)) SETTINGS_CHANGED
           ImGui::TableNextColumn();
           ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-          if (ImGui::Combo("##SNCoreRender",&settings.snCoreRender,snCores,2)) settingsChanged=true;
+          if (ImGui::Combo("##SNCoreRender",&settings.snCoreRender,snCores,2)) SETTINGS_CHANGED
 
           ImGui::TableNextRow();
           ImGui::TableNextColumn();
@@ -1558,10 +1559,10 @@ void FurnaceGUI::drawSettings() {
           ImGui::Text("NES");
           ImGui::TableNextColumn();
           ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-          if (ImGui::Combo("##NESCore",&settings.nesCore,nesCores,2)) settingsChanged=true;
+          if (ImGui::Combo("##NESCore",&settings.nesCore,nesCores,2)) SETTINGS_CHANGED
           ImGui::TableNextColumn();
           ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-          if (ImGui::Combo("##NESCoreRender",&settings.nesCoreRender,nesCores,2)) settingsChanged=true;
+          if (ImGui::Combo("##NESCoreRender",&settings.nesCoreRender,nesCores,2)) SETTINGS_CHANGED
 
           ImGui::TableNextRow();
           ImGui::TableNextColumn();
@@ -1569,10 +1570,10 @@ void FurnaceGUI::drawSettings() {
           ImGui::Text("FDS");
           ImGui::TableNextColumn();
           ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-          if (ImGui::Combo("##FDSCore",&settings.fdsCore,nesCores,2)) settingsChanged=true;
+          if (ImGui::Combo("##FDSCore",&settings.fdsCore,nesCores,2)) SETTINGS_CHANGED
           ImGui::TableNextColumn();
           ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-          if (ImGui::Combo("##FDSCoreRender",&settings.fdsCoreRender,nesCores,2)) settingsChanged=true;
+          if (ImGui::Combo("##FDSCoreRender",&settings.fdsCoreRender,nesCores,2)) SETTINGS_CHANGED
 
           ImGui::TableNextRow();
           ImGui::TableNextColumn();
@@ -1580,10 +1581,10 @@ void FurnaceGUI::drawSettings() {
           ImGui::Text("SID");
           ImGui::TableNextColumn();
           ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-          if (ImGui::Combo("##C64Core",&settings.c64Core,c64Cores,3)) settingsChanged=true;
+          if (ImGui::Combo("##C64Core",&settings.c64Core,c64Cores,3)) SETTINGS_CHANGED
           ImGui::TableNextColumn();
           ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-          if (ImGui::Combo("##C64CoreRender",&settings.c64CoreRender,c64Cores,3)) settingsChanged=true;
+          if (ImGui::Combo("##C64CoreRender",&settings.c64CoreRender,c64Cores,3)) SETTINGS_CHANGED
 
           ImGui::TableNextRow();
           ImGui::TableNextColumn();
@@ -1591,10 +1592,10 @@ void FurnaceGUI::drawSettings() {
           ImGui::Text("POKEY");
           ImGui::TableNextColumn();
           ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-          if (ImGui::Combo("##POKEYCore",&settings.pokeyCore,pokeyCores,2)) settingsChanged=true;
+          if (ImGui::Combo("##POKEYCore",&settings.pokeyCore,pokeyCores,2)) SETTINGS_CHANGED
           ImGui::TableNextColumn();
           ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-          if (ImGui::Combo("##POKEYCoreRender",&settings.pokeyCoreRender,pokeyCores,2)) settingsChanged=true;
+          if (ImGui::Combo("##POKEYCoreRender",&settings.pokeyCoreRender,pokeyCores,2)) SETTINGS_CHANGED
 
           ImGui::TableNextRow();
           ImGui::TableNextColumn();
@@ -1602,10 +1603,10 @@ void FurnaceGUI::drawSettings() {
           ImGui::Text("OPN/OPNA/OPNB");
           ImGui::TableNextColumn();
           ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-          if (ImGui::Combo("##OPNCore",&settings.opnCore,opnCores,2)) settingsChanged=true;
+          if (ImGui::Combo("##OPNCore",&settings.opnCore,opnCores,2)) SETTINGS_CHANGED
           ImGui::TableNextColumn();
           ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-          if (ImGui::Combo("##OPNCoreRender",&settings.opnCoreRender,opnCores,2)) settingsChanged=true;
+          if (ImGui::Combo("##OPNCoreRender",&settings.opnCoreRender,opnCores,2)) SETTINGS_CHANGED
 
           ImGui::TableNextRow();
           ImGui::TableNextColumn();
@@ -1613,10 +1614,10 @@ void FurnaceGUI::drawSettings() {
           ImGui::Text("OPL/OPL2/Y8950");
           ImGui::TableNextColumn();
           ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-          if (ImGui::Combo("##OPL2Core",&settings.opl2Core,opl2Cores,3)) settingsChanged=true;
+          if (ImGui::Combo("##OPL2Core",&settings.opl2Core,opl2Cores,3)) SETTINGS_CHANGED
           ImGui::TableNextColumn();
           ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-          if (ImGui::Combo("##OPL2CoreRender",&settings.opl2CoreRender,opl2Cores,3)) settingsChanged=true;
+          if (ImGui::Combo("##OPL2CoreRender",&settings.opl2CoreRender,opl2Cores,3)) SETTINGS_CHANGED
 
           ImGui::TableNextRow();
           ImGui::TableNextColumn();
@@ -1624,10 +1625,10 @@ void FurnaceGUI::drawSettings() {
           ImGui::Text("OPL3");
           ImGui::TableNextColumn();
           ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-          if (ImGui::Combo("##OPL3Core",&settings.opl3Core,opl3Cores,3)) settingsChanged=true;
+          if (ImGui::Combo("##OPL3Core",&settings.opl3Core,opl3Cores,3)) SETTINGS_CHANGED
           ImGui::TableNextColumn();
           ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-          if (ImGui::Combo("##OPL3CoreRender",&settings.opl3CoreRender,opl3Cores,3)) settingsChanged=true;
+          if (ImGui::Combo("##OPL3CoreRender",&settings.opl3CoreRender,opl3Cores,3)) SETTINGS_CHANGED
 
           ImGui::EndTable();
         }
@@ -1636,7 +1637,7 @@ void FurnaceGUI::drawSettings() {
         ImGui::AlignTextToFramePadding();
         ImGui::Text("PC Speaker strategy");
         ImGui::SameLine();
-        if (ImGui::Combo("##PCSOutMethod",&settings.pcSpeakerOutMethod,pcspkrOutMethods,5)) settingsChanged=true;
+        if (ImGui::Combo("##PCSOutMethod",&settings.pcSpeakerOutMethod,pcspkrOutMethods,5)) SETTINGS_CHANGED
 
         /*
         ImGui::Separator();
@@ -1827,14 +1828,14 @@ void FurnaceGUI::drawSettings() {
                   if (i.val<0) i.val=0;
                   if (i.val>96) i.val=96;
                   noteKeys[i.scan]=i.val;
-                  settingsChanged=true;
+                  SETTINGS_CHANGED
                 }
               }
               ImGui::TableNextColumn();
               snprintf(id,4095,ICON_FA_TIMES "##SNRemove_%d",i.scan);
               if (ImGui::Button(id)) {
                 noteKeys.erase(i.scan);
-                settingsChanged=true;
+                SETTINGS_CHANGED
               }
             }
             ImGui::EndTable();
@@ -1847,7 +1848,7 @@ void FurnaceGUI::drawSettings() {
                 snprintf(id,4095,"%s##SNNewKey_%d",sName,i);
                 if (ImGui::Selectable(id)) {
                   noteKeys[(SDL_Scancode)i]=0;
-                  settingsChanged=true;
+                  SETTINGS_CHANGED
                 }
               }
               ImGui::EndCombo();
@@ -2075,14 +2076,14 @@ void FurnaceGUI::drawSettings() {
         bool allowEditDockingB=settings.allowEditDocking;
         if (ImGui::Checkbox("Allow docking editors",&allowEditDockingB)) {
           settings.allowEditDocking=allowEditDockingB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
 #ifndef IS_MOBILE
           bool saveWindowPosB=settings.saveWindowPos;
           if (ImGui::Checkbox("Remember window position",&saveWindowPosB)) {
             settings.saveWindowPos=saveWindowPosB;
-            settingsChanged=true;
+            SETTINGS_CHANGED
           }
           if (ImGui::IsItemHovered()) {
             ImGui::SetTooltip("remembers the window's last position on start-up.");
@@ -2093,32 +2094,32 @@ void FurnaceGUI::drawSettings() {
         if (ImGui::Checkbox("Only allow window movement when clicking on title bar",&moveWindowTitleB)) {
           settings.moveWindowTitle=moveWindowTitleB;
           applyUISettings(false);
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         bool centerPopupB=settings.centerPopup;
         if (ImGui::Checkbox("Center pop-up windows",&centerPopupB)) {
           settings.centerPopup=centerPopupB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         ImGui::Text("Play/edit controls layout:");
         ImGui::Indent();
         if (ImGui::RadioButton("Classic##ecl0",settings.controlLayout==0)) {
           settings.controlLayout=0;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Compact##ecl1",settings.controlLayout==1)) {
           settings.controlLayout=1;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Compact (vertical)##ecl2",settings.controlLayout==2)) {
           settings.controlLayout=2;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Split##ecl3",settings.controlLayout==3)) {
           settings.controlLayout=3;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         ImGui::Unindent();
 
@@ -2126,15 +2127,15 @@ void FurnaceGUI::drawSettings() {
         ImGui::Indent();
         if (ImGui::RadioButton("Top##obp0",settings.orderButtonPos==0)) {
           settings.orderButtonPos=0;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Left##obp1",settings.orderButtonPos==1)) {
           settings.orderButtonPos=1;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Right##obp2",settings.orderButtonPos==2)) {
           settings.orderButtonPos=2;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         ImGui::Unindent();
 
@@ -2146,38 +2147,38 @@ void FurnaceGUI::drawSettings() {
           if (settings.doubleClickTime>1.0) settings.doubleClickTime=1.0;
 
           applyUISettings(false);
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         bool avoidRaisingPatternB=settings.avoidRaisingPattern;
         if (ImGui::Checkbox("Don't raise pattern editor on click",&avoidRaisingPatternB)) {
           settings.avoidRaisingPattern=avoidRaisingPatternB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         bool insFocusesPatternB=settings.insFocusesPattern;
         if (ImGui::Checkbox("Focus pattern editor when selecting instrument",&insFocusesPatternB)) {
           settings.insFocusesPattern=insFocusesPatternB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         ImGui::Text("Note preview behavior:");
         ImGui::Indent();
         if (ImGui::RadioButton("Never##npb0",settings.notePreviewBehavior==0)) {
           settings.notePreviewBehavior=0;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("When cursor is in Note column##npb1",settings.notePreviewBehavior==1)) {
           settings.notePreviewBehavior=1;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("When cursor is in Note column or not in edit mode##npb2",settings.notePreviewBehavior==2)) {
           settings.notePreviewBehavior=2;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Always##npb3",settings.notePreviewBehavior==3)) {
           settings.notePreviewBehavior=3;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         ImGui::Unindent();
 
@@ -2185,15 +2186,15 @@ void FurnaceGUI::drawSettings() {
         ImGui::Indent();
         if (ImGui::RadioButton("No##dms0",settings.dragMovesSelection==0)) {
           settings.dragMovesSelection=0;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Yes##dms1",settings.dragMovesSelection==1)) {
           settings.dragMovesSelection=1;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Yes (while holding Ctrl only)##dms2",settings.dragMovesSelection==2)) {
           settings.dragMovesSelection=2;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         ImGui::Unindent();
 
@@ -2201,22 +2202,22 @@ void FurnaceGUI::drawSettings() {
         ImGui::Indent();
         if (ImGui::RadioButton("Right-click or double-click##soloA",settings.soloAction==0)) {
           settings.soloAction=0;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Right-click##soloR",settings.soloAction==1)) {
           settings.soloAction=1;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Double-click##soloD",settings.soloAction==2)) {
           settings.soloAction=2;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         ImGui::Unindent();
 
         bool doubleClickColumnB=settings.doubleClickColumn;
         if (ImGui::Checkbox("Double click selects entire column",&doubleClickColumnB)) {
           settings.doubleClickColumn=doubleClickColumnB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         // SUBSECTION CURSOR BEHAVIOR
@@ -2224,59 +2225,59 @@ void FurnaceGUI::drawSettings() {
         bool insertBehaviorB=settings.insertBehavior;
         if (ImGui::Checkbox("Insert pushes entire channel row",&insertBehaviorB)) {
           settings.insertBehavior=insertBehaviorB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         bool pullDeleteRowB=settings.pullDeleteRow;
         if (ImGui::Checkbox("Pull delete affects entire channel row",&pullDeleteRowB)) {
           settings.pullDeleteRow=pullDeleteRowB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         bool pushNibbleB=settings.pushNibble;
         if (ImGui::Checkbox("Push value when overwriting instead of clearing it",&pushNibbleB)) {
           settings.pushNibble=pushNibbleB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         ImGui::Text("Effect input behavior:");
         ImGui::Indent();
         if (ImGui::RadioButton("Move down##eicb0",settings.effectCursorDir==0)) {
           settings.effectCursorDir=0;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Move to effect value (otherwise move down)##eicb1",settings.effectCursorDir==1)) {
           settings.effectCursorDir=1;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Move to effect value/next effect and wrap around##eicb2",settings.effectCursorDir==2)) {
           settings.effectCursorDir=2;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         ImGui::Unindent();
 
         bool effectDeletionAltersValueB=settings.effectDeletionAltersValue;
         if (ImGui::Checkbox("Delete effect value when deleting effect",&effectDeletionAltersValueB)) {
           settings.effectDeletionAltersValue=effectDeletionAltersValueB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         bool absorbInsInputB=settings.absorbInsInput;
         if (ImGui::Checkbox("Change current instrument when changing instrument column (absorb)",&absorbInsInputB)) {
           settings.absorbInsInput=absorbInsInputB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         bool removeInsOffB=settings.removeInsOff;
         if (ImGui::Checkbox("Remove instrument value when inserting note off/release",&removeInsOffB)) {
           settings.removeInsOff=removeInsOffB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         bool removeVolOffB=settings.removeVolOff;
         if (ImGui::Checkbox("Remove volume value when inserting note off/release",&removeVolOffB)) {
           settings.removeVolOff=removeVolOffB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         // SUBSECTION CURSOR MOVEMENT
@@ -2286,15 +2287,15 @@ void FurnaceGUI::drawSettings() {
         ImGui::Indent();
         if (ImGui::RadioButton("No##wrapH0",settings.wrapHorizontal==0)) {
           settings.wrapHorizontal=0;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Yes##wrapH1",settings.wrapHorizontal==1)) {
           settings.wrapHorizontal=1;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Yes, and move to next/prev row##wrapH2",settings.wrapHorizontal==2)) {
           settings.wrapHorizontal=2;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         ImGui::Unindent();
 
@@ -2302,19 +2303,19 @@ void FurnaceGUI::drawSettings() {
         ImGui::Indent();
         if (ImGui::RadioButton("No##wrapV0",settings.wrapVertical==0)) {
           settings.wrapVertical=0;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Yes##wrapV1",settings.wrapVertical==1)) {
           settings.wrapVertical=1;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Yes, and move to next/prev pattern##wrapV2",settings.wrapVertical==2)) {
           settings.wrapVertical=2;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Yes, and move to next/prev pattern (wrap around)##wrapV2",settings.wrapVertical==3)) {
           settings.wrapVertical=3;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         ImGui::Unindent();
 
@@ -2322,36 +2323,36 @@ void FurnaceGUI::drawSettings() {
         ImGui::Indent();
         if (ImGui::RadioButton("Move by one##cmk0",settings.scrollStep==0)) {
           settings.scrollStep=0;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Move by Edit Step##cmk1",settings.scrollStep==1)) {
           settings.scrollStep=1;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         ImGui::Unindent();
 
         bool stepOnDeleteB=settings.stepOnDelete;
         if (ImGui::Checkbox("Move cursor by edit step on delete",&stepOnDeleteB)) {
           settings.stepOnDelete=stepOnDeleteB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         bool stepOnInsertB=settings.stepOnInsert;
         if (ImGui::Checkbox("Move cursor by edit step on insert (push)",&stepOnInsertB)) {
           settings.stepOnInsert=stepOnInsertB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         bool pullDeleteBehaviorB=settings.pullDeleteBehavior;
         if (ImGui::Checkbox("Move cursor up on backspace-delete",&pullDeleteBehaviorB)) {
           settings.pullDeleteBehavior=pullDeleteBehaviorB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         bool cursorPastePosB=settings.cursorPastePos;
         if (ImGui::Checkbox("Move cursor to end of clipboard content when pasting",&cursorPastePosB)) {
           settings.cursorPastePos=cursorPastePosB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         // SUBSECTION SCROLLING
@@ -2361,22 +2362,22 @@ void FurnaceGUI::drawSettings() {
         ImGui::Indent();
         if (ImGui::RadioButton("No##pscroll0",settings.scrollChangesOrder==0)) {
           settings.scrollChangesOrder=0;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Yes##pscroll1",settings.scrollChangesOrder==1)) {
           settings.scrollChangesOrder=1;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Yes, and wrap around song##pscroll2",settings.scrollChangesOrder==2)) {
           settings.scrollChangesOrder=2;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         ImGui::Unindent();
 
         bool cursorFollowsOrderB=settings.cursorFollowsOrder;
         if (ImGui::Checkbox("Cursor follows current order when moving it",&cursorFollowsOrderB)) {
           settings.cursorFollowsOrder=cursorFollowsOrderB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::IsItemHovered()) {
           ImGui::SetTooltip("applies when playback is stopped.");
@@ -2385,22 +2386,22 @@ void FurnaceGUI::drawSettings() {
         bool cursorMoveNoScrollB=settings.cursorMoveNoScroll;
         if (ImGui::Checkbox("Don't scroll when moving cursor",&cursorMoveNoScrollB)) {
           settings.cursorMoveNoScroll=cursorMoveNoScrollB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         ImGui::Text("Move cursor with scroll wheel:");
         ImGui::Indent();
         if (ImGui::RadioButton("No##csw0",settings.cursorFollowsWheel==0)) {
           settings.cursorFollowsWheel=0;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Yes##csw1",settings.cursorFollowsWheel==1)) {
           settings.cursorFollowsWheel=1;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Inverted##csw2",settings.cursorFollowsWheel==2)) {
           settings.cursorFollowsWheel=2;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         ImGui::Unindent();
 
@@ -2410,13 +2411,13 @@ void FurnaceGUI::drawSettings() {
         bool insTypeMenuB=settings.insTypeMenu;
         if (ImGui::Checkbox("Display instrument type menu when adding instrument",&insTypeMenuB)) {
           settings.insTypeMenu=insTypeMenuB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         bool selectAssetOnLoadB=settings.selectAssetOnLoad;
         if (ImGui::Checkbox("Select asset after opening one",&selectAssetOnLoadB)) {
           settings.selectAssetOnLoad=selectAssetOnLoadB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         END_SECTION;
@@ -2431,20 +2432,20 @@ void FurnaceGUI::drawSettings() {
           } else {
             settings.dpiScale=1.0f;
           }
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (!dpiScaleAuto) {
           if (ImGui::SliderFloat("UI scaling factor",&settings.dpiScale,1.0f,3.0f,"%.2fx")) {
             if (settings.dpiScale<0.5f) settings.dpiScale=0.5f;
             if (settings.dpiScale>3.0f) settings.dpiScale=3.0f;
-            settingsChanged=true;
+            SETTINGS_CHANGED
           } rightClickable
         }
 
         if (ImGui::InputInt("Icon size",&settings.iconSize,1,3)) {
           if (settings.iconSize<3) settings.iconSize=3;
           if (settings.iconSize>48) settings.iconSize=48;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         // SUBSECTION TEXT
@@ -2458,7 +2459,7 @@ void FurnaceGUI::drawSettings() {
           ImGui::AlignTextToFramePadding();
           ImGui::Text("Font renderer");
           ImGui::TableNextColumn();
-          if (ImGui::Combo("##FontBack",&settings.fontBackend,fontBackends,2)) settingsChanged=true;
+          if (ImGui::Combo("##FontBack",&settings.fontBackend,fontBackends,2)) SETTINGS_CHANGED
 #else
           settings.fontBackend=0;
 #endif
@@ -2468,57 +2469,57 @@ void FurnaceGUI::drawSettings() {
           ImGui::AlignTextToFramePadding();
           ImGui::Text("Main font");
           ImGui::TableNextColumn();
-          if (ImGui::Combo("##MainFont",&settings.mainFont,mainFonts,7)) settingsChanged=true;
+          if (ImGui::Combo("##MainFont",&settings.mainFont,mainFonts,7)) SETTINGS_CHANGED
           if (settings.mainFont==6) {
             ImGui::InputText("##MainFontPath",&settings.mainFontPath);
             ImGui::SameLine();
             if (ImGui::Button(ICON_FA_FOLDER "##MainFontLoad")) {
               openFileDialog(GUI_FILE_LOAD_MAIN_FONT);
-              settingsChanged=true;
+              SETTINGS_CHANGED
             }
           }
           if (ImGui::InputInt("Size##MainFontSize",&settings.mainFontSize,1,3)) {
             if (settings.mainFontSize<3) settings.mainFontSize=3;
             if (settings.mainFontSize>96) settings.mainFontSize=96;
-            settingsChanged=true;
+            SETTINGS_CHANGED
           }
           ImGui::TableNextRow();
           ImGui::TableNextColumn();
           ImGui::AlignTextToFramePadding();
           ImGui::Text("Header font");
           ImGui::TableNextColumn();
-          if (ImGui::Combo("##HeadFont",&settings.headFont,headFonts,7)) settingsChanged=true;
+          if (ImGui::Combo("##HeadFont",&settings.headFont,headFonts,7)) SETTINGS_CHANGED
           if (settings.headFont==6) {
             ImGui::InputText("##HeadFontPath",&settings.headFontPath);
             ImGui::SameLine();
             if (ImGui::Button(ICON_FA_FOLDER "##HeadFontLoad")) {
               openFileDialog(GUI_FILE_LOAD_HEAD_FONT);
-              settingsChanged=true;
+              SETTINGS_CHANGED
             }
           }
           if (ImGui::InputInt("Size##HeadFontSize",&settings.headFontSize,1,3)) {
             if (settings.headFontSize<3) settings.headFontSize=3;
             if (settings.headFontSize>96) settings.headFontSize=96;
-            settingsChanged=true;
+            SETTINGS_CHANGED
           }
           ImGui::TableNextRow();
           ImGui::TableNextColumn();
           ImGui::AlignTextToFramePadding();
           ImGui::Text("Pattern font");
           ImGui::TableNextColumn();
-          if (ImGui::Combo("##PatFont",&settings.patFont,patFonts,7)) settingsChanged=true;
+          if (ImGui::Combo("##PatFont",&settings.patFont,patFonts,7)) SETTINGS_CHANGED
           if (settings.patFont==6) {
             ImGui::InputText("##PatFontPath",&settings.patFontPath);
             ImGui::SameLine();
             if (ImGui::Button(ICON_FA_FOLDER "##PatFontLoad")) {
               openFileDialog(GUI_FILE_LOAD_PAT_FONT);
-              settingsChanged=true;
+              SETTINGS_CHANGED
             }
           }
           if (ImGui::InputInt("Size##PatFontSize",&settings.patFontSize,1,3)) {
             if (settings.patFontSize<3) settings.patFontSize=3;
             if (settings.patFontSize>96) settings.patFontSize=96;
-            settingsChanged=true;
+            SETTINGS_CHANGED
           }
           ImGui::EndTable();
         }
@@ -2527,32 +2528,32 @@ void FurnaceGUI::drawSettings() {
           bool fontAntiAliasB=settings.fontAntiAlias;
           if (ImGui::Checkbox("Anti-aliased fonts",&fontAntiAliasB)) {
             settings.fontAntiAlias=fontAntiAliasB;
-            settingsChanged=true;
+            SETTINGS_CHANGED
           }
 
           bool fontBitmapB=settings.fontBitmap;
           if (ImGui::Checkbox("Support bitmap fonts",&fontBitmapB)) {
             settings.fontBitmap=fontBitmapB;
-            settingsChanged=true;
+            SETTINGS_CHANGED
           }
 
           ImGui::Text("Hinting:");
           ImGui::Indent();
           if (ImGui::RadioButton("Off (soft)##fh0",settings.fontHinting==0)) {
             settings.fontHinting=0;
-            settingsChanged=true;
+            SETTINGS_CHANGED
           }
           if (ImGui::RadioButton("Slight##fh1",settings.fontHinting==1)) {
             settings.fontHinting=1;
-            settingsChanged=true;
+            SETTINGS_CHANGED
           }
           if (ImGui::RadioButton("Normal##fh2",settings.fontHinting==2)) {
             settings.fontHinting=2;
-            settingsChanged=true;
+            SETTINGS_CHANGED
           }
           if (ImGui::RadioButton("Full (hard)##fh3",settings.fontHinting==3)) {
             settings.fontHinting=3;
-            settingsChanged=true;
+            SETTINGS_CHANGED
           }
           ImGui::Unindent();
 
@@ -2560,15 +2561,15 @@ void FurnaceGUI::drawSettings() {
           ImGui::Indent();
           if (ImGui::RadioButton("Disable##fah0",settings.fontAutoHint==0)) {
             settings.fontAutoHint=0;
-            settingsChanged=true;
+            SETTINGS_CHANGED
           }
           if (ImGui::RadioButton("Enable##fah1",settings.fontAutoHint==1)) {
             settings.fontAutoHint=1;
-            settingsChanged=true;
+            SETTINGS_CHANGED
           }
           if (ImGui::RadioButton("Force##fah2",settings.fontAutoHint==2)) {
             settings.fontAutoHint=2;
-            settingsChanged=true;
+            SETTINGS_CHANGED
           }
           ImGui::Unindent();
         }
@@ -2576,7 +2577,7 @@ void FurnaceGUI::drawSettings() {
         bool loadJapaneseB=settings.loadJapanese;
         if (ImGui::Checkbox("Display Japanese characters",&loadJapaneseB)) {
           settings.loadJapanese=loadJapaneseB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::IsItemHovered()) {
           ImGui::SetTooltip(
@@ -2590,7 +2591,7 @@ void FurnaceGUI::drawSettings() {
         bool loadChineseB=settings.loadChinese;
         if (ImGui::Checkbox("Display Chinese (Simplified) characters",&loadChineseB)) {
           settings.loadChinese=loadChineseB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::IsItemHovered()) {
           ImGui::SetTooltip(
@@ -2604,7 +2605,7 @@ void FurnaceGUI::drawSettings() {
         bool loadChineseTraditionalB=settings.loadChineseTraditional;
         if (ImGui::Checkbox("Display Chinese (Traditional) characters",&loadChineseTraditionalB)) {
           settings.loadChineseTraditional=loadChineseTraditionalB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::IsItemHovered()) {
           ImGui::SetTooltip(
@@ -2618,7 +2619,7 @@ void FurnaceGUI::drawSettings() {
         bool loadKoreanB=settings.loadKorean;
         if (ImGui::Checkbox("Display Korean characters",&loadKoreanB)) {
           settings.loadKorean=loadKoreanB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::IsItemHovered()) {
           ImGui::SetTooltip(
@@ -2636,22 +2637,22 @@ void FurnaceGUI::drawSettings() {
         if (ImGui::RadioButton("Furnace##tbar0",settings.titleBarInfo==0)) {
           settings.titleBarInfo=0;
           updateWindowTitle();
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Song Name - Furnace##tbar1",settings.titleBarInfo==1)) {
           settings.titleBarInfo=1;
           updateWindowTitle();
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("file_name.fur - Furnace##tbar2",settings.titleBarInfo==2)) {
           settings.titleBarInfo=2;
           updateWindowTitle();
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("/path/to/file.fur - Furnace##tbar3",settings.titleBarInfo==3)) {
           settings.titleBarInfo=3;
           updateWindowTitle();
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         ImGui::Unindent();
 
@@ -2659,68 +2660,68 @@ void FurnaceGUI::drawSettings() {
         if (ImGui::Checkbox("Display system name on title bar",&titleBarSysB)) {
           settings.titleBarSys=titleBarSysB;
           updateWindowTitle();
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         bool noMultiSystemB=settings.noMultiSystem;
         if (ImGui::Checkbox("Display chip names instead of \"multi-system\" in title bar",&noMultiSystemB)) {
           settings.noMultiSystem=noMultiSystemB;
           updateWindowTitle();
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         ImGui::Text("Status bar:");
         ImGui::Indent();
         if (ImGui::RadioButton("Cursor details##sbar0",settings.statusDisplay==0)) {
           settings.statusDisplay=0;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("File path##sbar1",settings.statusDisplay==1)) {
           settings.statusDisplay=1;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Cursor details or file path##sbar2",settings.statusDisplay==2)) {
           settings.statusDisplay=2;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Nothing##sbar3",settings.statusDisplay==3)) {
           settings.statusDisplay=3;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         ImGui::Unindent();
 
         bool playbackTimeB=settings.playbackTime;
         if (ImGui::Checkbox("Display playback status when playing",&playbackTimeB)) {
           settings.playbackTime=playbackTimeB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         ImGui::Text("Export options layout:");
         ImGui::Indent();
         if (ImGui::RadioButton("Sub-menus in File menu##eol0",settings.exportOptionsLayout==0)) {
           settings.exportOptionsLayout=0;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Modal window with tabs##eol1",settings.exportOptionsLayout==1)) {
           settings.exportOptionsLayout=1;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Modal windows with options in File menu##eol2",settings.exportOptionsLayout==2)) {
           settings.exportOptionsLayout=2;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         ImGui::Unindent();
 
         bool capitalMenuBarB=settings.capitalMenuBar;
         if (ImGui::Checkbox("Capitalize menu bar",&capitalMenuBarB)) {
           settings.capitalMenuBar=capitalMenuBarB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         bool classicChipOptionsB=settings.classicChipOptions;
         if (ImGui::Checkbox("Display add/configure/change/remove chip menus in File menu",&classicChipOptionsB)) {
           settings.classicChipOptions=classicChipOptionsB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         // SUBSECTION ORDERS
@@ -2734,18 +2735,18 @@ void FurnaceGUI::drawSettings() {
         bool ordersCursorB=settings.ordersCursor;
         if (ImGui::Checkbox("Highlight channel at cursor in Orders",&ordersCursorB)) {
           settings.ordersCursor=ordersCursorB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         ImGui::Text("Orders row number format:");
         ImGui::Indent();
         if (ImGui::RadioButton("Decimal##orbD",settings.orderRowsBase==0)) {
           settings.orderRowsBase=0;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Hexadecimal##orbH",settings.orderRowsBase==1)) {
           settings.orderRowsBase=1;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         ImGui::Unindent();
 
@@ -2754,56 +2755,56 @@ void FurnaceGUI::drawSettings() {
         bool centerPatternB=settings.centerPattern;
         if (ImGui::Checkbox("Center pattern view",&centerPatternB)) {
           settings.centerPattern=centerPatternB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         bool overflowHighlightB=settings.overflowHighlight;
         if (ImGui::Checkbox("Overflow pattern highlights",&overflowHighlightB)) {
           settings.overflowHighlight=overflowHighlightB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         bool viewPrevPatternB=settings.viewPrevPattern;
         if (ImGui::Checkbox("Display previous/next pattern",&viewPrevPatternB)) {
           settings.viewPrevPattern=viewPrevPatternB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         ImGui::Text("Pattern row number format:");
         ImGui::Indent();
         if (ImGui::RadioButton("Decimal##prbD",settings.patRowsBase==0)) {
           settings.patRowsBase=0;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Hexadecimal##prbH",settings.patRowsBase==1)) {
           settings.patRowsBase=1;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         ImGui::Unindent();
 
         ImGui::Text("Pattern view labels:");
         ImGui::PushFont(patFont);
-        if (ImGui::InputTextWithHint("##PVLOff","OFF",&settings.noteOffLabel)) settingsChanged=true;
+        if (ImGui::InputTextWithHint("##PVLOff","OFF",&settings.noteOffLabel)) SETTINGS_CHANGED
         ImGui::PopFont();
         ImGui::SameLine();
         ImGui::Text("Note off (3-char)");
         ImGui::PushFont(patFont);
-        if (ImGui::InputTextWithHint("##PVLRel","===",&settings.noteRelLabel)) settingsChanged=true;
+        if (ImGui::InputTextWithHint("##PVLRel","===",&settings.noteRelLabel)) SETTINGS_CHANGED
         ImGui::PopFont();
         ImGui::SameLine();
         ImGui::Text("Note release (3-char)");
         ImGui::PushFont(patFont);
-        if (ImGui::InputTextWithHint("##PVLMacroRel","REL",&settings.macroRelLabel)) settingsChanged=true;
+        if (ImGui::InputTextWithHint("##PVLMacroRel","REL",&settings.macroRelLabel)) SETTINGS_CHANGED
         ImGui::PopFont();
         ImGui::SameLine();
         ImGui::Text("Macro release (3-char)");
         ImGui::PushFont(patFont);
-        if (ImGui::InputTextWithHint("##PVLE3","...",&settings.emptyLabel)) settingsChanged=true;
+        if (ImGui::InputTextWithHint("##PVLE3","...",&settings.emptyLabel)) SETTINGS_CHANGED
         ImGui::PopFont();
         ImGui::SameLine();
         ImGui::Text("Empty field (3-char)");
         ImGui::PushFont(patFont);
-        if (ImGui::InputTextWithHint("##PVLE2","..",&settings.emptyLabel2)) settingsChanged=true;
+        if (ImGui::InputTextWithHint("##PVLE2","..",&settings.emptyLabel2)) SETTINGS_CHANGED
         ImGui::PopFont();
         ImGui::SameLine();
         ImGui::Text("Empty field (2-char)");
@@ -2813,49 +2814,49 @@ void FurnaceGUI::drawSettings() {
         if (CWSliderInt("Note",&settings.noteCellSpacing,0,32)) {
           if (settings.noteCellSpacing<0) settings.noteCellSpacing=0;
           if (settings.noteCellSpacing>32) settings.noteCellSpacing=32;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         if (CWSliderInt("Instrument",&settings.insCellSpacing,0,32)) {
           if (settings.insCellSpacing<0) settings.insCellSpacing=0;
           if (settings.insCellSpacing>32) settings.insCellSpacing=32;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         if (CWSliderInt("Volume",&settings.volCellSpacing,0,32)) {
           if (settings.volCellSpacing<0) settings.volCellSpacing=0;
           if (settings.volCellSpacing>32) settings.volCellSpacing=32;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         if (CWSliderInt("Effect",&settings.effectCellSpacing,0,32)) {
           if (settings.effectCellSpacing<0) settings.effectCellSpacing=0;
           if (settings.effectCellSpacing>32) settings.effectCellSpacing=32;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         if (CWSliderInt("Effect value",&settings.effectValCellSpacing,0,32)) {
           if (settings.effectValCellSpacing<0) settings.effectValCellSpacing=0;
           if (settings.effectValCellSpacing>32) settings.effectValCellSpacing=32;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         bool oneDigitEffectsB=settings.oneDigitEffects;
         if (ImGui::Checkbox("Single-digit effects for 00-0F",&oneDigitEffectsB)) {
           settings.oneDigitEffects=oneDigitEffectsB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         bool flatNotesB=settings.flatNotes;
         if (ImGui::Checkbox("Use flats instead of sharps",&flatNotesB)) {
           settings.flatNotes=flatNotesB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         bool germanNotationB=settings.germanNotation;
         if (ImGui::Checkbox("Use German notation",&germanNotationB)) {
           settings.germanNotation=germanNotationB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         // SUBSECTION CHANNEL
@@ -2865,27 +2866,27 @@ void FurnaceGUI::drawSettings() {
         ImGui::Indent();
         if (ImGui::RadioButton("Classic##CHS0",settings.channelStyle==0)) {
           settings.channelStyle=0;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Line##CHS1",settings.channelStyle==1)) {
           settings.channelStyle=1;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Round##CHS2",settings.channelStyle==2)) {
           settings.channelStyle=2;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Split button##CHS3",settings.channelStyle==3)) {
           settings.channelStyle=3;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Square border##CH42",settings.channelStyle==4)) {
           settings.channelStyle=4;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Round border##CHS5",settings.channelStyle==5)) {
           settings.channelStyle=5;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         ImGui::Unindent();
 
@@ -2893,23 +2894,23 @@ void FurnaceGUI::drawSettings() {
         ImGui::Indent();
         if (ImGui::RadioButton("None##CHV0",settings.channelVolStyle==0)) {
           settings.channelVolStyle=0;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Simple##CHV1",settings.channelVolStyle==1)) {
           settings.channelVolStyle=1;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Stereo##CHV2",settings.channelVolStyle==2)) {
           settings.channelVolStyle=2;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Real##CHV3",settings.channelVolStyle==3)) {
           settings.channelVolStyle=3;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Real (stereo)##CHV4",settings.channelVolStyle==4)) {
           settings.channelVolStyle=4;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         ImGui::Unindent();
 
@@ -2917,19 +2918,19 @@ void FurnaceGUI::drawSettings() {
         ImGui::Indent();
         if (ImGui::RadioButton("Off##CHF0",settings.channelFeedbackStyle==0)) {
           settings.channelFeedbackStyle=0;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Note##CHF1",settings.channelFeedbackStyle==1)) {
           settings.channelFeedbackStyle=1;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Volume##CHF2",settings.channelFeedbackStyle==2)) {
           settings.channelFeedbackStyle=2;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Active##CHF3",settings.channelFeedbackStyle==3)) {
           settings.channelFeedbackStyle=3;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         ImGui::Unindent();
 
@@ -2937,33 +2938,33 @@ void FurnaceGUI::drawSettings() {
         ImGui::Indent();
         if (ImGui::RadioButton("Regular##CHFont0",settings.channelFont==0)) {
           settings.channelFont=0;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Monospace##CHFont1",settings.channelFont==1)) {
           settings.channelFont=1;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         ImGui::Unindent();
 
         bool channelTextCenterB=settings.channelTextCenter;
         if (ImGui::Checkbox("Center channel name",&channelTextCenterB)) {
           settings.channelTextCenter=channelTextCenterB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         ImGui::Text("Channel colors:");
         ImGui::Indent();
         if (ImGui::RadioButton("Single##CHC0",settings.channelColors==0)) {
           settings.channelColors=0;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Channel type##CHC1",settings.channelColors==1)) {
           settings.channelColors=1;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Instrument type##CHC2",settings.channelColors==2)) {
           settings.channelColors=2;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         ImGui::Unindent();
 
@@ -2971,15 +2972,15 @@ void FurnaceGUI::drawSettings() {
         ImGui::Indent();
         if (ImGui::RadioButton("Single##CTC0",settings.channelTextColors==0)) {
           settings.channelTextColors=0;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Channel type##CTC1",settings.channelTextColors==1)) {
           settings.channelTextColors=1;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Instrument type##CTC2",settings.channelTextColors==2)) {
           settings.channelTextColors=2;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         ImGui::Unindent();
 
@@ -2988,7 +2989,7 @@ void FurnaceGUI::drawSettings() {
         bool unifiedDataViewB=settings.unifiedDataView;
         if (ImGui::Checkbox("Unified instrument/wavetable/sample list",&unifiedDataViewB)) {
           settings.unifiedDataView=unifiedDataViewB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (settings.unifiedDataView) {
           settings.horizontalDataView=0;
@@ -2998,7 +2999,7 @@ void FurnaceGUI::drawSettings() {
         bool horizontalDataViewB=settings.horizontalDataView;
         if (ImGui::Checkbox("Horizontal instrument list",&horizontalDataViewB)) {
           settings.horizontalDataView=horizontalDataViewB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         ImGui::EndDisabled();
 
@@ -3006,22 +3007,22 @@ void FurnaceGUI::drawSettings() {
         ImGui::Indent();
         if (ImGui::RadioButton("None##iis0",settings.insIconsStyle==0)) {
           settings.insIconsStyle=0;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Graphical icons##iis1",settings.insIconsStyle==1)) {
           settings.insIconsStyle=1;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Letter icons##iis2",settings.insIconsStyle==2)) {
           settings.insIconsStyle=2;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         ImGui::Unindent();
 
         bool insEditColorizeB=settings.insEditColorize;
         if (ImGui::Checkbox("Colorize instrument editor using instrument type",&insEditColorizeB)) {
           settings.insEditColorize=insEditColorizeB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         // SUBSECTION MACRO EDITOR
@@ -3030,26 +3031,26 @@ void FurnaceGUI::drawSettings() {
         ImGui::Indent();
         if (ImGui::RadioButton("Unified##mel0",settings.macroLayout==0)) {
           settings.macroLayout=0;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         /*
         if (ImGui::RadioButton("Tabs##mel1",settings.macroLayout==1)) {
           settings.macroLayout=1;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         */
         if (ImGui::RadioButton("Grid##mel2",settings.macroLayout==2)) {
           settings.macroLayout=2;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Single (with list)##mel3",settings.macroLayout==3)) {
           settings.macroLayout=3;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         /*
         if (ImGui::RadioButton("Single (combo box)##mel4",settings.macroLayout==4)) {
           settings.macroLayout=4;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         */
         ImGui::Unindent();
@@ -3057,7 +3058,7 @@ void FurnaceGUI::drawSettings() {
         bool oldMacroVSliderB=settings.oldMacroVSlider;
         if (ImGui::Checkbox("Use classic macro editor vertical slider",&oldMacroVSliderB)) {
           settings.oldMacroVSlider=oldMacroVSliderB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         // SUBSECTION WAVE EDITOR
@@ -3065,7 +3066,7 @@ void FurnaceGUI::drawSettings() {
         bool waveLayoutB=settings.waveLayout;
         if (ImGui::Checkbox("Use compact wave editor",&waveLayoutB)) {
           settings.waveLayout=waveLayoutB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         // SUBSECTION FM EDITOR
@@ -3074,53 +3075,53 @@ void FurnaceGUI::drawSettings() {
         ImGui::Indent();
         if (ImGui::RadioButton("Friendly##fmn0",settings.fmNames==0)) {
           settings.fmNames=0;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Technical##fmn1",settings.fmNames==1)) {
           settings.fmNames=1;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Technical (alternate)##fmn2",settings.fmNames==2)) {
           settings.fmNames=2;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         ImGui::Unindent();
 
         bool oplStandardWaveNamesB=settings.oplStandardWaveNames;
         if (ImGui::Checkbox("Use standard OPL waveform names",&oplStandardWaveNamesB)) {
           settings.oplStandardWaveNames=oplStandardWaveNamesB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         ImGui::Text("FM parameter editor layout:");
         ImGui::Indent();
         if (ImGui::RadioButton("Modern##fml0",settings.fmLayout==0)) {
           settings.fmLayout=0;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Compact (2x2, classic)##fml1",settings.fmLayout==1)) {
           settings.fmLayout=1;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Compact (1x4)##fml2",settings.fmLayout==2)) {
           settings.fmLayout=2;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Compact (4x1)##fml3",settings.fmLayout==3)) {
           settings.fmLayout=3;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Alternate (2x2)##fml4",settings.fmLayout==4)) {
           settings.fmLayout=4;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Alternate (1x4)##fml5",settings.fmLayout==5)) {
           settings.fmLayout=5;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Alternate (4x1)##fml5",settings.fmLayout==6)) {
           settings.fmLayout=6;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         ImGui::Unindent();
 
@@ -3128,24 +3129,24 @@ void FurnaceGUI::drawSettings() {
         ImGui::Indent();
         if (ImGui::RadioButton("Between Decay and Sustain Rate##susp0",settings.susPosition==0)) {
           settings.susPosition=0;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("After Release Rate##susp1",settings.susPosition==1)) {
           settings.susPosition=1;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         ImGui::Unindent();
 
         bool separateFMColorsB=settings.separateFMColors;
         if (ImGui::Checkbox("Use separate colors for carriers/modulators in FM editor",&separateFMColorsB)) {
           settings.separateFMColors=separateFMColorsB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         bool unsignedDetuneB=settings.unsignedDetune;
         if (ImGui::Checkbox("Unsigned FM detune values",&unsignedDetuneB)) {
           settings.unsignedDetune=unsignedDetuneB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         // SUBSECTION STATISTICS
@@ -3154,11 +3155,11 @@ void FurnaceGUI::drawSettings() {
         ImGui::Indent();
         if (ImGui::RadioButton("Bytes##MUU0",settings.memUsageUnit==0)) {
           settings.memUsageUnit=0;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (ImGui::RadioButton("Kilobytes##MUU1",settings.memUsageUnit==1)) {
           settings.memUsageUnit=1;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         ImGui::Unindent();
 
@@ -3167,43 +3168,43 @@ void FurnaceGUI::drawSettings() {
         bool oscRoundedCornersB=settings.oscRoundedCorners;
         if (ImGui::Checkbox("Rounded corners",&oscRoundedCornersB)) {
           settings.oscRoundedCorners=oscRoundedCornersB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         bool oscBorderB=settings.oscBorder;
         if (ImGui::Checkbox("Border",&oscBorderB)) {
           settings.oscBorder=oscBorderB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         bool oscMonoB=settings.oscMono;
         if (ImGui::Checkbox("Mono",&oscMonoB)) {
           settings.oscMono=oscMonoB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         bool oscAntiAliasB=settings.oscAntiAlias;
         if (ImGui::Checkbox("Anti-aliased",&oscAntiAliasB)) {
           settings.oscAntiAlias=oscAntiAliasB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         bool oscTakesEntireWindowB=settings.oscTakesEntireWindow;
         if (ImGui::Checkbox("Fill entire window",&oscTakesEntireWindowB)) {
           settings.oscTakesEntireWindow=oscTakesEntireWindowB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         bool oscEscapesBoundaryB=settings.oscEscapesBoundary;
         if (ImGui::Checkbox("Waveform goes out of bounds",&oscEscapesBoundaryB)) {
           settings.oscEscapesBoundary=oscEscapesBoundaryB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         if (ImGui::SliderFloat("Line size",&settings.oscLineSize,0.25f,16.0f,"%.1f")) {
           if (settings.oscLineSize<0.25f) settings.oscLineSize=0.25f;
           if (settings.oscLineSize>16.0f) settings.oscLineSize=16.0f;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         } rightClickable
 
         // SUBSECTION WINDOWS
@@ -3211,37 +3212,37 @@ void FurnaceGUI::drawSettings() {
         bool roundedWindowsB=settings.roundedWindows;
         if (ImGui::Checkbox("Rounded window corners",&roundedWindowsB)) {
           settings.roundedWindows=roundedWindowsB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         bool roundedButtonsB=settings.roundedButtons;
         if (ImGui::Checkbox("Rounded buttons",&roundedButtonsB)) {
           settings.roundedButtons=roundedButtonsB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         bool roundedMenusB=settings.roundedMenus;
         if (ImGui::Checkbox("Rounded menu corners",&roundedMenusB)) {
           settings.roundedMenus=roundedMenusB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         bool roundedTabsB=settings.roundedTabs;
         if (ImGui::Checkbox("Rounded tabs",&roundedTabsB)) {
           settings.roundedTabs=roundedTabsB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         bool roundedScrollbarsB=settings.roundedScrollbars;
         if (ImGui::Checkbox("Rounded scrollbars",&roundedScrollbarsB)) {
           settings.roundedScrollbars=roundedScrollbarsB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         bool frameBordersB=settings.frameBorders;
         if (ImGui::Checkbox("Borders around widgets",&frameBordersB)) {
           settings.frameBorders=frameBordersB;
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
 
         END_SECTION;
@@ -3264,7 +3265,7 @@ void FurnaceGUI::drawSettings() {
         if (ImGui::Checkbox("Guru mode",&basicColorsB)) {
           settings.basicColors=!basicColorsB;
           applyUISettings(false);
-          settingsChanged=true;
+          SETTINGS_CHANGED
         }
         if (settings.basicColors) {
           if (ImGui::TreeNode("Interface")) {
@@ -3272,19 +3273,19 @@ void FurnaceGUI::drawSettings() {
               if (settings.guiColorsShading<0) settings.guiColorsShading=0;
               if (settings.guiColorsShading>100) settings.guiColorsShading=100;
               applyUISettings(false);
-              settingsChanged=true;
+              SETTINGS_CHANGED
             }
             ImGui::Text("Color scheme type:");
             ImGui::Indent();
             if (ImGui::RadioButton("Dark##gcb0",settings.guiColorsBase==0)) {
               settings.guiColorsBase=0;
               applyUISettings(false);
-              settingsChanged=true;
+              SETTINGS_CHANGED
             }
             if (ImGui::RadioButton("Light##gcb1",settings.guiColorsBase==1)) {
               settings.guiColorsBase=1;
               applyUISettings(false);
-              settingsChanged=true;
+              SETTINGS_CHANGED
             }
             ImGui::Unindent();
 
@@ -3302,7 +3303,7 @@ void FurnaceGUI::drawSettings() {
               if (settings.guiColorsShading<0) settings.guiColorsShading=0;
               if (settings.guiColorsShading>100) settings.guiColorsShading=100;
               applyUISettings(false);
-              settingsChanged=true;
+              SETTINGS_CHANGED
             }
 
             UI_COLOR_CONFIG(GUI_COLOR_BUTTON,"Button");
