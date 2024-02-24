@@ -705,6 +705,31 @@ void FurnaceGUI::drawDebug() {
       if (ImGui::Button("Force Save")) e->saveConf();
       ImGui::TreePop();
     }
+    if (ImGui::TreeNode("RTHP")) {
+
+      ImGui::Text("RTHP writes:");
+      ImGui::SameLine();
+      if (ImGui::Button("Clear")) rthp->clearLastWrites();
+      if (ImGui::BeginTable("##RTHPWrites",4)) {
+        ImGui::TableSetupColumn("##RTHPWriteCol0",ImGuiTableColumnFlags_WidthFixed);
+        ImGui::TableSetupColumn("##RTHPWriteCol1",ImGuiTableColumnFlags_WidthFixed);
+        ImGui::TableSetupColumn("##RTHPWriteCol2",ImGuiTableColumnFlags_WidthFixed);
+        ImGui::TableSetupColumn("##RTHPWriteCol3",ImGuiTableColumnFlags_WidthFixed);
+        for (RTHPWrite lastWrite:rthp->getLastWrites()) {
+          ImGui::TableNextRow();
+          ImGui::TableNextColumn();
+          ImGui::Text("%.2x",lastWrite.key);
+          ImGui::TableNextColumn();
+          ImGui::Text("%.2x",lastWrite.data);
+          ImGui::TableNextColumn();
+          ImGui::Text("%.2x",lastWrite.addrlow);
+          ImGui::TableNextColumn();
+          ImGui::Text("%.2x",lastWrite.addrhigh);
+        }
+        ImGui::EndTable();
+      }
+      ImGui::TreePop();
+    }
     ImGui::Text("Song format version %d",e->song.version);
     ImGui::Text("Furnace version " DIV_VERSION " (%d)",DIV_ENGINE_VERSION);
   }
