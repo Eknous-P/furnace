@@ -465,6 +465,22 @@ void FurnaceGUI::drawSettings() {
         }
         popWarningColor();
 
+        ImGui::Text("Oscilloscope rendering engine:");
+        ImGui::Indent();
+        if (ImGui::RadioButton("ImGui line plot",settings.shaderOsc==0)) {
+          settings.shaderOsc=0;
+        }
+        if (ImGui::IsItemHovered()) {
+          ImGui::SetTooltip("render using Dear ImGui's built-in line drawing functions.");
+        }
+        if (ImGui::RadioButton("GLSL/HLSL (if available)",settings.shaderOsc==1)) {
+          settings.shaderOsc=1;
+        }
+        if (ImGui::IsItemHovered()) {
+          ImGui::SetTooltip("render using shaders that run on the graphics card.\nonly available in OpenGL render backend.");
+        }
+        ImGui::Unindent();
+
         // SUBSECTION FILE
         CONFIG_SUBSECTION("File");
 
@@ -1734,16 +1750,23 @@ void FurnaceGUI::drawSettings() {
           UI_KEYBIND_CONFIG(GUI_ACTION_WINDOW_PIANO);
           UI_KEYBIND_CONFIG(GUI_ACTION_WINDOW_OSCILLOSCOPE);
           UI_KEYBIND_CONFIG(GUI_ACTION_WINDOW_CHAN_OSC);
+          UI_KEYBIND_CONFIG(GUI_ACTION_WINDOW_XY_OSC);
           UI_KEYBIND_CONFIG(GUI_ACTION_WINDOW_VOL_METER);
           UI_KEYBIND_CONFIG(GUI_ACTION_WINDOW_CLOCK);
           UI_KEYBIND_CONFIG(GUI_ACTION_WINDOW_REGISTER_VIEW);
           UI_KEYBIND_CONFIG(GUI_ACTION_WINDOW_LOG);
           UI_KEYBIND_CONFIG(GUI_ACTION_WINDOW_STATS);
+          UI_KEYBIND_CONFIG(GUI_ACTION_WINDOW_MEMORY);
           UI_KEYBIND_CONFIG(GUI_ACTION_WINDOW_EFFECT_LIST);
           UI_KEYBIND_CONFIG(GUI_ACTION_WINDOW_DEBUG);
           UI_KEYBIND_CONFIG(GUI_ACTION_WINDOW_ABOUT);
           UI_KEYBIND_CONFIG(GUI_ACTION_COLLAPSE_WINDOW);
           UI_KEYBIND_CONFIG(GUI_ACTION_CLOSE_WINDOW);
+
+          UI_KEYBIND_CONFIG(GUI_ACTION_COMMAND_PALETTE);
+          UI_KEYBIND_CONFIG(GUI_ACTION_CMDPAL_RECENT);
+          UI_KEYBIND_CONFIG(GUI_ACTION_CMDPAL_INSTRUMENTS);
+          UI_KEYBIND_CONFIG(GUI_ACTION_CMDPAL_SAMPLES);
 
           KEYBIND_CONFIG_END;
           ImGui::TreePop();
@@ -2668,6 +2691,12 @@ void FurnaceGUI::drawSettings() {
         }
         ImGui::Unindent();
 
+        bool playbackTimeB=settings.playbackTime;
+        if (ImGui::Checkbox("Display playback status when playing",&playbackTimeB)) {
+          settings.playbackTime=playbackTimeB;
+          settingsChanged=true;
+        }
+
         ImGui::Text("Export options layout:");
         ImGui::Indent();
         if (ImGui::RadioButton("Sub-menus in File menu##eol0",settings.exportOptionsLayout==0)) {
@@ -3173,6 +3202,12 @@ void FurnaceGUI::drawSettings() {
           settingsChanged=true;
         }
 
+        if (ImGui::SliderFloat("Line size",&settings.oscLineSize,0.25f,16.0f,"%.1f")) {
+          if (settings.oscLineSize<0.25f) settings.oscLineSize=0.25f;
+          if (settings.oscLineSize>16.0f) settings.oscLineSize=16.0f;
+          settingsChanged=true;
+        } rightClickable
+
         // SUBSECTION WINDOWS
         CONFIG_SUBSECTION("Windows");
         bool roundedWindowsB=settings.roundedWindows;
@@ -3498,6 +3533,7 @@ void FurnaceGUI::drawSettings() {
           UI_COLOR_CONFIG(GUI_COLOR_INSTR_ESFM,"ESFM");
           UI_COLOR_CONFIG(GUI_COLOR_INSTR_POWERNOISE,"PowerNoise (noise)");
           UI_COLOR_CONFIG(GUI_COLOR_INSTR_POWERNOISE_SLOPE,"PowerNoise (slope)");
+          UI_COLOR_CONFIG(GUI_COLOR_INSTR_DAVE,"Dave");
           UI_COLOR_CONFIG(GUI_COLOR_INSTR_UNKNOWN,"Other/Unknown");
           ImGui::TreePop();
         }
@@ -3793,6 +3829,7 @@ void FurnaceGUI::readConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
 
     settings.chanOscThreads=conf.getInt("chanOscThreads",0);
     settings.renderPoolThreads=conf.getInt("renderPoolThreads",0);
+    settings.shaderOsc=conf.getInt("shaderOsc",0);
     settings.showPool=conf.getInt("showPool",0);
     settings.writeInsNames=conf.getInt("writeInsNames",0);
     settings.readInsNames=conf.getInt("readInsNames",1);
@@ -3948,6 +3985,7 @@ void FurnaceGUI::readConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
     settings.oscEscapesBoundary=conf.getInt("oscEscapesBoundary",0);
     settings.oscMono=conf.getInt("oscMono",1);
     settings.oscAntiAlias=conf.getInt("oscAntiAlias",1);
+    settings.oscLineSize=conf.getFloat("oscLineSize",1.0f);
 
     settings.channelColors=conf.getInt("channelColors",1);
     settings.channelTextColors=conf.getInt("channelTextColors",0);
@@ -3990,6 +4028,7 @@ void FurnaceGUI::readConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
     settings.orderRowsBase=conf.getInt("orderRowsBase",1);
     settings.fmNames=conf.getInt("fmNames",0);
     settings.statusDisplay=conf.getInt("statusDisplay",0);
+    settings.playbackTime=conf.getInt("playbackTime",1);
     settings.viewPrevPattern=conf.getInt("viewPrevPattern",1);
     settings.susPosition=conf.getInt("susPosition",0);
 
@@ -4231,6 +4270,9 @@ void FurnaceGUI::readConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
   clampSetting(settings.fontAntiAlias,0,1);
   clampSetting(settings.selectAssetOnLoad,0,1);
   clampSetting(settings.basicColors,0,1);
+  clampSetting(settings.playbackTime,0,1);
+  clampSetting(settings.shaderOsc,0,1);
+  clampSetting(settings.oscLineSize,0.25f,16.0f);
 
   if (settings.exportLoops<0.0) settings.exportLoops=0.0;
   if (settings.exportFadeOut<0.0) settings.exportFadeOut=0.0;  
@@ -4256,6 +4298,7 @@ void FurnaceGUI::writeConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
     
     conf.set("chanOscThreads",settings.chanOscThreads);
     conf.set("renderPoolThreads",settings.renderPoolThreads);
+    conf.set("shaderOsc",settings.shaderOsc);
     conf.set("showPool",settings.showPool);
     conf.set("writeInsNames",settings.writeInsNames);
     conf.set("readInsNames",settings.readInsNames);
@@ -4410,6 +4453,7 @@ void FurnaceGUI::writeConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
     conf.set("oscEscapesBoundary",settings.oscEscapesBoundary);
     conf.set("oscMono",settings.oscMono);
     conf.set("oscAntiAlias",settings.oscAntiAlias);
+    conf.set("oscLineSize",settings.oscLineSize);
 
     conf.set("channelColors",settings.channelColors);
     conf.set("channelTextColors",settings.channelTextColors);
@@ -4452,6 +4496,7 @@ void FurnaceGUI::writeConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
     conf.set("orderRowsBase",settings.orderRowsBase);
     conf.set("fmNames",settings.fmNames);
     conf.set("statusDisplay",settings.statusDisplay);
+    conf.set("playbackTime",settings.playbackTime);
     conf.set("viewPrevPattern",settings.viewPrevPattern);
     conf.set("susPosition",settings.susPosition);
 

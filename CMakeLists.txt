@@ -804,9 +804,11 @@ src/gui/grooves.cpp
 src/gui/insEdit.cpp
 src/gui/intro.cpp
 src/gui/log.cpp
+src/gui/memory.cpp
 src/gui/mixer.cpp
 src/gui/midiMap.cpp
 src/gui/newSong.cpp
+src/gui/commandPalette.cpp
 src/gui/orders.cpp
 src/gui/osc.cpp
 src/gui/patManager.cpp
@@ -1075,7 +1077,7 @@ if (NOT ANDROID OR TERMUX)
     install(DIRECTORY papers DESTINATION ${CMAKE_INSTALL_DOCDIR}/other)
     install(FILES LICENSE DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/furnace)
     if (WITH_DEMOS OR WITH_INSTRUMENTS OR WITH_WAVETABLES)
-      set(FURNACE_DATADIR ${CMAKE_INSTALL_DATADIR}/furnace)
+      set(FURNACE_DATADIR ${CMAKE_INSTALL_FULL_DATADIR}/furnace)
       if (WITH_DEMOS)
         install(DIRECTORY demos DESTINATION ${FURNACE_DATADIR})
       endif()
@@ -1085,7 +1087,7 @@ if (NOT ANDROID OR TERMUX)
       if (WITH_WAVETABLES)
         install(DIRECTORY wavetables DESTINATION ${FURNACE_DATADIR})
       endif()
-      add_compile_definitions(FURNACE_DATADIR="${CMAKE_INSTALL_PREFIX}/${FURNACE_DATADIR}")
+      add_compile_definitions(FURNACE_DATADIR="${FURNACE_DATADIR}")
       if (SHOW_OPEN_ASSETS_MENU_ENTRY)
         add_compile_definitions(SHOW_OPEN_ASSETS_MENU_ENTRY)
       endif()
