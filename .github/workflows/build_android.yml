@@ -90,7 +90,7 @@ jobs:
         # popd
 
         cd target
-        ls -l
+        # ls -l
 
         # tar -zcv -f ../${{ steps.package-identify.outputs.filename }} furnace
 
@@ -99,7 +99,7 @@ jobs:
       uses: actions/upload-artifact@v4.3.0
       with:
         name: ${{ steps.package-identify.outputs.id }}
-        path: ${{ steps.package-identify.outputs.filename }}
+        path: target/${{ steps.package-identify.outputs.filename }}
 
 
 
