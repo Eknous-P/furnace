@@ -94,7 +94,7 @@ jobs:
 
         tar -zcv -f ../${{ steps.package-identify.outputs.filename }} furnace
 
-        ls -l
+        ls -al ../*
 
     - name: Upload artifact
       if: ${{ github.repository == 'Eknous-P/furnace' && github.ref_name == 'android-actions-test' }}
