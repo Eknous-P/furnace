@@ -90,6 +90,7 @@ jobs:
         # popd
 
         cd target
+        ls -l
 
         # tar -zcv -f ../${{ steps.package-identify.outputs.filename }} furnace
 
