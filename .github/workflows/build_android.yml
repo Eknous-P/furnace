@@ -1,3 +1,4 @@
+# TODO: merge with build.yml
 name: Build furnace (Android)
 
 on:
@@ -38,7 +39,6 @@ jobs:
         echo "id=${package_name}" >> $GITHUB_OUTPUT
         echo "filename=${package_name}${package_ext}" >> $GITHUB_OUTPUT
 
-
     - name: Install Dependencies
       run: |
         sudo apt update
@@ -61,40 +61,17 @@ jobs:
       run: |
 
         mkdir -p target/furnace
-        # make -C ${PWD}/build DESTDIR=${PWD}/target/furnace install
         mv ${PWD}/android/app/build/outputs/apk/debug/app-debug.apk target/furnace/${{ steps.package-identify.outputs.id }}.apk
         pushd target/furnace
-
-        # cp -v ../../res/logo.png .DirIcon
-
-        # cd usr
-
-        # mv bin/furnace ..
-        # rmdir bin
-
-        # rm -r share/applications
-        # rm -r share/doc
-        # rm -r share/icons
-        # rm -r share/licenses
-        # rm -r share/metainfo
-
-        # rmdir share
-
-        # cd ..
 
         cp ../../LICENSE .
         cp ../../res/releaseReadme/unstable-android.txt .
         cp -r ../../papers papers
-        # rmdir usr
 
         popd
 
         cd target
-        # ls -l
-
         tar -zcv -f ../${{ steps.package-identify.outputs.filename }} furnace
-
-        # ls -al ../*
 
     - name: Upload artifact
       if: ${{ github.repository == 'Eknous-P/furnace' && github.ref_name == 'android-actions-test' }}
