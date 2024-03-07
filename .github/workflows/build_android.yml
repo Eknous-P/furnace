@@ -85,7 +85,7 @@ jobs:
         cp ../../LICENSE .
         cp ../../res/releaseReadme/unstable-android.txt .
         cp -r ../../papers papers
-        rmdir usr
+        # rmdir usr
 
         popd
 
