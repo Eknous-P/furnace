@@ -62,7 +62,7 @@ jobs:
 
         mkdir -p target/furnace
         # make -C ${PWD}/build DESTDIR=${PWD}/target/furnace install
-        mv ${PWD}/android/app/build/outputs/apk/debug/app-debug.apk target/${{ steps.package-identify.outputs.id }}.apk
+        mv ${PWD}/android/app/build/outputs/apk/debug/app-debug.apk target/furnace/${{ steps.package-identify.outputs.id }}.apk
         pushd target/furnace
 
         # cp -v ../../res/logo.png .DirIcon
@@ -93,6 +93,8 @@ jobs:
         # ls -l
 
         tar -zcv -f ../${{ steps.package-identify.outputs.filename }} furnace
+
+        ls -l
 
     - name: Upload artifact
       if: ${{ github.repository == 'Eknous-P/furnace' && github.ref_name == 'android-actions-test' }}
