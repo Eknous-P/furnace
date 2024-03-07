@@ -67,20 +67,20 @@ jobs:
 
         # cp -v ../../res/logo.png .DirIcon
 
-        cd usr
+        # cd usr
 
-        mv bin/furnace ..
-        rmdir bin
+        # mv bin/furnace ..
+        # rmdir bin
 
-        rm -r share/applications
-        rm -r share/doc
-        rm -r share/icons
-        rm -r share/licenses
-        rm -r share/metainfo
+        # rm -r share/applications
+        # rm -r share/doc
+        # rm -r share/icons
+        # rm -r share/licenses
+        # rm -r share/metainfo
 
-        rmdir share
+        # rmdir share
 
-        cd ..
+        # cd ..
 
         cp ../../LICENSE .
         cp ../../res/releaseReadme/unstable-android.txt .
