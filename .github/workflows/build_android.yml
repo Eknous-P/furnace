@@ -92,16 +92,16 @@ jobs:
         cd target
         # ls -l
 
-        tar -zcv -f * ../${{ steps.package-identify.outputs.filename }}
+        tar -zcv -f ../${{ steps.package-identify.outputs.filename }} furnace
 
-        ls -al ../*
+        # ls -al ../*
 
     - name: Upload artifact
       if: ${{ github.repository == 'Eknous-P/furnace' && github.ref_name == 'android-actions-test' }}
       uses: actions/upload-artifact@v4.3.0
       with:
         name: ${{ steps.package-identify.outputs.id }}
-        path: target/${{ steps.package-identify.outputs.filename }}
+        path: ${{ steps.package-identify.outputs.filename }}
 
 
 
