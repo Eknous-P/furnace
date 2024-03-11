@@ -90,6 +90,7 @@ int RTHPContainer::init(RTHPImplementations setImpl, String setPort) {
     default: return 2;
   }
   container.initialized=true;
+  container.writing=false;
   return 0;
 }
 
@@ -109,6 +110,7 @@ void RTHPContainer::write(unsigned short a, unsigned short v) {
       if (writeERTHP(lastWrite)) {
         logE("RTHP: %s",erthp.getLastLog());
         RTHPContainer::deinit();
+        container.writing=false;
       }
       break;
     }
