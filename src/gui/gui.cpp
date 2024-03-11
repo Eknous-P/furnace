@@ -1116,6 +1116,9 @@ float FurnaceGUI::calcBPM(const DivGroovePattern& speeds, float hz, int vN, int 
 }
 
 void FurnaceGUI::play(int row) {
+  if (e->getStreamPlayer()) {
+    e->killStream();
+  }
   memset(chanOscVol,0,DIV_MAX_CHANS*sizeof(float));
   for (int i=0; i<DIV_MAX_CHANS; i++) {
     chanOscChan[i].pitch=0.0f;
@@ -1902,15 +1905,6 @@ void FurnaceGUI::openFileDialog(FurnaceGUIFileDialogs type) {
       );
       break;
     case GUI_FILE_EXPORT_CMDSTREAM:
-      if (!dirExists(workingDirROMExport)) workingDirROMExport=getHomeDir();
-      hasOpened=fileDialog->openSave(
-        "Export Command Stream",
-        {"text file", "*.txt"},
-        workingDirROMExport,
-        dpiScale
-      );
-      break;
-    case GUI_FILE_EXPORT_CMDSTREAM_BINARY:
       if (!dirExists(workingDirROMExport)) workingDirROMExport=getHomeDir();
       hasOpened=fileDialog->openSave(
         "Export Command Stream",
@@ -3474,7 +3468,9 @@ bool FurnaceGUI::loop() {
   DECLARE_METRIC(volMeter)
   DECLARE_METRIC(settings)
   DECLARE_METRIC(debug)
+  DECLARE_METRIC(csPlayer)
   DECLARE_METRIC(stats)
+  DECLARE_METRIC(memory)
   DECLARE_METRIC(compatFlags)
   DECLARE_METRIC(piano)
   DECLARE_METRIC(notes)
@@ -4058,6 +4054,8 @@ bool FurnaceGUI::loop() {
         IMPORT_CLOSE(speedOpen);
         IMPORT_CLOSE(groovesOpen);
         IMPORT_CLOSE(xyOscOpen);
+        IMPORT_CLOSE(memoryOpen);
+        IMPORT_CLOSE(csPlayerOpen);
       } else if (pendingLayoutImportStep==1) {
         // let the UI settle
       } else if (pendingLayoutImportStep==2) {
@@ -4429,6 +4427,7 @@ bool FurnaceGUI::loop() {
         if (ImGui::MenuItem("register view",BIND_FOR(GUI_ACTION_WINDOW_REGISTER_VIEW),regViewOpen)) regViewOpen=!regViewOpen;
         if (ImGui::MenuItem("log viewer",BIND_FOR(GUI_ACTION_WINDOW_LOG),logOpen)) logOpen=!logOpen;
         if (ImGui::MenuItem("statistics",BIND_FOR(GUI_ACTION_WINDOW_STATS),statsOpen)) statsOpen=!statsOpen;
+        if (ImGui::MenuItem("memory composition",BIND_FOR(GUI_ACTION_WINDOW_MEMORY),memoryOpen)) memoryOpen=!memoryOpen;
         if (spoilerOpen) if (ImGui::MenuItem("spoiler",NULL,spoilerOpen)) spoilerOpen=!spoilerOpen;
 #ifdef WITH_RTHP
         ImGui::Separator();
@@ -4644,6 +4643,7 @@ bool FurnaceGUI::loop() {
       globalWinFlags=0;
       MEASURE(settings,drawSettings());
       MEASURE(debug,drawDebug());
+      MEASURE(csPlayer,drawCSPlayer());
       MEASURE(log,drawLog());
       MEASURE(compatFlags,drawCompatFlags());
       MEASURE(stats,drawStats());
@@ -4654,6 +4654,7 @@ bool FurnaceGUI::loop() {
       MEASURE(volMeter,drawVolMeter());
       MEASURE(grooves,drawGrooves());
       MEASURE(regView,drawRegView());
+      MEASURE(memory,drawMemory());
     } else {
       globalWinFlags=0;
       ImGui::DockSpaceOverViewport(NULL,lockLayout?(ImGuiDockNodeFlags_NoWindowMenuButton|ImGuiDockNodeFlags_NoMove|ImGuiDockNodeFlags_NoResize|ImGuiDockNodeFlags_NoCloseButton|ImGuiDockNodeFlags_NoDocking|ImGuiDockNodeFlags_NoDockingSplitMe|ImGuiDockNodeFlags_NoDockingSplitOther):0);
@@ -4683,7 +4684,9 @@ bool FurnaceGUI::loop() {
       MEASURE(volMeter,drawVolMeter());
       MEASURE(settings,drawSettings());
       MEASURE(debug,drawDebug());
+      MEASURE(csPlayer,drawCSPlayer());
       MEASURE(stats,drawStats());
+      MEASURE(memory,drawMemory());
       MEASURE(compatFlags,drawCompatFlags());
       MEASURE(piano,drawPiano());
       MEASURE(notes,drawNotes());
@@ -4838,7 +4841,6 @@ bool FurnaceGUI::loop() {
         case GUI_FILE_EXPORT_ROM:
         case GUI_FILE_EXPORT_TEXT:
         case GUI_FILE_EXPORT_CMDSTREAM:
-        case GUI_FILE_EXPORT_CMDSTREAM_BINARY:
           workingDirROMExport=fileDialog->getPath()+DIR_SEPARATOR_STR;
           break;
         case GUI_FILE_LOAD_MAIN_FONT:
@@ -4928,10 +4930,10 @@ bool FurnaceGUI::loop() {
           if (curFileDialog==GUI_FILE_EXPORT_ZSM) {
             checkExtension(".zsm");
           }
-          if (curFileDialog==GUI_FILE_EXPORT_CMDSTREAM || curFileDialog==GUI_FILE_EXPORT_TEXT) {
+          if (curFileDialog==GUI_FILE_EXPORT_TEXT) {
             checkExtension(".txt");
           }
-          if (curFileDialog==GUI_FILE_EXPORT_CMDSTREAM_BINARY) {
+          if (curFileDialog==GUI_FILE_EXPORT_CMDSTREAM) {
             checkExtension(".bin");
           }
           if (curFileDialog==GUI_FILE_EXPORT_COLORS) {
@@ -5325,11 +5327,8 @@ bool FurnaceGUI::loop() {
               }
               break;
             }
-            case GUI_FILE_EXPORT_CMDSTREAM:
-            case GUI_FILE_EXPORT_CMDSTREAM_BINARY: {
-              bool isBinary=(curFileDialog==GUI_FILE_EXPORT_CMDSTREAM_BINARY);
-
-              SafeWriter* w=e->saveCommand(isBinary);
+            case GUI_FILE_EXPORT_CMDSTREAM: {
+              SafeWriter* w=e->saveCommand();
               if (w!=NULL) {
                 FILE* f=ps_fopen(copyOfName.c_str(),"wb");
                 if (f!=NULL) {
@@ -6583,6 +6582,7 @@ bool FurnaceGUI::init() {
   oscOpen=e->getConfBool("oscOpen",true);
   chanOscOpen=e->getConfBool("chanOscOpen",false);
   xyOscOpen=e->getConfBool("xyOscOpen",false);
+  memoryOpen=e->getConfBool("memoryOpen",false);
   volMeterOpen=e->getConfBool("volMeterOpen",true);
   statsOpen=e->getConfBool("statsOpen",false);
   compatFlagsOpen=e->getConfBool("compatFlagsOpen",false);
@@ -7153,6 +7153,7 @@ void FurnaceGUI::commitState() {
   e->setConf("oscOpen",oscOpen);
   e->setConf("chanOscOpen",chanOscOpen);
   e->setConf("xyOscOpen",xyOscOpen);
+  e->setConf("memoryOpen",memoryOpen);
   e->setConf("volMeterOpen",volMeterOpen);
   e->setConf("statsOpen",statsOpen);
   e->setConf("compatFlagsOpen",compatFlagsOpen);
@@ -7525,6 +7526,8 @@ FurnaceGUI::FurnaceGUI():
   speedOpen(true),
   groovesOpen(false),
   xyOscOpen(false),
+  memoryOpen(false),
+  csPlayerOpen(false),
 #ifdef WITH_RTHP
   rthpWindowOpen(false),
 #endif

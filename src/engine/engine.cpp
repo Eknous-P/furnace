@@ -636,15 +636,18 @@ void DivEngine::swapChannels(int src, int dest) {
   String prevChanName=curSubSong->chanName[src];
   String prevChanShortName=curSubSong->chanShortName[src];
   bool prevChanShow=curSubSong->chanShow[src];
+  bool prevChanShowChanOsc=curSubSong->chanShowChanOsc[src];
   unsigned char prevChanCollapse=curSubSong->chanCollapse[src];
 
   curSubSong->chanName[src]=curSubSong->chanName[dest];
   curSubSong->chanShortName[src]=curSubSong->chanShortName[dest];
   curSubSong->chanShow[src]=curSubSong->chanShow[dest];
+  curSubSong->chanShowChanOsc[src]=curSubSong->chanShowChanOsc[dest];
   curSubSong->chanCollapse[src]=curSubSong->chanCollapse[dest];
   curSubSong->chanName[dest]=prevChanName;
   curSubSong->chanShortName[dest]=prevChanShortName;
   curSubSong->chanShow[dest]=prevChanShow;
+  curSubSong->chanShowChanOsc[dest]=prevChanShowChanOsc;
   curSubSong->chanCollapse[dest]=prevChanCollapse;
 }
 
@@ -658,6 +661,7 @@ void DivEngine::stompChannel(int ch) {
   curSubSong->chanName[ch]="";
   curSubSong->chanShortName[ch]="";
   curSubSong->chanShow[ch]=true;
+  curSubSong->chanShowChanOsc[ch]=true;
   curSubSong->chanCollapse[ch]=false;
 }
 
@@ -804,6 +808,7 @@ int DivEngine::duplicateSubSong(int index) {
   theCopy->orders=theOrig->orders;
   
   memcpy(theCopy->chanShow,theOrig->chanShow,DIV_MAX_CHANS*sizeof(bool));
+  memcpy(theCopy->chanShowChanOsc,theOrig->chanShowChanOsc,DIV_MAX_CHANS*sizeof(bool));
   memcpy(theCopy->chanCollapse,theOrig->chanCollapse,DIV_MAX_CHANS);
 
   for (int i=0; i<DIV_MAX_CHANS; i++) {
@@ -1323,6 +1328,7 @@ void DivEngine::swapSystemUnsafe(int src, int dest, bool preserveOrder) {
       String prevChanName[DIV_MAX_CHANS];
       String prevChanShortName[DIV_MAX_CHANS];
       bool prevChanShow[DIV_MAX_CHANS];
+      bool prevChanShowChanOsc[DIV_MAX_CHANS];
       unsigned char prevChanCollapse[DIV_MAX_CHANS];
 
       for (int j=0; j<tchans; j++) {
@@ -1334,6 +1340,7 @@ void DivEngine::swapSystemUnsafe(int src, int dest, bool preserveOrder) {
         prevChanName[j]=song.subsong[i]->chanName[j];
         prevChanShortName[j]=song.subsong[i]->chanShortName[j];
         prevChanShow[j]=song.subsong[i]->chanShow[j];
+        prevChanShowChanOsc[j]=song.subsong[i]->chanShowChanOsc[j];
         prevChanCollapse[j]=song.subsong[i]->chanCollapse[j];
       }
 
@@ -1347,6 +1354,7 @@ void DivEngine::swapSystemUnsafe(int src, int dest, bool preserveOrder) {
         song.subsong[i]->chanName[j]=prevChanName[swappedChannels[j]];
         song.subsong[i]->chanShortName[j]=prevChanShortName[swappedChannels[j]];
         song.subsong[i]->chanShow[j]=prevChanShow[swappedChannels[j]];
+        song.subsong[i]->chanShowChanOsc[j]=prevChanShowChanOsc[swappedChannels[j]];
         song.subsong[i]->chanCollapse[j]=prevChanCollapse[swappedChannels[j]];
       }
     }
