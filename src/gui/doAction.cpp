@@ -319,6 +319,11 @@ void FurnaceGUI::doAction(int what) {
     case GUI_ACTION_WINDOW_CS_PLAYER:
       nextWindow=GUI_WINDOW_CS_PLAYER;
       break;
+#ifdef WITH_RTHP
+    case GUI_ACTION_WINDOW_RTHP:
+      nextWindow=GUI_WINDOW_RTHP;
+      break;
+#endif
     
     case GUI_ACTION_COLLAPSE_WINDOW:
       collapseWindow=true;
@@ -424,6 +429,11 @@ void FurnaceGUI::doAction(int what) {
         case GUI_WINDOW_CS_PLAYER:
           csPlayerOpen=false;
           break;
+#ifdef WITH_RTHP
+        case GUI_WINDOW_RTHP:
+          rthpWindowOpen=false;
+          break;
+#endif
         default:
           break;
       }
