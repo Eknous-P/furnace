@@ -104,7 +104,7 @@ struct DivChannelState {
   int delayOrder, delayRow, retrigSpeed, retrigTick;
   int vibratoDepth, vibratoRate, vibratoPos, vibratoPosGiant, vibratoDir, vibratoFine;
   int tremoloDepth, tremoloRate, tremoloPos;
-  unsigned char arp, arpStage, arpTicks, panL, panR, panRL, panRR, lastVibrato, lastPorta;
+  unsigned char arp, arpStage, arpTicks, panL, panR, panRL, panRR, lastVibrato, lastPorta, cutType;
   bool doNote, legato, portaStop, keyOn, keyOff, nowYouCanStop, stopOnOff, releasing;
   bool arpYield, delayLocked, inPorta, scheduledSlideReset, shorthandPorta, wasShorthandPorta, noteOnInhibit, resetArp;
   bool wentThroughNote, goneThroughNote;
@@ -147,6 +147,7 @@ struct DivChannelState {
     panRR(0),
     lastVibrato(0),
     lastPorta(0),
+    cutType(0),
     doNote(false),
     legato(false),
     portaStop(false),
@@ -441,6 +442,7 @@ class DivEngine {
   int curMidiTimePiece, curMidiTimeCode;
   unsigned char extValue, pendingMetroTick;
   DivGroovePattern speeds;
+  short virtualTempoN, virtualTempoD;
   short tempoAccum;
   DivStatusView view;
   DivHaltPositions haltOn;
@@ -890,6 +892,13 @@ class DivEngine {
     // get current Hz
     float getCurHz();
 
+    // get virtual tempo
+    short getVirtualTempoN();
+    short getVirtualTempoD();
+
+    // tell engine about virtual tempo changes
+    void virtualTempoChanged();
+
     // get time
     int getTotalTicks(); // 1/1000000th of a second
     int getTotalSeconds();
@@ -1333,6 +1342,8 @@ class DivEngine {
       curMidiTimeCode(0),
       extValue(0),
       pendingMetroTick(0),
+      virtualTempoN(150),
+      virtualTempoD(150),
       tempoAccum(0),
       view(DIV_STATUS_NOTHING),
       haltOn(DIV_HALT_NONE),
