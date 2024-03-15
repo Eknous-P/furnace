@@ -2,9 +2,9 @@ name: Build furnace
 
 on:
   push:
-    branches: master
+    branches: master, android-actions-test
   pull_request:
-    branches: master
+    branches: master, android-actions-test
 
 defaults:
   run:
