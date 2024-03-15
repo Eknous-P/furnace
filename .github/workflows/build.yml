@@ -81,7 +81,7 @@ jobs:
         elif [ '${{ runner.os }}' == 'macOS' ]; then
           package_name="${package_name}-macOS-${{ matrix.config.arch }}"
           package_ext=".dmg"
-        elif [ '${{ runner.os }}' == 'Android' ]; then
+        elif [ '${{ matrix.config.name }}' == 'Android' ]; then
           package_name="${package_name}-AndroidDEBUG"
           package_ext=".tar.gz"
         else
