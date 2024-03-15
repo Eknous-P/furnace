@@ -306,7 +306,7 @@ jobs:
         popd
 
     - name: Package [Linux]
-      if: ${{ runner.os == 'Linux' && matrix.config.compiler != 'mingw' }}
+      if: ${{ runner.os == 'Linux' && matrix.config.compiler != 'mingw' &&  matrix.config.name != 'Android' }}
       run: |
         #if [ '${{ env.BUILD_TYPE }}' == 'Release' ]; then
         #  strip -s build/furnace
