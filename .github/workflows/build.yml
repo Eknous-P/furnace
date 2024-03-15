@@ -2,9 +2,9 @@ name: Build furnace
 
 on:
   push:
-    branches: [ master, android-actions-test ]
+    branches: [ master, android-actions ]
   pull_request:
-    branches: [ master, android-actions-test ]
+    branches: [ master, android-actions ]
 
 defaults:
   run:
@@ -363,7 +363,7 @@ jobs:
 
 
     - name: Upload artifact
-      if: ${{ github.repository == 'Eknous-P/furnace' && github.ref_name == 'android-actions-test' }}
+      if: ${{ github.repository == 'Eknous-P/furnace' && github.ref_name == 'android-actions' }}
       uses: actions/upload-artifact@v4.3.0
       with:
         name: ${{ steps.package-identify.outputs.id }}
