@@ -344,7 +344,7 @@ jobs:
 
         tar -zcv -f ../${{ steps.package-identify.outputs.filename }} furnace
 
-      - name: Package [Android]
+    - name: Package [Android]
       if: ${{ matrix.config.name == 'Android' }}
       run: |
 
