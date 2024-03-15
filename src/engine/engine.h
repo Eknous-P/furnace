@@ -542,7 +542,7 @@ class DivEngine {
   void testFunction();
 
   bool loadDMF(unsigned char* file, size_t len);
-  bool loadFur(unsigned char* file, size_t len);
+  bool loadFur(unsigned char* file, size_t len, int variantID=0);
   bool loadMod(unsigned char* file, size_t len);
   bool loadS3M(unsigned char* file, size_t len);
   bool loadFTM(unsigned char* file, size_t len);
@@ -1252,7 +1252,7 @@ class DivEngine {
     void everythingOK();
 
     // terminate the engine.
-    bool quit();
+    bool quit(bool saveConfig=true);
 
     unsigned char* yrw801ROM;
     unsigned char* tg100ROM;
