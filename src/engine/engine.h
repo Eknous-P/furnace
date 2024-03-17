@@ -35,6 +35,10 @@
 #include <thread>
 #include "../fixedQueue.h"
 
+#ifdef WITH_RTHP
+#include "rthp.h"
+#endif
+
 class DivWorkPool;
 
 #define addWarning(x) \
@@ -473,6 +477,10 @@ class DivEngine {
   static DivSystem sysFileMapDMF[DIV_MAX_CHIP_DEFS];
 
   DivCSPlayer* cmdStreamInt;
+
+#ifdef WITH_RTHP
+  RTHPContainer* rthp;
+#endif
 
   struct SamplePreview {
     double rate;
@@ -1264,6 +1272,10 @@ class DivEngine {
 
     // terminate the engine.
     bool quit(bool saveConfig=true);
+
+#ifdef WITH_RTHP // bind rthp
+    void bindRTHP(RTHPContainer* rthpi);
+#endif
 
     unsigned char* yrw801ROM;
     unsigned char* tg100ROM;
