@@ -624,7 +624,7 @@ int main(int argc, char** argv) {
       return 1;
     }
     fclose(f);
-    if (!e.load(file,(size_t)len)) {
+    if (!e.load(file,(size_t)len,fileName.c_str())) {
       reportError(fmt::sprintf("could not open file! (%s)",e.getLastError()));
       e.everythingOK();
       finishLogFile();
@@ -777,13 +777,13 @@ int main(int argc, char** argv) {
 
   g.loop();
   logI("closing GUI.");
-  g.finish();
+  g.finish(true);
 #else
   logE("GUI requested but GUI not compiled!");
 #endif
 
   logI("stopping engine.");
-  e.quit();
+  e.quit(false);
 #ifdef WITH_RTHP
   rthp.deinit();
 #endif
