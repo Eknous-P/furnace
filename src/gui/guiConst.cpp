@@ -179,6 +179,9 @@ const char* insTypes[DIV_INS_MAX+1][3]={
   {"PowerNoise (noise)",ICON_FUR_NOISE,ICON_FUR_INS_POWERNOISE},
   {"PowerNoise (slope)",ICON_FUR_SAW,ICON_FUR_INS_POWERNOISE_SAW},
   {"Dave",ICON_FA_BAR_CHART,ICON_FUR_INS_DAVE},
+  {"NDS",ICON_FA_BAR_CHART,ICON_FUR_INS_NDS},
+  {"GBA DMA",ICON_FA_GAMEPAD,ICON_FUR_INS_GBA_DMA},
+  {"GBA MinMod",ICON_FA_VOLUME_UP,ICON_FUR_INS_GBA_MINMOD},
   {NULL,ICON_FA_QUESTION,ICON_FA_QUESTION}
 };
 
@@ -202,7 +205,7 @@ const char* sampleDepths[DIV_SAMPLE_DEPTH_MAX]={
   "VOX",
   "8-bit µ-law PCM",
   "C219 PCM",
-  NULL,
+  "IMA ADPCM",
   NULL,
   NULL,
   "16-bit PCM"
@@ -992,6 +995,9 @@ const FurnaceGUIColorDef guiColors[GUI_COLOR_MAX]={
   D(GUI_COLOR_INSTR_POWERNOISE,"",ImVec4(1.0f,1.0f,0.8f,1.0f)),
   D(GUI_COLOR_INSTR_POWERNOISE_SLOPE,"",ImVec4(1.0f,0.6f,0.3f,1.0f)),
   D(GUI_COLOR_INSTR_DAVE,"",ImVec4(0.7f,0.7f,0.8f,1.0f)),
+  D(GUI_COLOR_INSTR_NDS,"",ImVec4(0.7f,0.7f,0.8f,1.0f)),
+  D(GUI_COLOR_INSTR_GBA_DMA,"",ImVec4(0.6f,0.4f,1.0f,1.0f)),
+  D(GUI_COLOR_INSTR_GBA_MINMOD,"",ImVec4(0.5f,0.45f,0.7f,1.0f)),
   D(GUI_COLOR_INSTR_UNKNOWN,"",ImVec4(0.3f,0.3f,0.3f,1.0f)),
 
   D(GUI_COLOR_CHANNEL_BG,"",ImVec4(0.4f,0.6f,0.8f,1.0f)),
@@ -1229,11 +1235,14 @@ const int availableSystems[]={
   DIV_SYSTEM_TED,
   DIV_SYSTEM_C140,
   DIV_SYSTEM_C219,
+  DIV_SYSTEM_GBA_DMA,
+  DIV_SYSTEM_GBA_MINMOD,
   DIV_SYSTEM_PCM_DAC,
   DIV_SYSTEM_ESFM,
   DIV_SYSTEM_PONG,
   DIV_SYSTEM_POWERNOISE,
   DIV_SYSTEM_DAVE,
+  DIV_SYSTEM_NDS,
   0 // don't remove this last one!
 };
 
@@ -1325,6 +1334,7 @@ const int chipsSpecial[]={
   DIV_SYSTEM_SM8521,
   DIV_SYSTEM_POWERNOISE,
   DIV_SYSTEM_DAVE,
+  DIV_SYSTEM_NDS,
   0 // don't remove this last one!
 };
 
@@ -1347,6 +1357,9 @@ const int chipsSample[]={
   DIV_SYSTEM_K053260,
   DIV_SYSTEM_C140,
   DIV_SYSTEM_C219,
+  DIV_SYSTEM_NDS,
+  DIV_SYSTEM_GBA_DMA,
+  DIV_SYSTEM_GBA_MINMOD,
   0 // don't remove this last one!
 };
 
