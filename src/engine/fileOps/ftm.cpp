@@ -723,8 +723,7 @@ bool DivEngine::loadFTM(unsigned char* file, size_t len, bool dnft, bool dnft_si
           }
         }
         if (expansions & 256) {
-          // TODO: change when 5E01 is added
-          ds.system[systemID++] = DIV_SYSTEM_NES;
+          ds.system[systemID++] = DIV_SYSTEM_5E01;
 
           for (int ch = 0; ch < 5; ch++) {
             map_channels[curr_chan] = map_ch;
@@ -1767,7 +1766,7 @@ bool DivEngine::loadFTM(unsigned char* file, size_t len, bool dnft, bool dnft_si
                     for (int v = 0; v < 8; v++) {
                       if (map_channels[ch] == n163_chans[v]) {
                         if (pat->data[row][4 + (j * 2)] == 0x12) {
-                          pat->data[row][4 + (j * 2)] = 0x17; // local wave
+                          pat->data[row][4 + (j * 2)] = 0x10; // TODO: map wave
                         }
                       }
                     }

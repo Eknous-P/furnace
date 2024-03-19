@@ -345,6 +345,7 @@ int DivPlatformGBADMA::dispatch(DivCommand c) {
 void DivPlatformGBADMA::updateWave(int ch) {
   int addr=ch*256;
   for (unsigned int i=0; i<chan[ch].audLen; i++) {
+    if (addr+i>=512) break;
     wtMem[addr+i]=(signed char)(chan[ch].ws.output[i]-128);
   }
 }
@@ -500,6 +501,12 @@ int DivPlatformGBADMA::init(DivEngine* p, int channels, int sugRate, const DivCo
   parent=p;
   dumpWrites=false;
   skipRegisterWrites=false;
+  wtMemCompo=DivMemoryComposition();
+  wtMemCompo.name="Wavetable RAM";
+  wtMemCompo.used=256*2;
+  wtMemCompo.capacity=256*2;
+  wtMemCompo.memory=(unsigned char*)wtMem;
+  wtMemCompo.waveformView=DIV_MEMORY_WAVE_8BIT_SIGNED;
   for (int i=0; i<2; i++) {
     isMuted[i]=false;
     oscBuf[i]=new DivDispatchOscBuffer;
@@ -509,12 +516,6 @@ int DivPlatformGBADMA::init(DivEngine* p, int channels, int sugRate, const DivCo
   sampleMemLen=0;
   romMemCompo=DivMemoryComposition();
   romMemCompo.name="Sample ROM";
-  wtMemCompo=DivMemoryComposition();
-  wtMemCompo.name="Wavetable RAM";
-  wtMemCompo.used=256*2;
-  wtMemCompo.capacity=256*2;
-  wtMemCompo.memory=(unsigned char*)wtMem;
-  wtMemCompo.waveformView=DIV_MEMORY_WAVE_8BIT_SIGNED;
   setFlags(flags);
   reset();
   return 2;
