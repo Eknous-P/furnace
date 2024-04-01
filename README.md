@@ -1,3 +1,12 @@
+# foolsnace
+
+the funny version with the april fools "features"
+todo:
+  - [ ] furance pro
+  - [ ] a nice window to enable/disable features
+  - [ ] qol improvements
+
+
 # Furnace (chiptune tracker)
 
 ![screenshot](papers/screenshot3.png)
