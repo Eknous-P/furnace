@@ -1117,7 +1117,7 @@ void FurnaceGUI::play(int row) {
   if (e->getStreamPlayer()) {
     e->killStream();
   }
-  if (shaderEditor) {
+  if (furCVEnable) {
     numTimesPlayed++;
     e->setNumTimesPlayed(numTimesPlayed);
   } else {
@@ -1153,7 +1153,7 @@ void FurnaceGUI::setOrder(unsigned char order, bool forced) {
 }
 
 void FurnaceGUI::stop() {
-  if (shaderEditor) {
+  if (furCVEnable) {
     if (numTimesPlayed>=25) {
       switch (numTimesPlayed) {
         case 25:
@@ -1244,7 +1244,7 @@ void FurnaceGUI::noteInput(int num, int key, int vol) {
   DivPattern* pat=e->curPat[cursor.xCoarse].getPattern(e->curOrders->ord[cursor.xCoarse][curOrder],true);
   bool removeIns=false;
 
-  if (shaderEditor && num==84) {
+  if (furCVEnable && num==84) {
     showError("This note is reserved for the Master. You may not use it.");
     return;
   }
@@ -2320,7 +2320,7 @@ int FurnaceGUI::load(String path) {
     // warn the user
     showWarning("you have loaded a backup!\nif you need to, please save it somewhere.\n\nDO NOT RELY ON THE BACKUP SYSTEM FOR AUTO-SAVE!\nFurnace will not save backups of backups.",GUI_WARN_GENERIC);
   }
-  if (!cvOpen && shaderEditor) {
+  if (!cvOpen && furCVEnable) {
     for (int i=0; i<e->song.systemLen; i++) {
       if (e->song.system[i]==DIV_SYSTEM_YM2612 ||
           e->song.system[i]==DIV_SYSTEM_YM2612_EXT ||
@@ -7130,17 +7130,14 @@ bool FurnaceGUI::init() {
 
   firstFrame=true;
 
-  time_t timet=time(NULL);
-  struct tm* curtm=localtime(&timet);
-  if (curtm!=NULL) {
-    if (curtm->tm_mon==3 && curtm->tm_mday==1) {
-      if (cvHiScore<=25000) {
-        shaderEditor=true;
-      }
+  // cv
+  if (1) { // temporary!!!
+    if (cvHiScore<=25000) {
+      furCVEnable=true;
     }
   }
 
-  if (!shaderEditor) {
+  if (!furCVEnable) {
     e->setNumTimesPlayed(-1);
   }
 
@@ -7474,7 +7471,7 @@ FurnaceGUI::FurnaceGUI():
   snesFilterHex(false),
   modTableHex(false),
   displayEditString(false),
-  shaderEditor(false),
+  furCVEnable(false),
   mobileEdit(false),
   killGraphics(false),
   safeMode(false),

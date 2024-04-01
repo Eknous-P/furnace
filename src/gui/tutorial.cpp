@@ -1127,7 +1127,7 @@ void FurnaceGUI::drawTutorial() {
         cv->init(e);
         cv->hiScore=cvHiScore;
         e->setNumTimesPlayed(-1);
-        shaderEditor=false;
+        furCVEnable=false;
       }
       if (cvTex==NULL) {
         cvTex=rend->createTexture(true,320,224,false);
