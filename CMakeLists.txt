@@ -811,6 +811,7 @@ src/gui/effectList.cpp
 src/gui/exportOptions.cpp
 src/gui/findReplace.cpp
 src/gui/fmPreview.cpp
+src/gui/fools.cpp
 src/gui/gradient.cpp
 src/gui/grooves.cpp
 src/gui/insEdit.cpp
