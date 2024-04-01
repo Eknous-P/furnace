@@ -179,7 +179,7 @@ const char* insTypes[DIV_INS_MAX+1][3]={
   {"PowerNoise (noise)",ICON_FUR_NOISE,ICON_FUR_INS_POWERNOISE},
   {"PowerNoise (slope)",ICON_FUR_SAW,ICON_FUR_INS_POWERNOISE_SAW},
   {"Dave",ICON_FA_BAR_CHART,ICON_FUR_INS_DAVE},
-  {"NDS",ICON_FA_BAR_CHART,ICON_FUR_INS_NDS},
+  {"Nintendo DS",ICON_FA_BAR_CHART,ICON_FUR_INS_NDS},
   {"GBA DMA",ICON_FA_GAMEPAD,ICON_FUR_INS_GBA_DMA},
   {"GBA MinMod",ICON_FA_VOLUME_UP,ICON_FUR_INS_GBA_MINMOD},
   {NULL,ICON_FA_QUESTION,ICON_FA_QUESTION}
@@ -610,6 +610,7 @@ const FurnaceGUIActionDef guiActions[GUI_ACTION_MAX]={
   D("WINDOW_XY_OSC", "Oscilloscope (X-Y)", 0),
   D("WINDOW_MEMORY", "Memory Composition", 0),
   D("WINDOW_CS_PLAYER", "Command Stream Player", 0),
+  D("WINDOW_USER_PRESETS", "User Presets", 0),
 
   D("COLLAPSE_WINDOW", "Collapse/expand current window", 0),
   D("CLOSE_WINDOW", "Close current window", FURKMOD_SHIFT|SDLK_ESCAPE),

@@ -3179,8 +3179,8 @@ void FurnaceGUI::drawSettings() {
           settingsChanged=true;
         }
 
-        // SUBSECTION STATISTICS
-        CONFIG_SUBSECTION("Statistics");
+        // SUBSECTION MEMORY COMPOSITION
+        CONFIG_SUBSECTION("Memory Composition");
         ImGui::Text("Chip memory usage unit:");
         ImGui::Indent();
         if (ImGui::RadioButton("Bytes##MUU0",settings.memUsageUnit==0)) {
@@ -3563,7 +3563,7 @@ void FurnaceGUI::drawSettings() {
           UI_COLOR_CONFIG(GUI_COLOR_INSTR_POWERNOISE,"PowerNoise (noise)");
           UI_COLOR_CONFIG(GUI_COLOR_INSTR_POWERNOISE_SLOPE,"PowerNoise (slope)");
           UI_COLOR_CONFIG(GUI_COLOR_INSTR_DAVE,"Dave");
-          UI_COLOR_CONFIG(GUI_COLOR_INSTR_NDS,"NDS");
+          UI_COLOR_CONFIG(GUI_COLOR_INSTR_NDS,"Nintendo DS");
           UI_COLOR_CONFIG(GUI_COLOR_INSTR_GBA_DMA,"GBA DMA");
           UI_COLOR_CONFIG(GUI_COLOR_INSTR_GBA_MINMOD,"GBA MinMod");
           UI_COLOR_CONFIG(GUI_COLOR_INSTR_UNKNOWN,"Other/Unknown");
