@@ -802,6 +802,7 @@ src/gui/clock.cpp
 src/gui/compatFlags.cpp
 src/gui/csPlayer.cpp
 src/gui/cursor.cpp
+src/gui/cv.cpp
 src/gui/dataList.cpp
 src/gui/debugWindow.cpp
 src/gui/doAction.cpp

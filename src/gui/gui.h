@@ -2628,6 +2628,8 @@ class FurnaceGUI {
   void drawXYOsc();
   void drawUserPresets();
 
+  void runCV();
+
   void parseKeybinds();
   void promptKey(int which);
   void doAction(int what);
