@@ -322,6 +322,11 @@ void FurnaceGUI::doAction(int what) {
     case GUI_ACTION_WINDOW_USER_PRESETS:
       nextWindow=GUI_WINDOW_USER_PRESETS;
       break;
+#ifdef WITH_RTHP
+    case GUI_ACTION_WINDOW_RTHP:
+      nextWindow=GUI_WINDOW_RTHP;
+      break;
+#endif
     
     case GUI_ACTION_COLLAPSE_WINDOW:
       collapseWindow=true;
@@ -429,6 +434,11 @@ void FurnaceGUI::doAction(int what) {
           break;
         case GUI_WINDOW_USER_PRESETS:
           userPresetsOpen=false;
+#ifdef WITH_RTHP
+        case GUI_WINDOW_RTHP:
+          rthpWindowOpen=false;
+          break;
+#endif
         default:
           break;
       }

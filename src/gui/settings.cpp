@@ -3236,6 +3236,12 @@ void FurnaceGUI::drawSettings() {
         }
         ImGui::Unindent();
 
+        bool flashOnOverloadB=settings.flashOnOverload;
+        if (ImGui::Checkbox("Flash red on audio overload",&flashOnOverloadB)) {
+          settings.flashOnOverload=flashOnOverloadB;
+          settingsChanged=true;
+        }
+
         // SUBSECTION OSCILLOSCOPE
         CONFIG_SUBSECTION("Oscilloscope");
         bool oscRoundedCornersB=settings.oscRoundedCorners;
@@ -4151,6 +4157,7 @@ void FurnaceGUI::readConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
     settings.oneDigitEffects=conf.getInt("oneDigitEffects",0);
     settings.orderButtonPos=conf.getInt("orderButtonPos",2);
     settings.memUsageUnit=conf.getInt("memUsageUnit",1);
+    settings.flashOnOverload=conf.getInt("flashOnOverload",0);
     settings.capitalMenuBar=conf.getInt("capitalMenuBar",0);
     settings.insIconsStyle=conf.getInt("insIconsStyle",1);
     settings.sysSeparators=conf.getInt("sysSeparators",1);
@@ -4359,6 +4366,7 @@ void FurnaceGUI::readConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
   clampSetting(settings.pullDeleteRow,0,1);
   clampSetting(settings.newSongBehavior,0,1);
   clampSetting(settings.memUsageUnit,0,1);
+  clampSetting(settings.flashOnOverload,0,1);
   clampSetting(settings.cursorFollowsWheel,0,2);
   clampSetting(settings.noDMFCompat,0,1);
   clampSetting(settings.removeInsOff,0,1);
@@ -4634,6 +4642,7 @@ void FurnaceGUI::writeConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
     conf.set("oneDigitEffects",settings.oneDigitEffects);
     conf.set("orderButtonPos",settings.orderButtonPos);
     conf.set("memUsageUnit",settings.memUsageUnit);
+    conf.set("flashOnOverload",settings.flashOnOverload);
     conf.set("capitalMenuBar",settings.capitalMenuBar);
     conf.set("insIconsStyle",settings.insIconsStyle);
     conf.set("sysSeparators",settings.sysSeparators);
