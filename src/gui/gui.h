@@ -890,12 +890,6 @@ enum FurnaceGUIChanOscRef {
   GUI_OSCREF_MAX
 };
 
-enum FurnaceGUITutorials {
-  GUI_TUTORIAL_OVERVIEW=0,
-  
-  GUI_TUTORIAL_MAX
-};
-
 enum PasteMode {
   GUI_PASTE_MODE_NORMAL=0,
   GUI_PASTE_MODE_MIX_FG,
@@ -1266,31 +1260,6 @@ struct FurnaceGUISysCategory {
     description(NULL) {}
 };
 
-typedef std::function<void()> TutorialFunc;
-
-struct FurnaceGUITutorialStep {
-  const char* text;
-  int waitForTrigger;
-  TutorialFunc run;
-  TutorialFunc runBefore;
-  TutorialFunc runAfter;
-  
-  FurnaceGUITutorialStep(const char* t, int trigger=-1, TutorialFunc activeFunc=NULL, TutorialFunc beginFunc=NULL, TutorialFunc endFunc=NULL):
-    text(t),
-    waitForTrigger(trigger),
-    run(activeFunc),
-    runBefore(beginFunc),
-    runAfter(endFunc) {}
-};
-
-struct FurnaceGUITutorialDef {
-  const char* name;
-  std::vector<FurnaceGUITutorialStep> steps;
-  FurnaceGUITutorialDef():
-    name("Help!") {}
-  FurnaceGUITutorialDef(const char* n, std::initializer_list<FurnaceGUITutorialStep> step);
-};
-
 struct FurnaceGUIMacroDesc {
   DivInstrumentMacro* macro;
   int min, max;
@@ -1464,6 +1433,7 @@ class FurnaceGUIRender {
     virtual void resized(const SDL_Event& ev);
     virtual void clear(ImVec4 color);
     virtual bool newFrame();
+    virtual bool canVSync();
     virtual void createFontsTexture();
     virtual void destroyFontsTexture();
     virtual void renderGUI();
@@ -1475,8 +1445,9 @@ class FurnaceGUIRender {
     virtual bool regenOscShader(const char* fragment);
     virtual bool getOutputSize(int& w, int& h);
     virtual int getWindowFlags();
+    virtual void setSwapInterval(int swapInterval);
     virtual void preInit();
-    virtual bool init(SDL_Window* win);
+    virtual bool init(SDL_Window* win, int swapInterval);
     virtual void initGUI(SDL_Window* win);
     virtual void quitGUI();
     virtual bool quit();
@@ -1546,7 +1517,6 @@ class FurnaceGUI {
   bool wantCaptureKeyboard, oldWantCaptureKeyboard, displayMacroMenu;
   bool displayNew, displayExport, displayPalette, fullScreen, preserveChanPos, sysDupCloneChannels, sysDupEnd, wantScrollList, noteInputPoly, notifyWaveChange;
   bool displayPendingIns, pendingInsSingle, displayPendingRawSample, snesFilterHex, modTableHex, displayEditString;
-  bool shaderEditor;
   bool mobileEdit;
   bool killGraphics;
   bool safeMode;
@@ -1567,7 +1537,6 @@ class FurnaceGUI {
   int wheelCalmDown;
   int shallDetectScale;
   int cpuCores;
-  int numTimesPlayed;
   float secondTimer;
   unsigned int userEvents;
   float mobileMenuPos, autoButtonSize, mobileEditAnim;
@@ -1659,6 +1628,18 @@ class FurnaceGUI {
     int opl2Core;
     int opl3Core;
     int esfmCore;
+    int opllCore;
+    int bubsysQuality;
+    int dsidQuality;
+    int gbQuality;
+    int ndsQuality;
+    int pceQuality;
+    int pnQuality;
+    int saaQuality;
+    int sccQuality;
+    int smQuality; 
+    int swanQuality;
+    int vbQuality;
     int arcadeCoreRender;
     int ym2612CoreRender;
     int snCoreRender;
@@ -1670,6 +1651,18 @@ class FurnaceGUI {
     int opl2CoreRender;
     int opl3CoreRender;
     int esfmCoreRender;
+    int opllCoreRender;
+    int bubsysQualityRender;
+    int dsidQualityRender;
+    int gbQualityRender;
+    int ndsQualityRender;
+    int pceQualityRender;
+    int pnQualityRender;
+    int saaQualityRender;
+    int sccQualityRender;
+    int smQualityRender; 
+    int swanQualityRender;
+    int vbQualityRender;
     int pcSpeakerOutMethod;
     String yrw801Path;
     String tg100Path;
@@ -1827,6 +1820,8 @@ class FurnaceGUI {
     int playbackTime;
     int shaderOsc;
     int cursorWheelStep;
+    int vsync;
+    int frameRateLimit;
     unsigned int maxUndoSteps;
     String mainFontPath;
     String headFontPath;
@@ -1867,6 +1862,18 @@ class FurnaceGUI {
       opl2Core(0),
       opl3Core(0),
       esfmCore(0),
+      opllCore(0),
+      bubsysQuality(3),
+      dsidQuality(3),
+      gbQuality(3),
+      ndsQuality(3),
+      pceQuality(3),
+      pnQuality(3),
+      saaQuality(3),
+      sccQuality(3),
+      smQuality(3),
+      swanQuality(3),
+      vbQuality(3),
       arcadeCoreRender(1),
       ym2612CoreRender(0),
       snCoreRender(0),
@@ -1878,6 +1885,18 @@ class FurnaceGUI {
       opl2CoreRender(0),
       opl3CoreRender(0),
       esfmCoreRender(0),
+      opllCoreRender(0),
+      bubsysQualityRender(3),
+      dsidQualityRender(3),
+      gbQualityRender(3),
+      ndsQualityRender(3),
+      pceQualityRender(3),
+      pnQualityRender(3),
+      saaQualityRender(3),
+      sccQualityRender(3),
+      smQualityRender(3),
+      swanQualityRender(3),
+      vbQualityRender(3),
       pcSpeakerOutMethod(0),
       yrw801Path(""),
       tg100Path(""),
@@ -2032,6 +2051,8 @@ class FurnaceGUI {
       playbackTime(1),
       shaderOsc(1),
       cursorWheelStep(0),
+      vsync(1),
+      frameRateLimit(60),
       maxUndoSteps(100),
       mainFontPath(""),
       headFontPath(""),
@@ -2052,15 +2073,11 @@ class FurnaceGUI {
   } settings;
 
   struct Tutorial {
-    int userComesFrom;
     bool introPlayed;
     bool protoWelcome;
-    bool taken[GUI_TUTORIAL_MAX];
     Tutorial():
-      userComesFrom(0),
       introPlayed(false),
       protoWelcome(false) {
-      memset(taken,0,GUI_TUTORIAL_MAX*sizeof(bool));
     }
   } tutorial;
 
@@ -2184,7 +2201,6 @@ class FurnaceGUI {
   std::vector<std::pair<DivInstrument*,bool>> pendingIns;
 
   std::vector<FurnaceGUISysCategory> sysCategories;
-  FurnaceGUITutorialDef tutorials[GUI_TUTORIAL_MAX];
 
   bool wavePreviewOn;
   SDL_Scancode wavePreviewKey;
@@ -2263,6 +2279,7 @@ class FurnaceGUI {
   uint64_t drawTimeBegin, drawTimeEnd, drawTimeDelta;
   uint64_t swapTimeBegin, swapTimeEnd, swapTimeDelta;
   uint64_t eventTimeBegin, eventTimeEnd, eventTimeDelta;
+  uint64_t nextPresentTime;
 
   FurnaceGUIPerfMetric perfMetrics[64];
   int perfMetricsLen;
@@ -2733,8 +2750,6 @@ class FurnaceGUI {
 
   void applyUISettings(bool updateFonts=true);
   void initSystemPresets();
-  void initTutorial();
-  void activateTutorial(FurnaceGUITutorials which);
 
   void initRandomDemoSong();
   bool loadRandomDemoSong();
