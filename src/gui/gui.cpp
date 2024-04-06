@@ -641,6 +641,73 @@ void FurnaceGUI::updateWindowTitle() {
   }
 }
 
+void FurnaceGUI::autoDetectSystemIter(std::vector<FurnaceGUISysDef>& category, bool& isMatch, std::map<DivSystem,int>& defCountMap, std::map<DivSystem,DivConfig>& defConfMap, std::map<DivSystem,int>& sysCountMap, std::map<DivSystem,DivConfig>& sysConfMap) {
+  for (FurnaceGUISysDef& j: category) {
+    if (!j.orig.empty()) {
+      defCountMap.clear();
+      defConfMap.clear();
+      for (FurnaceGUISysDefChip& k: j.orig) {
+        auto it=defCountMap.find(k.sys);
+        if (it==defCountMap.cend()) {
+          defCountMap[k.sys]=1;
+        } else {
+          it->second++;
+        }
+        DivConfig dc;
+        dc.loadFromMemory(k.flags.c_str());
+        defConfMap[k.sys]=dc;
+      }
+      if (defCountMap.size()==sysCountMap.size()) {
+        isMatch=true;
+        /*logV("trying on defCountMap: %s",j.name);
+        for (std::pair<DivSystem,int> k: defCountMap) {
+          logV("- %s: %d",e->getSystemName(k.first),k.second);
+        }*/
+        for (std::pair<DivSystem,int> k: defCountMap) {
+          auto countI=sysCountMap.find(k.first);
+          if (countI==sysCountMap.cend()) {
+            isMatch=false;
+            break;
+          } else if (countI->second!=k.second) {
+            isMatch=false;
+            break;
+          }
+
+          auto confI=sysConfMap.find(k.first);
+          if (confI==sysConfMap.cend()) {
+            isMatch=false;
+            break;
+          }
+          DivConfig& sysDC=confI->second;
+          auto defConfI=defConfMap.find(k.first);
+          if (defConfI==defConfMap.cend()) {
+            isMatch=false;
+            break;
+          }
+          for (std::pair<String,String> l: defConfI->second.configMap()) {
+            if (!sysDC.has(l.first)) {
+              isMatch=false;
+              break;
+            }
+            if (sysDC.getString(l.first,"")!=l.second) {
+              isMatch=false;
+              break;
+            }
+          }
+          if (!isMatch) break;
+        }
+        if (isMatch) {
+          logV("match found!");
+          e->song.systemName=j.name;
+          break;
+        }
+      }
+    }
+    if (!j.subDefs.empty()) autoDetectSystemIter(j.subDefs,isMatch,defCountMap,defConfMap,sysCountMap,sysConfMap);
+    if (isMatch) break;
+  }
+}
+
 void FurnaceGUI::autoDetectSystem() {
   std::map<DivSystem,int> sysCountMap;
   std::map<DivSystem,DivConfig> sysConfMap;
@@ -663,65 +730,7 @@ void FurnaceGUI::autoDetectSystem() {
   std::map<DivSystem,int> defCountMap;
   std::map<DivSystem,DivConfig> defConfMap;
   for (FurnaceGUISysCategory& i: sysCategories) {
-    for (FurnaceGUISysDef& j: i.systems) {
-      defCountMap.clear();
-      defConfMap.clear();
-      for (FurnaceGUISysDefChip& k: j.orig) {
-        auto it=defCountMap.find(k.sys);
-        if (it==defCountMap.cend()) {
-          defCountMap[k.sys]=1;
-        } else {
-          it->second++;
-        }
-        DivConfig dc;
-        dc.loadFromMemory(k.flags);
-        defConfMap[k.sys]=dc;
-      }
-      if (defCountMap.size()!=sysCountMap.size()) continue;
-      isMatch=true;
-      /*logV("trying on defCountMap: %s",j.name);
-      for (std::pair<DivSystem,int> k: defCountMap) {
-        logV("- %s: %d",e->getSystemName(k.first),k.second);
-      }*/
-      for (std::pair<DivSystem,int> k: defCountMap) {
-        auto countI=sysCountMap.find(k.first);
-        if (countI==sysCountMap.cend()) {
-          isMatch=false;
-          break;
-        } else if (countI->second!=k.second) {
-          isMatch=false;
-          break;
-        }
-
-        auto confI=sysConfMap.find(k.first);
-        if (confI==sysConfMap.cend()) {
-          isMatch=false;
-          break;
-        }
-        DivConfig& sysDC=confI->second;
-        auto defConfI=defConfMap.find(k.first);
-        if (defConfI==defConfMap.cend()) {
-          isMatch=false;
-          break;
-        }
-        for (std::pair<String,String> l: defConfI->second.configMap()) {
-          if (!sysDC.has(l.first)) {
-            isMatch=false;
-            break;
-          }
-          if (sysDC.getString(l.first,"")!=l.second) {
-            isMatch=false;
-            break;
-          }
-        }
-        if (!isMatch) break;
-      }
-      if (isMatch) {
-        logV("match found!");
-        e->song.systemName=j.name;
-        break;
-      }
-    }
+    autoDetectSystemIter(i.systems,isMatch,defCountMap,defConfMap,sysCountMap,sysConfMap);
     if (isMatch) break;
   }
 
@@ -1372,6 +1381,7 @@ void FurnaceGUI::keyDown(SDL_Event& ev) {
   if (introPos<11.0 && !shortIntro) return;
   if (ImGuiFileDialog::Instance()->IsOpened()) return;
   if (aboutOpen) return;
+  if (cvOpen) return;
 
   int mapped=ev.key.keysym.sym;
   if (ev.key.keysym.mod&KMOD_CTRL) {
@@ -3097,6 +3107,7 @@ int FurnaceGUI::processEvent(SDL_Event* ev) {
     e->saveConf();
   }
 #endif
+  if (cvOpen) return 1;
   if (ev->type==SDL_KEYDOWN) {
     if (!ev->key.repeat && latchTarget==0 && !wantCaptureKeyboard && !sampleMapWaitingInput && (ev->key.keysym.mod&(~(VALID_MODS)))==0) {
       if (settings.notePreviewBehavior==0) return 1;
@@ -3481,6 +3492,7 @@ bool FurnaceGUI::loop() {
   DECLARE_METRIC(regView)
   DECLARE_METRIC(log)
   DECLARE_METRIC(effectList)
+  DECLARE_METRIC(userPresets)
   DECLARE_METRIC(popup)
 #ifdef WITH_RTHP
   DECLARE_METRIC(rthpWindow)
@@ -3703,6 +3715,10 @@ bool FurnaceGUI::loop() {
         scrConfY=scrY;
         scrConfW=scrW;
         scrConfH=scrH;
+      }
+      if (rend!=NULL) {
+        logV("restoring swap interval...");
+        rend->setSwapInterval(settings.vsync);
       }
     }
     // update canvas size as well
@@ -3972,7 +3988,7 @@ bool FurnaceGUI::loop() {
 
       logD("starting render backend...");
       while (++initAttempts<=5) {
-        if (rend->init(sdlWin)) {
+        if (rend->init(sdlWin,settings.vsync)) {
           break;
         }
         SDL_Delay(1000);
@@ -4056,6 +4072,7 @@ bool FurnaceGUI::loop() {
         IMPORT_CLOSE(xyOscOpen);
         IMPORT_CLOSE(memoryOpen);
         IMPORT_CLOSE(csPlayerOpen);
+        IMPORT_CLOSE(userPresetsOpen);
       } else if (pendingLayoutImportStep==1) {
         // let the UI settle
       } else if (pendingLayoutImportStep==2) {
@@ -4388,6 +4405,11 @@ bool FurnaceGUI::loop() {
           toggleMobileUI(!mobileUI);
         }
 #endif
+        /*
+        if (ImGui::MenuItem("manage presets...",BIND_FOR(GUI_ACTION_WINDOW_USER_PRESETS))) {
+          userPresetsOpen=true;
+        }
+        */
         if (ImGui::MenuItem("settings...",BIND_FOR(GUI_ACTION_WINDOW_SETTINGS))) {
           syncSettings();
           settingsOpen=true;
@@ -4572,7 +4594,8 @@ bool FurnaceGUI::loop() {
                 if (maxVol<1 || p->data[cursor.y][3]>maxVol) {
                   info=fmt::sprintf("Set volume: %d (%.2X, INVALID!)",p->data[cursor.y][3],p->data[cursor.y][3]);
                 } else {
-                  info=fmt::sprintf("Set volume: %d (%.2X, %d%%)",p->data[cursor.y][3],p->data[cursor.y][3],(p->data[cursor.y][3]*100)/maxVol);
+                  float realVol=e->mapVelocity(cursor.xCoarse,(float)p->data[cursor.y][3]/(float)maxVol);
+                  info=fmt::sprintf("Set volume: %d (%.2X, %d%%)",p->data[cursor.y][3],p->data[cursor.y][3],(int)(realVol*100.0f));
                 }
                 hasInfo=true;
               }
@@ -4673,6 +4696,7 @@ bool FurnaceGUI::loop() {
       MEASURE(grooves,drawGrooves());
       MEASURE(regView,drawRegView());
       MEASURE(memory,drawMemory());
+      MEASURE(userPresets,drawUserPresets());
     } else {
       globalWinFlags=0;
       ImGui::DockSpaceOverViewport(NULL,lockLayout?(ImGuiDockNodeFlags_NoWindowMenuButton|ImGuiDockNodeFlags_NoMove|ImGuiDockNodeFlags_NoResize|ImGuiDockNodeFlags_NoCloseButton|ImGuiDockNodeFlags_NoDocking|ImGuiDockNodeFlags_NoDockingSplitMe|ImGuiDockNodeFlags_NoDockingSplitOther):0);
@@ -4715,35 +4739,10 @@ bool FurnaceGUI::loop() {
       MEASURE(regView,drawRegView());
       MEASURE(log,drawLog());
       MEASURE(effectList,drawEffectList());
+      MEASURE(userPresets,drawUserPresets());
 #ifdef WITH_RTHP
       MEASURE(rthpWindow,drawRTHPWindow());
 #endif
-    }
-
-    // NEW CODE - REMOVE WHEN DONE
-    if (shaderEditor) {
-      if (ImGui::Begin("Shader Editor 2024",&shaderEditor,ImGuiWindowFlags_NoScrollWithMouse|ImGuiWindowFlags_NoScrollbar)) {
-        ImGui::PushFont(patFont);
-        ImGui::InputTextMultiline("##SHFragment",&newOscFragment,ImVec2(ImGui::GetContentRegionAvail().x,ImGui::GetContentRegionAvail().y-ImGui::GetFrameHeightWithSpacing()),ImGuiInputTextFlags_UndoRedo);
-        ImGui::PopFont();
-        if (ImGui::Button("Save")) {
-          FILE* f=ps_fopen("/storage/emulated/0/osc.fsh","w");
-          if (f==NULL) {
-            showError("Something happened");
-          } else {
-            fwrite(newOscFragment.c_str(),1,newOscFragment.size(),f);
-            fclose(f);
-            showError("Saved!");
-          }
-        }
-        ImGui::SameLine();
-        if (ImGui::Button("Apply")) {
-          if (!rend->regenOscShader(newOscFragment.c_str())) {
-            showError("Of course you screwed it up, again!");
-          }
-        }
-      }
-      ImGui::End();
     }
 
     // release selection if mouse released
@@ -4765,8 +4764,6 @@ bool FurnaceGUI::loop() {
       keyHit1[i]-=0.2f;
       if (keyHit1[i]<0.0f) keyHit1[i]=0.0f;
     }
-
-    activateTutorial(GUI_TUTORIAL_OVERVIEW);
 
     if (inspectorOpen) ImGui::ShowMetricsWindow(&inspectorOpen);
 
@@ -4996,6 +4993,9 @@ bool FurnaceGUI::loop() {
                     break;
                   case GUI_WARN_OPEN_BACKUP:
                     openFileDialog(GUI_FILE_OPEN_BACKUP);
+                    break;
+                  case GUI_WARN_CV:
+                    cvOpen=true;
                     break;
                   default:
                     break;
@@ -5640,6 +5640,30 @@ bool FurnaceGUI::loop() {
           if (ImGui::Button("No")) {
             ImGui::CloseCurrentPopup();
             openFileDialog(GUI_FILE_OPEN);
+          }
+          ImGui::SameLine();
+          if (ImGui::Button("Cancel") || ImGui::IsKeyPressed(ImGuiKey_Escape)) {
+            ImGui::CloseCurrentPopup();
+          }
+          break;
+        case GUI_WARN_CV:
+          if (ImGui::Button("Yes")) {
+            ImGui::CloseCurrentPopup();
+            if (curFileName=="" || curFileName.find(backupPath)==0 || e->song.version>=0xff00) {
+              openFileDialog(GUI_FILE_SAVE);
+              postWarnAction=GUI_WARN_CV;
+            } else {
+              if (save(curFileName,e->song.isDMF?e->song.version:0)>0) {
+                showError(fmt::sprintf("Error while saving file! (%s)",lastError));
+              } else {
+                cvOpen=true;
+              }
+            }
+          }
+          ImGui::SameLine();
+          if (ImGui::Button("No")) {
+            ImGui::CloseCurrentPopup();
+            cvOpen=true;
           }
           ImGui::SameLine();
           if (ImGui::Button("Cancel") || ImGui::IsKeyPressed(ImGuiKey_Escape)) {
@@ -6464,6 +6488,22 @@ bool FurnaceGUI::loop() {
     }
     drawTimeEnd=SDL_GetPerformanceCounter();
     swapTimeBegin=SDL_GetPerformanceCounter();
+    if (!settings.vsync || !rend->canVSync()) {
+      unsigned int presentDelay=SDL_GetPerformanceFrequency()/settings.frameRateLimit;
+      if ((nextPresentTime-swapTimeBegin)<presentDelay) {
+#ifdef _WIN32
+        unsigned int mDivider=SDL_GetPerformanceFrequency()/1000;
+        Sleep((unsigned int)(nextPresentTime-swapTimeBegin)/mDivider);
+#else
+        unsigned int mDivider=SDL_GetPerformanceFrequency()/1000000;
+        usleep((unsigned int)(nextPresentTime-swapTimeBegin)/mDivider);
+#endif
+
+        nextPresentTime+=presentDelay;
+      } else {
+        nextPresentTime=swapTimeBegin+presentDelay;
+      }
+    }
     rend->present();
     if (settings.renderClearPos) {
       rend->clear(uiColors[GUI_COLOR_BACKGROUND]);
@@ -6622,6 +6662,7 @@ bool FurnaceGUI::init() {
   subSongsOpen=e->getConfBool("subSongsOpen",true);
   findOpen=e->getConfBool("findOpen",false);
   spoilerOpen=e->getConfBool("spoilerOpen",false);
+  userPresetsOpen=e->getConfBool("userPresetsOpen",false);
 #ifdef WITH_RTHP
   rthpWindowOpen=e->getConfBool("rthpWindowOpen",false);
 #endif
@@ -6718,6 +6759,8 @@ bool FurnaceGUI::init() {
   xyOscIntensity=e->getConfFloat("xyOscIntensity",2.0f);
   xyOscThickness=e->getConfFloat("xyOscThickness",2.0f);
 
+  cvHiScore=e->getConfInt("cvHiScore",25000);
+
 #ifdef WITH_RTHP
   RTHPImplementation=e->getConfInt("RTHPImplementation",RTHP_ERTHP);
   RTHPPort=e->getConfString("RTHPPort","");
@@ -6739,7 +6782,6 @@ bool FurnaceGUI::init() {
   }
 
   initSystemPresets();
-  initTutorial();
 
   e->setAutoNotePoly(noteInputPoly);
 
@@ -6972,7 +7014,7 @@ bool FurnaceGUI::init() {
   }
 
   logD("starting render backend...");
-  if (!rend->init(sdlWin)) {
+  if (!rend->init(sdlWin,settings.vsync)) {
     logE("it failed...");
     if (settings.renderBackend!="SDL") {
       settings.renderBackend="SDL";
@@ -7026,6 +7068,8 @@ bool FurnaceGUI::init() {
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
   rend->initGUI(sdlWin);
+
+  loadUserPresets(true);
 
   // NEW CODE - REMOVE WHEN DONE
   newOscFragment=rend->getStupidFragment();
@@ -7189,6 +7233,7 @@ void FurnaceGUI::commitState() {
   e->setConf("subSongsOpen",subSongsOpen);
   e->setConf("findOpen",findOpen);
   e->setConf("spoilerOpen",spoilerOpen);
+  e->setConf("userPresetsOpen",userPresetsOpen);
 #ifdef WITH_RTHP
   e->setConf("rthpWindowOpen",rthpWindowOpen);
 #endif
@@ -7296,10 +7341,15 @@ void FurnaceGUI::commitState() {
       e->setConf(key,recentFile[i]);
     }
   }
+
+  e->setConf("cvHiScore",cvHiScore);
 }
 
 bool FurnaceGUI::finish(bool saveConfig) {
   commitState();
+  if (userPresetsOpen) {
+    saveUserPresets(true);
+  }
   if (saveConfig) {
     logI("saving config.");
     e->saveConf();
@@ -7337,7 +7387,7 @@ bool FurnaceGUI::finish(bool saveConfig) {
 }
 
 bool FurnaceGUI::requestQuit() {
-  if (modified) {
+  if (modified && !cvOpen) {
     showWarning("Unsaved changes! Save changes before quitting?",GUI_WARN_QUIT);
   } else {
     quit=true;
@@ -7352,6 +7402,7 @@ FurnaceGUI::FurnaceGUI():
   sdlWin(NULL),
   vibrator(NULL),
   vibratorAvailable(false),
+  cv(NULL),
   sampleTex(NULL),
   sampleTexW(0),
   sampleTexH(0),
@@ -7393,7 +7444,6 @@ FurnaceGUI::FurnaceGUI():
   snesFilterHex(false),
   modTableHex(false),
   displayEditString(false),
-  shaderEditor(false),
   mobileEdit(false),
   killGraphics(false),
   safeMode(false),
@@ -7550,6 +7600,9 @@ FurnaceGUI::FurnaceGUI():
   xyOscOpen(false),
   memoryOpen(false),
   csPlayerOpen(false),
+  cvOpen(false),
+  userPresetsOpen(false),
+  cvNotSerious(false),
 #ifdef WITH_RTHP
   rthpWindowOpen(false),
 #endif
@@ -7705,6 +7758,7 @@ FurnaceGUI::FurnaceGUI():
   eventTimeBegin(0),
   eventTimeEnd(0),
   eventTimeDelta(0),
+  nextPresentTime(0),
   perfMetricsLen(0),
   chanToMove(-1),
   sysToMove(-1),
@@ -7858,7 +7912,8 @@ FurnaceGUI::FurnaceGUI():
   curTutorialStep(0),
   audioExportType(0),
   dmfExportVersion(0),
-  curExportType(GUI_EXPORT_NONE)
+  curExportType(GUI_EXPORT_NONE),
+  selectedUserPreset(-1)
 #ifdef WITH_RTHP
   ,RTHPImplementation(RTHP_ERTHP),
   RTHPAvailPorts({}),

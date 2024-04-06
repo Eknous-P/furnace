@@ -152,6 +152,7 @@ const char* aboutLine[]={
   "RevvoBolt",
   "Rockyfan75000",
   "scooblee",
+  "sheffield^2",
   "sillygoose",
   "smaybius",
   "SnugglyBun",
@@ -176,7 +177,6 @@ const char* aboutLine[]={
   "tom_atom",
   "traumatized",
   "Tytanium654",
-  "Uhrwerk Klockwerx",
   "Ultraprogramer",
   "UserSniper",
   "Weeppiko",
@@ -214,6 +214,7 @@ const char* aboutLine[]={
   "FFTW by Matteo Frigo and Steven G. Johnson",
   "backward-cpp by Google",
   "adpcm by superctr",
+  "adpcm-xq by David Bryant",
   "Nuked-OPL3/OPLL/OPM/OPN2/PSG by nukeykt",
   "YM3812-LLE, YMF262-LLE and YMF276-LLE by nukeykt",
   "ESFMu (modified version) by Kagamiin~",
@@ -253,6 +254,8 @@ const char* aboutLine[]={
   "D65010G031 emulator (modified version) by cam900",
   "Namco C140/C219 emulator (modified version) by cam900",
   "PowerNoise emulator by scratchminer",
+  "ep128emu by Istvan Varga",
+  "NDS sound emulator by cam900",
   "",
   "greetings to:",
   "NEOART Costa Rica",
@@ -370,6 +373,16 @@ void FurnaceGUI::drawAbout() {
     while (aboutHue>1) aboutHue--;
     while (aboutSin>=2400) aboutSin-=2400;
     if (aboutScroll>(42*dpiScale*aboutCount+canvasH)) aboutScroll=-20*dpiScale;
+
+    if (ImGui::IsKeyPressed(ImGuiKey_Space)) {
+      aboutOpen=false;
+      if (modified) {
+        showWarning("Unsaved changes! Save changes before playing?",GUI_WARN_CV);
+      } else {
+        cvOpen=true;
+        cvNotSerious=true;
+      }
+    }
 
     WAKE_UP;
   }

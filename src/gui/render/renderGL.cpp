@@ -301,12 +301,17 @@ bool FurnaceGUIRenderGL::updateTexture(FurnaceGUITexture* which, void* data, int
   return true;
 }
 
-FurnaceGUITexture* FurnaceGUIRenderGL::createTexture(bool dynamic, int width, int height) {
+FurnaceGUITexture* FurnaceGUIRenderGL::createTexture(bool dynamic, int width, int height, bool interpolate) {
   FurnaceGLTexture* t=new FurnaceGLTexture;
   C(glGenTextures(1,&t->id));
   C(glBindTexture(GL_TEXTURE_2D,t->id));
-  C(glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR));
-  C(glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR));
+  if (interpolate) {
+    C(glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR));
+    C(glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR));
+  } else {
+    C(glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST));
+    C(glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST));
+  }
   C(glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,width,height,0,GL_RGBA,PIXEL_FORMAT,NULL));
   C(furActiveTexture(GL_TEXTURE0));
   t->width=width;
@@ -353,6 +358,10 @@ void FurnaceGUIRenderGL::clear(ImVec4 color) {
 
 bool FurnaceGUIRenderGL::newFrame() {
   return ImGui_ImplOpenGL3_NewFrame();
+}
+
+bool FurnaceGUIRenderGL::canVSync() {
+  return swapIntervalSet;
 }
 
 void FurnaceGUIRenderGL::createFontsTexture() {
@@ -522,6 +531,16 @@ int FurnaceGUIRenderGL::getWindowFlags() {
   return SDL_WINDOW_OPENGL;
 }
 
+void FurnaceGUIRenderGL::setSwapInterval(int swapInterval) {
+  SDL_GL_SetSwapInterval(swapInterval);
+  if (swapInterval>0 && SDL_GL_GetSwapInterval()==0) {
+    swapIntervalSet=false;
+    logW("tried to enable VSync but couldn't!");
+  } else {
+    swapIntervalSet=true;
+  }
+}
+
 void FurnaceGUIRenderGL::preInit() {
 #if defined(USE_GLES)
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
@@ -562,14 +581,20 @@ void FurnaceGUIRenderGL::preInit() {
     logW(_s " not found"); \
   }
 
-bool FurnaceGUIRenderGL::init(SDL_Window* win) {
+bool FurnaceGUIRenderGL::init(SDL_Window* win, int swapInterval) {
   sdlWin=win;
   context=SDL_GL_CreateContext(win);
   if (context==NULL) {
     return false;
   }
   SDL_GL_MakeCurrent(win,context);
-  SDL_GL_SetSwapInterval(1);
+  SDL_GL_SetSwapInterval(swapInterval);
+  if (swapInterval>0 && SDL_GL_GetSwapInterval()==0) {
+    swapIntervalSet=false;
+    logW("tried to enable VSync but couldn't!");
+  } else {
+    swapIntervalSet=true;
+  }
 
   LOAD_PROC_MANDATORY(furGenBuffers,PFNGLGENBUFFERSPROC,"glGenBuffers");
   LOAD_PROC_MANDATORY(furBindBuffer,PFNGLBINDBUFFERPROC,"glBindBuffer");

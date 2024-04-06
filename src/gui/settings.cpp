@@ -174,6 +174,20 @@ const char* esfmCores[]={
   "ESFMu (fast)"
 };
 
+const char* opllCores[]={
+  "Nuked-OPLL",
+  "emu2413"
+};
+
+const char* coreQualities[]={
+  "Horrible",
+  "Low",
+  "Medium",
+  "High",
+  "Ultra",
+  "Ultimate"
+};
+
 const char* pcspkrOutMethods[]={
   "evdev SND_TONE",
   "KIOCSOUND on /dev/tty1",
@@ -407,6 +421,24 @@ void FurnaceGUI::drawSettings() {
           if (ImGui::IsItemHovered()) {
             ImGui::SetTooltip("you may need to restart Furnace for this setting to take effect.");
           }
+        }
+
+        bool vsyncB=settings.vsync;
+        if (ImGui::Checkbox("VSync",&vsyncB)) {
+          settings.vsync=vsyncB;
+          settingsChanged=true;
+          if (rend!=NULL) {
+            rend->setSwapInterval(settings.vsync);
+          }
+        }
+
+        if (ImGui::SliderInt("Frame rate limit",&settings.frameRateLimit,0,250,settings.frameRateLimit==0?"Unlimited":"%d")) {
+          settingsChanged=true;
+        }
+        if (settings.frameRateLimit<0) settings.frameRateLimit=0;
+        if (settings.frameRateLimit>1000) settings.frameRateLimit=1000;
+        if (ImGui::IsItemHovered()) {
+          ImGui::SetTooltip("only applies when VSync is disabled.");
         }
 
         bool renderClearPosB=settings.renderClearPos;
@@ -1645,6 +1677,17 @@ void FurnaceGUI::drawSettings() {
           ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
           if (ImGui::Combo("##ESFMCoreRender",&settings.esfmCoreRender,esfmCores,2)) settingsChanged=true;
 
+          ImGui::TableNextRow();
+          ImGui::TableNextColumn();
+          ImGui::AlignTextToFramePadding();
+          ImGui::Text("OPLL");
+          ImGui::TableNextColumn();
+          ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+          if (ImGui::Combo("##OPLLCore",&settings.opllCore,opllCores,2)) settingsChanged=true;
+          ImGui::TableNextColumn();
+          ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+          if (ImGui::Combo("##OPLLCoreRender",&settings.opllCoreRender,opllCores,2)) settingsChanged=true;
+
           ImGui::EndTable();
         }
         ImGui::Separator();
@@ -2423,6 +2466,18 @@ void FurnaceGUI::drawSettings() {
         }
         ImGui::Unindent();
 
+        if (settings.cursorFollowsWheel) {
+          ImGui::Text("How many steps to move with each scroll wheel step?");
+          if (ImGui::RadioButton("One##cws0",settings.cursorWheelStep==0)) {
+            settings.cursorWheelStep=0;
+            settingsChanged=true;
+          }
+          if (ImGui::RadioButton("Edit Step##cws1",settings.cursorWheelStep==1)) {
+            settings.cursorWheelStep=1;
+            settingsChanged=true;
+          }
+        }
+
         // SUBSECTION ASSETS
         CONFIG_SUBSECTION("Assets");
 
@@ -3167,8 +3222,8 @@ void FurnaceGUI::drawSettings() {
           settingsChanged=true;
         }
 
-        // SUBSECTION STATISTICS
-        CONFIG_SUBSECTION("Statistics");
+        // SUBSECTION MEMORY COMPOSITION
+        CONFIG_SUBSECTION("Memory Composition");
         ImGui::Text("Chip memory usage unit:");
         ImGui::Indent();
         if (ImGui::RadioButton("Bytes##MUU0",settings.memUsageUnit==0)) {
@@ -3557,6 +3612,9 @@ void FurnaceGUI::drawSettings() {
           UI_COLOR_CONFIG(GUI_COLOR_INSTR_POWERNOISE,"PowerNoise (noise)");
           UI_COLOR_CONFIG(GUI_COLOR_INSTR_POWERNOISE_SLOPE,"PowerNoise (slope)");
           UI_COLOR_CONFIG(GUI_COLOR_INSTR_DAVE,"Dave");
+          UI_COLOR_CONFIG(GUI_COLOR_INSTR_NDS,"Nintendo DS");
+          UI_COLOR_CONFIG(GUI_COLOR_INSTR_GBA_DMA,"GBA DMA");
+          UI_COLOR_CONFIG(GUI_COLOR_INSTR_GBA_MINMOD,"GBA MinMod");
           UI_COLOR_CONFIG(GUI_COLOR_INSTR_UNKNOWN,"Other/Unknown");
           ImGui::TreePop();
         }
@@ -3876,6 +3934,9 @@ void FurnaceGUI::readConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
     settings.renderBackend=conf.getString("renderBackend",GUI_BACKEND_DEFAULT_NAME);
     settings.renderClearPos=conf.getInt("renderClearPos",0);
 
+    settings.vsync=conf.getInt("vsync",1);
+    settings.frameRateLimit=conf.getInt("frameRateLimit",100);
+
     settings.chanOscThreads=conf.getInt("chanOscThreads",0);
     settings.renderPoolThreads=conf.getInt("renderPoolThreads",0);
     settings.shaderOsc=conf.getInt("shaderOsc",0);
@@ -3995,6 +4056,7 @@ void FurnaceGUI::readConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
     settings.insertBehavior=conf.getInt("insertBehavior",1);
     settings.pullDeleteRow=conf.getInt("pullDeleteRow",1);
     settings.cursorFollowsWheel=conf.getInt("cursorFollowsWheel",0);
+    settings.cursorWheelStep=conf.getInt("cursorWheelStep",0);
     settings.removeInsOff=conf.getInt("removeInsOff",0);
     settings.removeVolOff=conf.getInt("removeVolOff",0);
     settings.insTypeMenu=conf.getInt("insTypeMenu",1);
@@ -4135,6 +4197,7 @@ void FurnaceGUI::readConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
     settings.opl2Core=conf.getInt("opl2Core",0);
     settings.opl3Core=conf.getInt("opl3Core",0);
     settings.esfmCore=conf.getInt("esfmCore",0);
+    settings.opllCore=conf.getInt("opllCore",0);
     settings.arcadeCoreRender=conf.getInt("arcadeCoreRender",1);
     settings.ym2612CoreRender=conf.getInt("ym2612CoreRender",0);
     settings.snCoreRender=conf.getInt("snCoreRender",0);
@@ -4146,6 +4209,7 @@ void FurnaceGUI::readConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
     settings.opl2CoreRender=conf.getInt("opl2CoreRender",0);
     settings.opl3CoreRender=conf.getInt("opl3CoreRender",0);
     settings.esfmCoreRender=conf.getInt("esfmCoreRender",0);
+    settings.opllCoreRender=conf.getInt("opllCoreRender",0);
 
     settings.pcSpeakerOutMethod=conf.getInt("pcSpeakerOutMethod",0);
 
@@ -4175,6 +4239,7 @@ void FurnaceGUI::readConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
   clampSetting(settings.opl2Core,0,2);
   clampSetting(settings.opl3Core,0,2);
   clampSetting(settings.esfmCore,0,1);
+  clampSetting(settings.opllCore,0,1);
   clampSetting(settings.arcadeCoreRender,0,1);
   clampSetting(settings.ym2612CoreRender,0,2);
   clampSetting(settings.snCoreRender,0,1);
@@ -4186,6 +4251,7 @@ void FurnaceGUI::readConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
   clampSetting(settings.opl2CoreRender,0,2);
   clampSetting(settings.opl3CoreRender,0,2);
   clampSetting(settings.esfmCoreRender,0,1);
+  clampSetting(settings.opllCoreRender,0,1);
   clampSetting(settings.pcSpeakerOutMethod,0,4);
   clampSetting(settings.mainFont,0,6);
   clampSetting(settings.patFont,0,6);
@@ -4328,6 +4394,9 @@ void FurnaceGUI::readConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
   clampSetting(settings.playbackTime,0,1);
   clampSetting(settings.shaderOsc,0,1);
   clampSetting(settings.oscLineSize,0.25f,16.0f);
+  clampSetting(settings.cursorWheelStep,0,1);
+  clampSetting(settings.vsync,0,4);
+  clampSetting(settings.frameRateLimit,0,1000);
 
   if (settings.exportLoops<0.0) settings.exportLoops=0.0;
   if (settings.exportFadeOut<0.0) settings.exportFadeOut=0.0;  
@@ -4350,7 +4419,10 @@ void FurnaceGUI::writeConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
 
     conf.set("renderBackend",settings.renderBackend);
     conf.set("renderClearPos",settings.renderClearPos);
-    
+
+    conf.set("vsync",settings.vsync);
+    conf.set("frameRateLimit",settings.frameRateLimit);
+
     conf.set("chanOscThreads",settings.chanOscThreads);
     conf.set("renderPoolThreads",settings.renderPoolThreads);
     conf.set("shaderOsc",settings.shaderOsc);
@@ -4467,6 +4539,7 @@ void FurnaceGUI::writeConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
     conf.set("insertBehavior",settings.insertBehavior);
     conf.set("pullDeleteRow",settings.pullDeleteRow);
     conf.set("cursorFollowsWheel",settings.cursorFollowsWheel);
+    conf.set("cursorWheelStep",settings.cursorWheelStep);
     conf.set("removeInsOff",settings.removeInsOff);
     conf.set("removeVolOff",settings.removeVolOff);
     conf.set("insTypeMenu",settings.insTypeMenu);
@@ -4612,6 +4685,7 @@ void FurnaceGUI::writeConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
     conf.set("opl2Core",settings.opl2Core);
     conf.set("opl3Core",settings.opl3Core);
     conf.set("esfmCore",settings.esfmCore);
+    conf.set("opllCore",settings.opllCore);
     conf.set("arcadeCoreRender",settings.arcadeCoreRender);
     conf.set("ym2612CoreRender",settings.ym2612CoreRender);
     conf.set("snCoreRender",settings.snCoreRender);
@@ -4623,6 +4697,7 @@ void FurnaceGUI::writeConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
     conf.set("opl2CoreRender",settings.opl2CoreRender);
     conf.set("opl3CoreRender",settings.opl3CoreRender);
     conf.set("esfmCoreRender",settings.esfmCoreRender);
+    conf.set("opllCoreRender",settings.opllCoreRender);
 
     conf.set("pcSpeakerOutMethod",settings.pcSpeakerOutMethod);
 
@@ -4645,6 +4720,10 @@ void FurnaceGUI::syncSettings() {
   e->setMidiVolExp(midiMap.volExp);
   e->setMetronomeVol(((float)settings.metroVol)/100.0f);
   e->setSamplePreviewVol(((float)settings.sampleVol)/100.0f);
+
+  if (rend!=NULL) {
+    rend->setSwapInterval(settings.vsync);
+  }
 }
 
 void FurnaceGUI::commitSettings() {
@@ -4664,6 +4743,7 @@ void FurnaceGUI::commitSettings() {
     settings.opl2Core!=e->getConfInt("opl2Core",0) ||
     settings.opl3Core!=e->getConfInt("opl3Core",0) ||
     settings.esfmCore!=e->getConfInt("esfmCore",0) ||
+    settings.opllCore!=e->getConfInt("opllCore",0) ||
     settings.arcadeCoreRender!=e->getConfInt("arcadeCoreRender",0) ||
     settings.ym2612CoreRender!=e->getConfInt("ym2612CoreRender",0) ||
     settings.snCoreRender!=e->getConfInt("snCoreRender",0) ||
@@ -4675,6 +4755,7 @@ void FurnaceGUI::commitSettings() {
     settings.opl2CoreRender!=e->getConfInt("opl2CoreRender",0) ||
     settings.opl3CoreRender!=e->getConfInt("opl3CoreRender",0) ||
     settings.esfmCoreRender!=e->getConfInt("esfmCoreRender",0) ||
+    settings.opllCoreRender!=e->getConfInt("opllCoreRender",0) ||
     settings.audioQuality!=e->getConfInt("audioQuality",0) ||
     settings.audioHiPass!=e->getConfInt("audioHiPass",1)
   );
@@ -4764,41 +4845,22 @@ bool FurnaceGUI::exportColors(String path) {
 }
 
 bool FurnaceGUI::importKeybinds(String path) {
-  FILE* f=ps_fopen(path.c_str(),"rb");
-  if (f==NULL) {
+  DivConfig c;
+  if (!c.loadFromFile(path.c_str(),false,false)) {
     logW("error while opening keybind file for import: %s",strerror(errno));
     return false;
   }
   resetKeybinds();
-  char line[4096];
-  while (!feof(f)) {
-    String key="";
-    String value="";
-    bool keyOrValue=false;
-    if (fgets(line,4095,f)==NULL) {
-      break;
-    }
-    for (char* i=line; *i; i++) {
-      if (*i=='\n') continue;
-      if (keyOrValue) {
-        value+=*i;
-      } else {
-        if (*i=='=') {
-          keyOrValue=true;
-        } else {
-          key+=*i;
-        }
-      }
-    }
-    if (keyOrValue) {
-      // unoptimal
-      const char* cs=key.c_str();
-      bool found=false;
+  if (c.has("configVersion")) {
+    // new
+    readConfig(c,GUI_SETTINGS_KEYBOARD);
+  } else {
+    // unoptimal
+    for (auto& key: c.configMap()) {
       for (int i=0; i<GUI_ACTION_MAX; i++) {
         try {
-          if (strcmp(cs,guiActions[i].name)==0) {
-            actionKeys[i]=std::stoi(value);
-            found=true;
+          if (key.first==guiActions[i].name) {
+            actionKeys[i]=std::stoi(key.second);
             break;
           }
         } catch (std::out_of_range& e) {
@@ -4807,26 +4869,29 @@ bool FurnaceGUI::importKeybinds(String path) {
           break;
         }
       }
-      if (!found) logW("line invalid: %s",line);
     }
   }
-  fclose(f);
   return true;
 }
 
 bool FurnaceGUI::exportKeybinds(String path) {
+  DivConfig c;
+
+  c.set("configVersion",DIV_ENGINE_VERSION);
+  writeConfig(c,GUI_SETTINGS_KEYBOARD);
+
   FILE* f=ps_fopen(path.c_str(),"wb");
   if (f==NULL) {
     logW("error while opening keybind file for export: %s",strerror(errno));
     return false;
   }
-  for (int i=0; i<GUI_ACTION_MAX; i++) {
-    if (guiActions[i].defaultBind==-1) continue;
-    if (fprintf(f,"%s=%d\n",guiActions[i].name,actionKeys[i])<0) {
-      logW("error while exporting keybinds: %s",strerror(errno));
-      break;
-    }
+
+  String result=c.toString();
+
+  if (fwrite(result.c_str(),1,result.size(),f)!=result.size()) {
+    logW("couldn't write keybind file entirely.");
   }
+
   fclose(f);
   return true;
 }
@@ -5641,7 +5706,6 @@ void FurnaceGUI::applyUISettings(bool updateFonts) {
   ImGuiFileDialog::Instance()->SetFileStyle(IGFD_FileStyleByExtension,".fur",uiColors[GUI_COLOR_FILE_SONG_NATIVE],ICON_FA_FILE);
   ImGuiFileDialog::Instance()->SetFileStyle(IGFD_FileStyleByExtension,".fui",uiColors[GUI_COLOR_FILE_INSTR],ICON_FA_FILE);
   ImGuiFileDialog::Instance()->SetFileStyle(IGFD_FileStyleByExtension,".fuw",uiColors[GUI_COLOR_FILE_WAVE],ICON_FA_FILE);
-  ImGuiFileDialog::Instance()->SetFileStyle(IGFD_FileStyleByExtension,".dmf",uiColors[GUI_COLOR_FILE_SONG_NATIVE],ICON_FA_FILE);
   ImGuiFileDialog::Instance()->SetFileStyle(IGFD_FileStyleByExtension,".dmp",uiColors[GUI_COLOR_FILE_INSTR],ICON_FA_FILE);
   ImGuiFileDialog::Instance()->SetFileStyle(IGFD_FileStyleByExtension,".dmw",uiColors[GUI_COLOR_FILE_WAVE],ICON_FA_FILE);
   ImGuiFileDialog::Instance()->SetFileStyle(IGFD_FileStyleByExtension,".wav",uiColors[GUI_COLOR_FILE_AUDIO],ICON_FA_FILE_AUDIO_O);
@@ -5657,6 +5721,7 @@ void FurnaceGUI::applyUISettings(bool updateFonts) {
   ImGuiFileDialog::Instance()->SetFileStyle(IGFD_FileStyleByExtension,".pcf",uiColors[GUI_COLOR_FILE_FONT],ICON_FA_FONT);
   ImGuiFileDialog::Instance()->SetFileStyle(IGFD_FileStyleByExtension,".psf",uiColors[GUI_COLOR_FILE_FONT],ICON_FA_FONT);
 
+  ImGuiFileDialog::Instance()->SetFileStyle(IGFD_FileStyleByExtension,".dmf",uiColors[GUI_COLOR_FILE_SONG_IMPORT],ICON_FA_FILE);
   ImGuiFileDialog::Instance()->SetFileStyle(IGFD_FileStyleByExtension,".mod",uiColors[GUI_COLOR_FILE_SONG_IMPORT],ICON_FA_FILE);
   ImGuiFileDialog::Instance()->SetFileStyle(IGFD_FileStyleByExtension,".fc13",uiColors[GUI_COLOR_FILE_SONG_IMPORT],ICON_FA_FILE);
   ImGuiFileDialog::Instance()->SetFileStyle(IGFD_FileStyleByExtension,".fc14",uiColors[GUI_COLOR_FILE_SONG_IMPORT],ICON_FA_FILE);

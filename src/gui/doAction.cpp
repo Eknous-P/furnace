@@ -319,6 +319,9 @@ void FurnaceGUI::doAction(int what) {
     case GUI_ACTION_WINDOW_CS_PLAYER:
       nextWindow=GUI_WINDOW_CS_PLAYER;
       break;
+    case GUI_ACTION_WINDOW_USER_PRESETS:
+      nextWindow=GUI_WINDOW_USER_PRESETS;
+      break;
 #ifdef WITH_RTHP
     case GUI_ACTION_WINDOW_RTHP:
       nextWindow=GUI_WINDOW_RTHP;
@@ -429,6 +432,8 @@ void FurnaceGUI::doAction(int what) {
         case GUI_WINDOW_CS_PLAYER:
           csPlayerOpen=false;
           break;
+        case GUI_WINDOW_USER_PRESETS:
+          userPresetsOpen=false;
 #ifdef WITH_RTHP
         case GUI_WINDOW_RTHP:
           rthpWindowOpen=false;
@@ -1024,7 +1029,8 @@ void FurnaceGUI::doAction(int what) {
             i==DIV_INS_GA20 ||
             i==DIV_INS_K053260 ||
             i==DIV_INS_C140 ||
-            i==DIV_INS_C219) {
+            i==DIV_INS_C219 ||
+            i==DIV_INS_NDS) {
           makeInsTypeList.push_back(i);
         }
       }
@@ -1550,7 +1556,10 @@ void FurnaceGUI::doAction(int what) {
             i==DIV_INS_GA20 ||
             i==DIV_INS_K053260 ||
             i==DIV_INS_C140 ||
-            i==DIV_INS_C219) {
+            i==DIV_INS_C219 ||
+            i==DIV_INS_NDS ||
+            i==DIV_INS_GBA_DMA ||
+            i==DIV_INS_GBA_MINMOD) {
           makeInsTypeList.push_back(i);
         }
       }

@@ -16,7 +16,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(CMAKE_PROJECT_VERSION_MAJOR 0)
 set(CMAKE_PROJECT_VERSION_MINOR 6)
-set(CMAKE_PROJECT_VERSION_PATCH 1)
+set(CMAKE_PROJECT_VERSION_PATCH 2)
 
 set(BUILD_GUI_DEFAULT ON)
 set(USE_SDL2_DEFAULT ON)
@@ -140,18 +140,19 @@ else()
   set(SYSTEM_SDL_MIN_VER 2.0.0)
 endif()
 
-if (WIN32)
-  # support Windows XP
-  if (SUPPORT_XP)
-    add_compile_definitions("_WIN32_WINNT=0x0501")
-  endif()
-endif()
-
 #list(APPEND DEPENDENCIES_INCLUDE_DIRS "extern/SAASound/include")
 list(APPEND DEPENDENCIES_INCLUDE_DIRS "extern/vgsound_emu-modified")
 
 find_package(Threads REQUIRED)
 list(APPEND DEPENDENCIES_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
+
+
+if (WIN32)
+  # support Windows XP
+  if (SUPPORT_XP)
+    list(APPEND DEPENDENCIES_DEFINES "_WIN32_WINNT=0x0501")
+  endif()
+endif()
 
 if (SYSTEM_FFTW)
   find_package(PkgConfig REQUIRED)
@@ -521,6 +522,8 @@ extern/adpcm/yma_codec.c
 extern/adpcm/ymb_codec.c
 extern/adpcm/ymz_codec.c
 
+extern/adpcm-xq-s/adpcm-lib.c
+
 extern/opn/ym3438.c
 extern/Nuked-PSG/ympsg.c
 extern/opm/opm.c
@@ -531,6 +534,7 @@ extern/YMF262-LLE/fmopl3.c
 extern/YMF276-LLE/fmopn2.c
 extern/ESFMu/esfm.c
 extern/ESFMu/esfm_registers.c
+extern/emu2413/emu2413.c
 
 extern/pwrnoise/pwrnoise.c
 
@@ -550,6 +554,8 @@ src/engine/platform/sound/nes/mmc5.c
 src/engine/platform/sound/vera_psg.c
 src/engine/platform/sound/vera_pcm.c
 
+src/engine/platform/sound/nes_nsfplay/5e01_apu.cpp
+src/engine/platform/sound/nes_nsfplay/5e01_dmc.cpp
 src/engine/platform/sound/nes_nsfplay/nes_apu.cpp
 src/engine/platform/sound/nes_nsfplay/nes_dmc.cpp
 src/engine/platform/sound/nes_nsfplay/nes_fds.cpp
@@ -645,6 +651,8 @@ src/engine/platform/sound/c140_c219.c
 
 src/engine/platform/sound/dave/dave.cpp
 
+src/engine/platform/sound/nds.cpp
+
 src/engine/platform/oplAInterface.cpp
 src/engine/platform/ym2608Interface.cpp
 src/engine/platform/ym2610Interface.cpp
@@ -656,6 +664,7 @@ src/engine/fileOps/ftm.cpp
 src/engine/fileOps/fur.cpp
 src/engine/fileOps/mod.cpp
 src/engine/fileOps/s3m.cpp
+src/engine/fileOps/text.cpp
 
 src/engine/blip_buf.c
 src/engine/brrUtils.c
@@ -753,6 +762,9 @@ src/engine/platform/c140.cpp
 src/engine/platform/esfm.cpp
 src/engine/platform/powernoise.cpp
 src/engine/platform/dave.cpp
+src/engine/platform/gbadma.cpp
+src/engine/platform/gbaminmod.cpp
+src/engine/platform/nds.cpp
 src/engine/platform/pcmdac.cpp
 src/engine/platform/dummy.cpp
 
@@ -1079,7 +1091,6 @@ else()
 endif()
 
 target_include_directories(furnace SYSTEM PRIVATE ${DEPENDENCIES_INCLUDE_DIRS})
-target_compile_definitions(furnace PRIVATE ${DEPENDENCIES_DEFINES})
 target_compile_options(furnace PRIVATE ${DEPENDENCIES_COMPILE_OPTIONS})
 target_link_libraries(furnace PRIVATE ${DEPENDENCIES_LIBRARIES})
 if (PKG_CONFIG_FOUND AND (SYSTEM_FMT OR SYSTEM_LIBSNDFILE OR SYSTEM_ZLIB OR SYSTEM_SDL2 OR SYSTEM_RTMIDI OR WITH_JACK))
@@ -1132,9 +1143,9 @@ if (NOT ANDROID OR TERMUX)
       if (WITH_WAVETABLES)
         install(DIRECTORY wavetables DESTINATION ${FURNACE_DATADIR})
       endif()
-      add_compile_definitions(FURNACE_DATADIR="${FURNACE_DATADIR}")
+      list(APPEND DEPENDENCIES_DEFINES FURNACE_DATADIR="${FURNACE_DATADIR}")
       if (SHOW_OPEN_ASSETS_MENU_ENTRY)
-        add_compile_definitions(SHOW_OPEN_ASSETS_MENU_ENTRY)
+        list(APPEND DEPENDENCIES_DEFINES SHOW_OPEN_ASSETS_MENU_ENTRY)
       endif()
     endif()
     foreach(num 16 32 64 128 256 512)
@@ -1165,3 +1176,5 @@ if (NOT ANDROID OR TERMUX)
   
   include(CPack)
 endif()
+
+target_compile_definitions(furnace PRIVATE ${DEPENDENCIES_DEFINES})

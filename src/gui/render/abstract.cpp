@@ -35,7 +35,7 @@ bool FurnaceGUIRender::updateTexture(FurnaceGUITexture* which, void* data, int p
   return false;
 }
 
-FurnaceGUITexture* FurnaceGUIRender::createTexture(bool dynamic, int width, int height) {
+FurnaceGUITexture* FurnaceGUIRender::createTexture(bool dynamic, int width, int height, bool interpolate) {
   return NULL;
 }
 
@@ -56,6 +56,10 @@ void FurnaceGUIRender::clear(ImVec4 color) {
 }
 
 bool FurnaceGUIRender::newFrame() {
+  return true;
+}
+
+bool FurnaceGUIRender::canVSync() {
   return true;
 }
 
@@ -89,10 +93,13 @@ int FurnaceGUIRender::getWindowFlags() {
   return 0;
 }
 
+void FurnaceGUIRender::setSwapInterval(int swapInterval) {
+}
+
 void FurnaceGUIRender::preInit() {
 }
 
-bool FurnaceGUIRender::init(SDL_Window* win) {
+bool FurnaceGUIRender::init(SDL_Window* win, int swapInterval) {
   return false;
 }
 
