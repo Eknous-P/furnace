@@ -2095,11 +2095,11 @@ class FurnaceGUI {
   bool pianoOpen, notesOpen, channelsOpen, regViewOpen, logOpen, effectListOpen, chanOscOpen;
   bool subSongsOpen, findOpen, spoilerOpen, patManagerOpen, sysManagerOpen, clockOpen, speedOpen;
   bool groovesOpen, xyOscOpen, memoryOpen, csPlayerOpen, cvOpen, userPresetsOpen;
+
+  bool cvNotSerious;
 #ifdef WITH_RTHP
   bool rthpWindowOpen;
 #endif
-
-  bool cvNotSerious;
 
   bool shortIntro;
   bool insListDir, waveListDir, sampleListDir;

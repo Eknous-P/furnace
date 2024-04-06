@@ -434,6 +434,7 @@ void FurnaceGUI::doAction(int what) {
           break;
         case GUI_WINDOW_USER_PRESETS:
           userPresetsOpen=false;
+          break; // inb4 this gets added and i get a merge conflict
 #ifdef WITH_RTHP
         case GUI_WINDOW_RTHP:
           rthpWindowOpen=false;
