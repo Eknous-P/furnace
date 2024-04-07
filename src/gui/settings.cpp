@@ -406,8 +406,21 @@ void FurnaceGUI::drawSettings() {
           }
 #endif
 #ifdef HAVE_RENDER_GL
-          if (ImGui::Selectable("OpenGL",curRenderBackend=="OpenGL")) {
-            settings.renderBackend="OpenGL";
+#ifdef USE_GLES
+#else
+          if (ImGui::Selectable("OpenGL 3.0",curRenderBackend=="OpenGL 3.0")) {
+            settings.renderBackend="OpenGL 3.0";
+            settingsChanged=true;
+          }
+          if (ImGui::Selectable("OpenGL 2.0",curRenderBackend=="OpenGL 2.0")) {
+            settings.renderBackend="OpenGL 2.0";
+            settingsChanged=true;
+          }
+#endif
+#endif
+#ifdef HAVE_RENDER_GL1
+          if (ImGui::Selectable("OpenGL 1.1",curRenderBackend=="OpenGL 1.1")) {
+            settings.renderBackend="OpenGL 1.1";
             settingsChanged=true;
           }
 #endif
@@ -4867,29 +4880,6 @@ void FurnaceGUI::commitSettings() {
     settings.smQuality!=e->getConfInt("smQuality",3) ||
     settings.swanQuality!=e->getConfInt("swanQuality",3) ||
     settings.vbQuality!=e->getConfInt("vbQuality",3) ||
-    settings.arcadeCoreRender!=e->getConfInt("arcadeCoreRender",0) ||
-    settings.ym2612CoreRender!=e->getConfInt("ym2612CoreRender",0) ||
-    settings.snCoreRender!=e->getConfInt("snCoreRender",0) ||
-    settings.nesCoreRender!=e->getConfInt("nesCoreRender",0) ||
-    settings.fdsCoreRender!=e->getConfInt("fdsCoreRender",0) ||
-    settings.c64CoreRender!=e->getConfInt("c64CoreRender",0) ||
-    settings.pokeyCoreRender!=e->getConfInt("pokeyCoreRender",1) ||
-    settings.opnCoreRender!=e->getConfInt("opnCoreRender",1) ||
-    settings.opl2CoreRender!=e->getConfInt("opl2CoreRender",0) ||
-    settings.opl3CoreRender!=e->getConfInt("opl3CoreRender",0) ||
-    settings.esfmCoreRender!=e->getConfInt("esfmCoreRender",0) ||
-    settings.opllCoreRender!=e->getConfInt("opllCoreRender",0) ||
-    settings.bubsysQualityRender!=e->getConfInt("bubsysQualityRender",3) ||
-    settings.dsidQualityRender!=e->getConfInt("dsidQualityRender",3) ||
-    settings.gbQualityRender!=e->getConfInt("gbQualityRender",3) ||
-    settings.ndsQualityRender!=e->getConfInt("ndsQualityRender",3) ||
-    settings.pceQualityRender!=e->getConfInt("pceQualityRender",3) ||
-    settings.pnQualityRender!=e->getConfInt("pnQualityRender",3) ||
-    settings.saaQualityRender!=e->getConfInt("saaQualityRender",3) ||
-    settings.sccQualityRender!=e->getConfInt("sccQualityRender",3) ||
-    settings.smQualityRender!=e->getConfInt("smQualityRender",3) ||
-    settings.swanQualityRender!=e->getConfInt("swanQualityRender",3) ||
-    settings.vbQualityRender!=e->getConfInt("vbQualityRender",3) ||
     settings.audioQuality!=e->getConfInt("audioQuality",0) ||
     settings.audioHiPass!=e->getConfInt("audioHiPass",1)
   );
@@ -5727,7 +5717,9 @@ void FurnaceGUI::applyUISettings(bool updateFonts) {
 
     // two fallback fonts
     mainFont=ImGui::GetIO().Fonts->AddFontFromMemoryCompressedTTF(font_liberationSans_compressed_data,font_liberationSans_compressed_size,MAX(1,e->getConfInt("mainFontSize",18)*dpiScale),&fc1,fontRange);
-    mainFont=ImGui::GetIO().Fonts->AddFontFromMemoryCompressedTTF(font_unifont_compressed_data,font_unifont_compressed_size,MAX(1,e->getConfInt("mainFontSize",18)*dpiScale),&fc1,fontRange);
+    if (settings.loadJapanese || settings.loadChinese || settings.loadChineseTraditional || settings.loadKorean) {
+      mainFont=ImGui::GetIO().Fonts->AddFontFromMemoryCompressedTTF(font_unifont_compressed_data,font_unifont_compressed_size,MAX(1,e->getConfInt("mainFontSize",18)*dpiScale),&fc1,fontRange);
+    }
 
     ImFontConfig fc;
     fc.MergeMode=true;

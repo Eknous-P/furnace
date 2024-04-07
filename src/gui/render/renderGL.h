@@ -47,6 +47,7 @@ class FurnaceGUIRenderGL: public FurnaceGUIRender {
   bool sh_oscRender_have;
 
   bool swapIntervalSet;
+  unsigned char glVer;
 
   bool createShader(const char* vertexS, const char* fragmentS, int& vertex, int& fragment, int& program, const char** attribNames);
 
@@ -59,8 +60,6 @@ class FurnaceGUIRenderGL: public FurnaceGUIRender {
     bool destroyTexture(FurnaceGUITexture* which);
     void setTextureBlendMode(FurnaceGUITexture* which, FurnaceGUIBlendMode mode);
     void setBlendMode(FurnaceGUIBlendMode mode);
-    const char* getStupidFragment();
-    bool regenOscShader(const char* fragment);
     void clear(ImVec4 color);
     bool newFrame();
     bool canVSync();
@@ -80,6 +79,7 @@ class FurnaceGUIRenderGL: public FurnaceGUIRender {
     void quitGUI();
     bool quit();
     bool isDead();
+    void setVersion(unsigned char ver);
     FurnaceGUIRenderGL():
       context(NULL),
       sdlWin(NULL),
