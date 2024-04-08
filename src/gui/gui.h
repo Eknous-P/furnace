@@ -74,7 +74,8 @@ enum FurnaceGUIRenderBackend {
   GUI_BACKEND_GL2,
   GUI_BACKEND_GL1,
   GUI_BACKEND_DX11,
-  GUI_BACKEND_DX9
+  GUI_BACKEND_DX9,
+  GUI_BACKEND_SOFTWARE
 };
 
 #ifdef HAVE_RENDER_DX11
@@ -99,7 +100,8 @@ enum FurnaceGUIRenderBackend {
 #define GUI_BACKEND_DEFAULT GUI_BACKEND_SDL
 #define GUI_BACKEND_DEFAULT_NAME "SDL"
 #else
-#error how did you manage to do that?
+#define GUI_BACKEND_DEFAULT GUI_BACKEND_SOFTWARE
+#define GUI_BACKEDN_DEFAULT_NAME "Software"
 #endif
 #endif
 #endif
@@ -2778,6 +2780,8 @@ class FurnaceGUI {
 
   bool initRender();
   bool quitRender();
+
+  ImFont* addFontZlib(const void* data, size_t len, float size_pixels, const ImFontConfig* font_cfg=NULL, const ImWchar* glyph_ranges=NULL);
 
   const char* getSystemName(DivSystem which);
   const char* getSystemPartNumber(DivSystem sys, DivConfig& flags);

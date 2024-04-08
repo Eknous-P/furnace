@@ -9,7 +9,7 @@ extern "C" {
 
 #define OPLL_DEBUG 0
 
-enum OPLL_TONE_ENUM { OPLL_2413_TONE = 0, OPLL_VRC7_TONE = 1, OPLL_281B_TONE = 2 };
+enum OPLL_TONE_ENUM { OPLL_2413_TONE = 0, OPLL_VRC7_TONE = 1, OPLL_281B_TONE = 2, OPLL_2423_TONE = 3 };
 
 /* voice data */
 typedef struct __OPLL_PATCH {
@@ -96,7 +96,7 @@ typedef struct __OPLL {
   double out_step;
   double out_time;
 
-  uint8_t reg[0x40];
+  uint8_t reg[64];
   uint8_t test_flag;
   uint32_t slot_key_status;
   uint8_t rhythm_mode;
