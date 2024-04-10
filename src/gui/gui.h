@@ -56,7 +56,7 @@
 // for now
 #define NOTIFY_LONG_HOLD \
   if (vibrator && vibratorAvailable) { \
-    if (SDL_HapticRumblePlay(vibrator,0.5f,20)!=0) { \
+    if (SDL_HapticRumblePlay(vibrator,settings.vibrationStrength,settings.vibrationLength)!=0) { \
       logV("could not vibrate: %s!",SDL_GetError()); \
     } \
   } else { \
@@ -1460,6 +1460,12 @@ class FurnaceGUIRender {
     virtual bool supportsDrawOsc();
     virtual bool getOutputSize(int& w, int& h);
     virtual int getWindowFlags();
+    virtual int getMaxTextureWidth();
+    virtual int getMaxTextureHeight();
+    virtual const char* getBackendName();
+    virtual const char* getVendorName();
+    virtual const char* getDeviceName();
+    virtual const char* getAPIVersion();
     virtual void setSwapInterval(int swapInterval);
     virtual void preInit();
     virtual bool init(SDL_Window* win, int swapInterval);
@@ -1836,7 +1842,10 @@ class FurnaceGUI {
     int cursorWheelStep;
     int vsync;
     int frameRateLimit;
+    int displayRenderTime;
     unsigned int maxUndoSteps;
+    float vibrationStrength;
+    int vibrationLength;
     String mainFontPath;
     String headFontPath;
     String patFontPath;
@@ -2067,7 +2076,10 @@ class FurnaceGUI {
       cursorWheelStep(0),
       vsync(1),
       frameRateLimit(60),
+      displayRenderTime(0),
       maxUndoSteps(100),
+      vibrationStrength(0.5f),
+      vibrationLength(100),
       mainFontPath(""),
       headFontPath(""),
       patFontPath(""),
@@ -2518,7 +2530,8 @@ class FurnaceGUI {
   FurnaceGUIExportTypes curExportType;
 
   // user presets window
-  int selectedUserPreset;
+  std::vector<int> selectedUserPreset;
+
   std::vector<String> randomDemoSong;
 
   void drawExportAudio(bool onWindow=false);
@@ -2601,7 +2614,9 @@ class FurnaceGUI {
   void waveListItem(int index, float* wavePreview, int dir, int asset);
   void sampleListItem(int index, int dir, int asset);
 
-  void drawSysDefs(std::vector<FurnaceGUISysDef>& category, bool& accepted, std::vector<int>& sysDefStack);
+  void drawSysDefs(std::vector<FurnaceGUISysDef>& category, bool& accepted, std::vector<int>& sysDefStack, bool& alreadyHover);
+  void printPresets(std::vector<FurnaceGUISysDef>& items, size_t depth, std::vector<int>& depthStack);
+  FurnaceGUISysDef* selectPreset(std::vector<FurnaceGUISysDef>& items);
 
   void toggleMobileUI(bool enable, bool force=false);
 

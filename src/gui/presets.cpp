@@ -21,7 +21,9 @@
 #include "../baseutils.h"
 #include "../fileutils.h"
 #include <fmt/printf.h>
+#include "IconsFontAwesome4.h"
 #include <imgui.h>
+#include "misc/cpp/imgui_stdlib.h"
 
 // add system configurations here.
 // every entry is written in the following format:
@@ -2430,10 +2432,8 @@ void FurnaceGUI::initSystemPresets() {
     );
   CATEGORY_END;
 
-  /*
   CATEGORY_BEGIN("User","system presets that you have saved.");
   CATEGORY_END;
-  */
 
   CATEGORY_BEGIN("FM","chips which use frequency modulation (FM) to generate sound.\nsome of these also pack more (like square and sample channels).");
   ENTRY(
@@ -3398,6 +3398,56 @@ bool FurnaceGUI::saveUserPresets(bool redundancy) {
 }
 
 // user presets management
+void FurnaceGUI::printPresets(std::vector<FurnaceGUISysDef>& items, size_t depth, std::vector<int>& depthStack) {
+  if (depth>0) ImGui::Indent();
+  int index=0;
+  for (FurnaceGUISysDef& i: items) {
+    bool isSelected=(selectedUserPreset.size()==(depth+1));
+    if (isSelected) {
+      for (size_t j=0; j<=depth; j++) {
+        int item=-1;
+        if (j>=depthStack.size()) {
+          item=index;
+        } else {
+          item=depthStack[j];
+        }
+
+        if (selectedUserPreset[j]!=item) {
+          isSelected=false;
+          break;
+        }
+      }
+    }
+    ImGui::PushID(index+1);
+    if (ImGui::Selectable(i.name.c_str(),isSelected)) {
+      selectedUserPreset=depthStack;
+      selectedUserPreset.push_back(index);
+    }
+    ImGui::PopID();
+    if (!i.subDefs.empty()) {
+      depthStack.push_back(index);
+      ImGui::PushID(index);
+      printPresets(i.subDefs,depth+1,depthStack);
+      ImGui::PopID();
+      depthStack.pop_back();
+    }
+    index++;
+  }
+  if (depth>0) ImGui::Unindent();
+}
+
+FurnaceGUISysDef* FurnaceGUI::selectPreset(std::vector<FurnaceGUISysDef>& items) {
+  FurnaceGUISysDef* ret=NULL;
+  for (size_t i=0; i<selectedUserPreset.size(); i++) {
+    if (selectedUserPreset[i]<0 || selectedUserPreset[i]>(int)items.size()) return NULL;
+    ret=&items[selectedUserPreset[i]];
+    if (i<selectedUserPreset.size()-1) {
+      items=ret->subDefs;
+    }
+  }
+  return ret;
+}
+
 void FurnaceGUI::drawUserPresets() {
   if (nextWindow==GUI_WINDOW_USER_PRESETS) {
     userPresetsOpen=true;
@@ -3414,17 +3464,37 @@ void FurnaceGUI::drawUserPresets() {
       }
     }
 
+    std::vector<int> depthStack;
+
     if (userCategory==NULL) {
       ImGui::Text("Error! User category does not exist!");
     } else if (ImGui::BeginTable("UserPresets",2,ImGuiTableFlags_BordersInnerV)) {
+      // preset list
       ImGui::TableNextRow();
       ImGui::TableNextColumn();
-      ImGui::Text("Presets...");
+      if (ImGui::Button(ICON_FA_PLUS "##AddPreset")) {
+        userCategory->systems.push_back(FurnaceGUISysDef("New Preset",{}));
+        selectedUserPreset.clear();
+        selectedUserPreset.push_back(userCategory->systems.size()-1);
+      }
+      printPresets(userCategory->systems,0,depthStack);
+
+      // editor
       ImGui::TableNextColumn();
-      if (selectedUserPreset<0 || selectedUserPreset>=(int)userCategory->systems.size()) {
+      if (selectedUserPreset.empty()) {
         ImGui::Text("select a preset");
       } else {
-        ImGui::Text("Edit...");
+        FurnaceGUISysDef* preset=selectPreset(userCategory->systems);
+
+        if (preset!=NULL) {
+          ImGui::AlignTextToFramePadding();
+          ImGui::Text("Name");
+          ImGui::SameLine();
+          ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+          ImGui::InputText("##PName",&preset->name);
+          ImGui::Separator();
+          ImGui::Text("the rest...");
+        }
       }
 
       ImGui::EndTable();

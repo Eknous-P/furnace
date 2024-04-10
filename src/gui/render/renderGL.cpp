@@ -546,6 +546,30 @@ int FurnaceGUIRenderGL::getWindowFlags() {
   return SDL_WINDOW_OPENGL;
 }
 
+int FurnaceGUIRenderGL::getMaxTextureWidth() {
+  return maxWidth;
+}
+
+int FurnaceGUIRenderGL::getMaxTextureHeight() {
+  return maxHeight;
+}
+
+const char* FurnaceGUIRenderGL::getBackendName() {
+  return backendName.c_str();
+}
+
+const char* FurnaceGUIRenderGL::getVendorName() {
+  return vendorName.c_str();
+}
+
+const char* FurnaceGUIRenderGL::getDeviceName() {
+  return deviceName.c_str();
+}
+
+const char* FurnaceGUIRenderGL::getAPIVersion() {
+  return apiVersion.c_str();
+}
+
 void FurnaceGUIRenderGL::setSwapInterval(int swapInterval) {
   SDL_GL_SetSwapInterval(swapInterval);
   if (swapInterval>0 && SDL_GL_GetSwapInterval()==0) {
@@ -563,11 +587,15 @@ void FurnaceGUIRenderGL::preInit() {
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION,2);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION,0);
 #elif defined(__APPLE__)
-  // not recommended...
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS,SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,SDL_GL_CONTEXT_PROFILE_CORE);
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION,3);
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION,2);
+  if (glVer==2) {
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION,2);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION,0);
+  } else {
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION,3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION,2);
+  }
 #else
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS,0);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,SDL_GL_CONTEXT_PROFILE_CORE);
@@ -640,7 +668,35 @@ bool FurnaceGUIRenderGL::init(SDL_Window* win, int swapInterval) {
 
 #ifndef USE_GLES
   LOAD_PROC_OPTIONAL(furGetGraphicsResetStatusARB,PFNGLGETGRAPHICSRESETSTATUSARBPROC,"glGetGraphicsResetStatusARB");
+#else
+  backendName="OpenGL ES 2.0";
 #endif
+
+  // information
+  const char* next=(const char*)glGetString(GL_VENDOR);
+  if (next==NULL) {
+    vendorName="???";
+  } else {
+    vendorName=next;
+  }
+  next=(const char*)glGetString(GL_RENDERER);
+  if (next==NULL) {
+    deviceName="???";
+  } else {
+    deviceName=next;
+  }
+  next=(const char*)glGetString(GL_VERSION);
+  if (next==NULL) {
+    apiVersion="???";
+  } else {
+    apiVersion=next;
+  }
+
+  int maxSize=1024;
+  glGetIntegerv(GL_MAX_TEXTURE_SIZE,&maxSize);
+
+  maxWidth=maxSize;
+  maxHeight=maxSize;
 
   // texture for osc renderer
   if (glVer==3) {
@@ -725,4 +781,11 @@ bool FurnaceGUIRenderGL::isDead() {
 
 void FurnaceGUIRenderGL::setVersion(unsigned char ver) {
   glVer=ver;
+  if (glVer==3) {
+    backendName="OpenGL 3.0";
+  } else if (glVer==2) {
+    backendName="OpenGL 2.0";
+  } else {
+    backendName="OpenGL BUG.REPORT";
+  }
 }

@@ -456,6 +456,8 @@ void FurnaceGUI::drawSettings() {
           }
         }
 
+        ImGui::TextWrapped("current backend: %s\n%s\n%s\n%s",rend->getBackendName(),rend->getVendorName(),rend->getDeviceName(),rend->getAPIVersion());
+
         bool vsyncB=settings.vsync;
         if (ImGui::Checkbox("VSync",&vsyncB)) {
           settings.vsync=vsyncB;
@@ -472,6 +474,12 @@ void FurnaceGUI::drawSettings() {
         if (settings.frameRateLimit>1000) settings.frameRateLimit=1000;
         if (ImGui::IsItemHovered()) {
           ImGui::SetTooltip("only applies when VSync is disabled.");
+        }
+
+        bool displayRenderTimeB=settings.displayRenderTime;
+        if (ImGui::Checkbox("Display render time",&displayRenderTimeB)) {
+          settings.displayRenderTime=displayRenderTimeB;
+          settingsChanged=true;
         }
 
         bool renderClearPosB=settings.renderClearPos;
@@ -554,6 +562,23 @@ void FurnaceGUI::drawSettings() {
 #endif
         }
         ImGui::Unindent();
+
+#ifdef IS_MOBILE
+        // SUBSECTION VIBRATION
+        CONFIG_SUBSECTION("Vibration");
+
+        if (ImGui::SliderFloat("Strength",&settings.vibrationStrength,0.0f,1.0f)) {
+          if (settings.vibrationStrength<0.0f) settings.vibrationStrength=0.0f;
+          if (settings.vibrationStrength>1.0f) settings.vibrationStrength=1.0f;
+          settingsChanged=true;
+        }
+
+        if (ImGui::SliderInt("Length",&settings.vibrationLength,10,500)) {
+          if (settings.vibrationLength<10) settings.vibrationLength=10;
+          if (settings.vibrationLength>500) settings.vibrationLength=500;
+          settingsChanged=true;
+        }
+#endif
 
         // SUBSECTION FILE
         CONFIG_SUBSECTION("File");
@@ -4004,6 +4029,7 @@ void FurnaceGUI::readConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
 
     settings.vsync=conf.getInt("vsync",1);
     settings.frameRateLimit=conf.getInt("frameRateLimit",100);
+    settings.displayRenderTime=conf.getInt("displayRenderTime",0);
 
     settings.chanOscThreads=conf.getInt("chanOscThreads",0);
     settings.renderPoolThreads=conf.getInt("renderPoolThreads",0);
@@ -4040,6 +4066,9 @@ void FurnaceGUI::readConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
     settings.newSongBehavior=conf.getInt("newSongBehavior",0);
     settings.playOnLoad=conf.getInt("playOnLoad",0);
     settings.centerPopup=conf.getInt("centerPopup",1);
+
+    settings.vibrationStrength=conf.getFloat("vibrationStrength",0.5f);
+    settings.vibrationLength=conf.getInt("vibrationLength",100);
   }
 
   if (groups&GUI_SETTINGS_AUDIO) {
@@ -4510,6 +4539,9 @@ void FurnaceGUI::readConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
   clampSetting(settings.cursorWheelStep,0,1);
   clampSetting(settings.vsync,0,4);
   clampSetting(settings.frameRateLimit,0,1000);
+  clampSetting(settings.displayRenderTime,0,1);
+  clampSetting(settings.vibrationStrength,0.0f,1.0f);
+  clampSetting(settings.vibrationLength,10,500);
 
   if (settings.exportLoops<0.0) settings.exportLoops=0.0;
   if (settings.exportFadeOut<0.0) settings.exportFadeOut=0.0;  
@@ -4535,6 +4567,7 @@ void FurnaceGUI::writeConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
 
     conf.set("vsync",settings.vsync);
     conf.set("frameRateLimit",settings.frameRateLimit);
+    conf.set("displayRenderTime",settings.displayRenderTime);
 
     conf.set("chanOscThreads",settings.chanOscThreads);
     conf.set("renderPoolThreads",settings.renderPoolThreads);
@@ -4571,6 +4604,9 @@ void FurnaceGUI::writeConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
     conf.set("newSongBehavior",settings.newSongBehavior);
     conf.set("playOnLoad",settings.playOnLoad);
     conf.set("centerPopup",settings.centerPopup);
+
+    conf.set("vibrationStrength",settings.vibrationStrength);
+    conf.set("vibrationLength",settings.vibrationLength);
   }
 
   // audio
@@ -5529,6 +5565,10 @@ void FurnaceGUI::applyUISettings(bool updateFonts) {
     sty.FrameRounding=0.0f;
     sty.GrabRounding=0.0f;
     sty.FrameShading=0.0f;
+    sty.TabRounding=0.0f;
+    sty.ScrollbarRounding=0.0f;
+    sty.ChildRounding=0.0f;
+    sty.PopupRounding=0.0f;
     sty.AntiAliasedLines=false;
     sty.AntiAliasedLinesUseTex=false;
     sty.AntiAliasedFill=false;
