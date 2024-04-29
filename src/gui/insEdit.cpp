@@ -174,6 +174,14 @@ const char* esfmNoiseModeDescriptions[4]={
   "Noise disabled", "Square + noise", "Ringmod from OP3 + noise", "Ringmod from OP3 + double pitch ModInput\nWARNING - has emulation issues, subject to change"
 };
 
+const char* sid2WaveMixModes[5]={
+  "Normal", "Bitwise AND", "Bitwise OR", "Bitwise XOR", NULL
+};
+
+const char* sid2ControlBits[4]={
+  "gate", "sync", "ring", NULL
+};
+
 const bool opIsOutput[8][4]={
   {false,false,false,true},
   {false,false,false,true},
@@ -5651,7 +5659,7 @@ void FurnaceGUI::drawInsEdit() {
           ImGui::EndDisabled();
           ImGui::EndTabItem();
         }
-        if (ins->type==DIV_INS_C64) if (ImGui::BeginTabItem("C64")) {
+        if (ins->type==DIV_INS_C64 || ins->type==DIV_INS_SID2) if (ImGui::BeginTabItem((ins->type==DIV_INS_SID2)?"SID2":"C64")) {
           ImGui::AlignTextToFramePadding();
           ImGui::Text("Waveform");
           ImGui::SameLine();
@@ -5715,7 +5723,7 @@ void FurnaceGUI::drawInsEdit() {
             ImGui::TableNextColumn();
             P(CWVSliderScalar("##Release",sliderSize,ImGuiDataType_U8,&ins->c64.r,&_ZERO,&_FIFTEEN)); rightClickable
             ImGui::TableNextColumn();
-            drawFMEnv(0,16-ins->c64.a,16-ins->c64.d,15-ins->c64.r,15-ins->c64.r,15-ins->c64.s,0,0,0,15,16,15,ImVec2(ImGui::GetContentRegionAvail().x,sliderSize.y),ins->type);
+            drawFMEnv((ins->type==DIV_INS_SID2)?(15-ins->sid2.volume):0,16-ins->c64.a,16-ins->c64.d,15-ins->c64.r,15-ins->c64.r,15-ins->c64.s,0,0,0,15,16,15,ImVec2(ImGui::GetContentRegionAvail().x,sliderSize.y),ins->type);
 
             ImGui::EndTable();
           }
@@ -5734,8 +5742,13 @@ void FurnaceGUI::drawInsEdit() {
           P(ImGui::Checkbox("Enable filter",&ins->c64.toFilter));
           P(ImGui::Checkbox("Initialize filter",&ins->c64.initFilter));
           
-          P(CWSliderScalar("Cutoff",ImGuiDataType_U16,&ins->c64.cut,&_ZERO,&_TWO_THOUSAND_FORTY_SEVEN)); rightClickable
-          P(CWSliderScalar("Resonance",ImGuiDataType_U8,&ins->c64.res,&_ZERO,&_FIFTEEN)); rightClickable
+          if (ins->type==DIV_INS_SID2) {
+            P(CWSliderScalar("Cutoff",ImGuiDataType_U16,&ins->c64.cut,&_ZERO,&_FOUR_THOUSAND_NINETY_FIVE)); rightClickable
+            P(CWSliderScalar("Resonance",ImGuiDataType_U8,&ins->c64.res,&_ZERO,&_TWO_HUNDRED_FIFTY_FIVE)); rightClickable
+          } else {
+            P(CWSliderScalar("Cutoff",ImGuiDataType_U16,&ins->c64.cut,&_ZERO,&_TWO_THOUSAND_FORTY_SEVEN)); rightClickable
+            P(CWSliderScalar("Resonance",ImGuiDataType_U8,&ins->c64.res,&_ZERO,&_FIFTEEN)); rightClickable
+          }
 
           ImGui::AlignTextToFramePadding();
           ImGui::Text("Filter Mode");
@@ -5757,12 +5770,19 @@ void FurnaceGUI::drawInsEdit() {
             ins->c64.hp=!ins->c64.hp;
           }
           popToggleColors();
-          ImGui::SameLine();
-          pushToggleColors(ins->c64.ch3off);
-          if (ImGui::Button("ch3off")) { PARAMETER
-            ins->c64.ch3off=!ins->c64.ch3off;
+          if (ins->type!=DIV_INS_SID2) {
+            ImGui::SameLine();
+            pushToggleColors(ins->c64.ch3off);
+            if (ImGui::Button("ch3off")) { PARAMETER
+              ins->c64.ch3off=!ins->c64.ch3off;
+            }
+            popToggleColors();
           }
-          popToggleColors();
+
+          if (ins->type==DIV_INS_SID2) {
+            P(CWSliderScalar("Noise Mode",ImGuiDataType_U8,&ins->sid2.noiseMode,&_ZERO,&_THREE));
+            P(CWSliderScalar("Wave Mix Mode",ImGuiDataType_U8,&ins->sid2.mixMode,&_ZERO,&_THREE,sid2WaveMixModes[ins->sid2.mixMode&3]));
+          }
 
           if (ImGui::Checkbox("Absolute Cutoff Macro",&ins->c64.filterIsAbs)) {
             ins->std.algMacro.vZoom=-1;
@@ -5772,7 +5792,10 @@ void FurnaceGUI::drawInsEdit() {
             ins->std.dutyMacro.vZoom=-1;
             PARAMETER;
           }
-          P(ImGui::Checkbox("Don't test before new note",&ins->c64.noTest));
+
+          if (ins->type!=DIV_INS_SID2) {
+            P(ImGui::Checkbox("Don't test before new note",&ins->c64.noTest));
+          }
           ImGui::EndTabItem();
         }
         if (ins->type==DIV_INS_SU) if (ImGui::BeginTabItem("Sound Unit")) {
@@ -6782,7 +6805,8 @@ void FurnaceGUI::drawInsEdit() {
             volMax=31;
           }
           if (ins->type==DIV_INS_ADPCMB || ins->type==DIV_INS_YMZ280B || ins->type==DIV_INS_RF5C68 ||
-              ins->type==DIV_INS_GA20 || ins->type==DIV_INS_C140 || ins->type==DIV_INS_C219 || ins->type==DIV_INS_GBA_MINMOD) {
+              ins->type==DIV_INS_GA20 || ins->type==DIV_INS_C140 || ins->type==DIV_INS_C219 || ins->type==DIV_INS_GBA_MINMOD ||
+              ins->type==DIV_INS_BIFURCATOR) {
             volMax=255;
           }
           if (ins->type==DIV_INS_QSOUND) {
@@ -6795,7 +6819,7 @@ void FurnaceGUI::drawInsEdit() {
           const char* dutyLabel="Duty/Noise";
           int dutyMin=0;
           int dutyMax=3;
-          if (ins->type==DIV_INS_C64) {
+          if (ins->type==DIV_INS_C64 || ins->type==DIV_INS_SID2) {
             dutyLabel="Duty";
             if (ins->c64.dutyIsAbs) {
               dutyMax=4095;
@@ -6942,18 +6966,22 @@ void FurnaceGUI::drawInsEdit() {
             dutyLabel="Duty";
             dutyMax=ins->amiga.useSample?0:7;
           }
+          if (ins->type==DIV_INS_BIFURCATOR) {
+            dutyLabel="Parameter";
+            dutyMax=65535;
+          }
 
           const char* waveLabel="Waveform";
           int waveMax=(ins->type==DIV_INS_VERA)?3:(MAX(1,e->song.waveLen-1));
           bool waveBitMode=false;
-          if (ins->type==DIV_INS_C64 || ins->type==DIV_INS_SAA1099) {
+          if (ins->type==DIV_INS_C64 || ins->type==DIV_INS_SAA1099 || ins->type==DIV_INS_SID2) {
             waveBitMode=true;
           }
           if (ins->type==DIV_INS_STD || ins->type==DIV_INS_VRC6_SAW || ins->type==DIV_INS_NES ||
               ins->type==DIV_INS_T6W28 || ins->type==DIV_INS_PV1000)
               waveMax=0;
           if (ins->type==DIV_INS_TIA || ins->type==DIV_INS_VIC || ins->type==DIV_INS_OPLL) waveMax=15;
-          if (ins->type==DIV_INS_C64) waveMax=4;
+          if (ins->type==DIV_INS_C64 || ins->type==DIV_INS_SID2) waveMax=4;
           if (ins->type==DIV_INS_SAA1099) waveMax=2;
           if (ins->type==DIV_INS_FM || ins->type==DIV_INS_OPL || ins->type==DIV_INS_OPL_DRUMS || ins->type==DIV_INS_OPZ || ins->type==DIV_INS_OPM || ins->type==DIV_INS_ESFM) waveMax=0;
           if (ins->type==DIV_INS_MIKEY) waveMax=0;
@@ -6981,6 +7009,7 @@ void FurnaceGUI::drawInsEdit() {
           if (ins->type==DIV_INS_SU || ins->type==DIV_INS_POKEY) waveMax=7;
           if (ins->type==DIV_INS_DAVE) waveMax=4;
           if (ins->type==DIV_INS_NDS) waveMax=0;
+          if (ins->type==DIV_INS_BIFURCATOR) waveMax=0;
           if (ins->type==DIV_INS_PET) {
             waveMax=8;
             waveBitMode=true;
@@ -7000,7 +7029,7 @@ void FurnaceGUI::drawInsEdit() {
 
           const char** waveNames=NULL;
           if (ins->type==DIV_INS_AY || ins->type==DIV_INS_AY8930 || ins->type==DIV_INS_SAA1099) waveNames=ayShapeBits;
-          if (ins->type==DIV_INS_C64) waveNames=c64ShapeBits;
+          if (ins->type==DIV_INS_C64 || ins->type==DIV_INS_SID2) waveNames=c64ShapeBits;
 
           int ex1Max=(ins->type==DIV_INS_AY8930)?8:0;
           int ex2Max=(ins->type==DIV_INS_AY || ins->type==DIV_INS_AY8930)?4:0;
@@ -7009,6 +7038,10 @@ void FurnaceGUI::drawInsEdit() {
           if (ins->type==DIV_INS_C64) {
             ex1Max=4;
             ex2Max=15;
+          }
+          if (ins->type==DIV_INS_SID2) {
+            ex1Max=3;
+            ex2Max=255;
           }
           if (ins->type==DIV_INS_X1_010) {
             dutyMax=0;
@@ -7055,6 +7088,9 @@ void FurnaceGUI::drawInsEdit() {
           }
           if (ins->type==DIV_INS_GBA_MINMOD) {
             ex1Max=2;
+          }
+          if (ins->type==DIV_INS_BIFURCATOR) {
+            ex1Max=65535;
           }
 
           int panMin=0;
@@ -7121,7 +7157,8 @@ void FurnaceGUI::drawInsEdit() {
             panMin=0;
             panMax=127;
           }
-          if (ins->type==DIV_INS_C140 || ins->type==DIV_INS_C219 || ins->type==DIV_INS_GBA_MINMOD) {
+          if (ins->type==DIV_INS_C140 || ins->type==DIV_INS_C219 || ins->type==DIV_INS_GBA_MINMOD ||
+              ins->type==DIV_INS_BIFURCATOR) {
             panMin=0;
             panMax=255;
           }
@@ -7235,11 +7272,12 @@ void FurnaceGUI::drawInsEdit() {
               ins->type==DIV_INS_DAVE ||
               ins->type==DIV_INS_NDS ||
               ins->type==DIV_INS_GBA_DMA ||
-              ins->type==DIV_INS_GBA_MINMOD) {
+              ins->type==DIV_INS_GBA_MINMOD ||
+              ins->type==DIV_INS_SID2) {
             macroList.push_back(FurnaceGUIMacroDesc("Phase Reset",&ins->std.phaseResetMacro,0,1,32,uiColors[GUI_COLOR_MACRO_OTHER],false,NULL,NULL,true));
           }
           if (ex1Max>0) {
-            if (ins->type==DIV_INS_C64) {
+            if (ins->type==DIV_INS_C64 || ins->type==DIV_INS_SID2) {
               int cutoffMin=-2047;
               int cutoffMax=2047;
 
@@ -7247,6 +7285,17 @@ void FurnaceGUI::drawInsEdit() {
                 cutoffMin=0;
                 cutoffMax=2047;
               }
+
+              if (ins->type==DIV_INS_SID2) {
+                if (ins->c64.filterIsAbs) {
+                  cutoffMin=0;
+                  cutoffMax=4095;
+                } else {
+                  cutoffMin=-4095;
+                  cutoffMax=4095;
+                }
+              }
+
               macroList.push_back(FurnaceGUIMacroDesc("Cutoff",&ins->std.algMacro,cutoffMin,cutoffMax,160,uiColors[GUI_COLOR_MACRO_OTHER]));
               macroList.push_back(FurnaceGUIMacroDesc("Filter Mode",&ins->std.ex1Macro,0,ex1Max,64,uiColors[GUI_COLOR_MACRO_OTHER],false,NULL,NULL,true,filtModeBits));
             } else if (ins->type==DIV_INS_SAA1099) {
@@ -7275,6 +7324,8 @@ void FurnaceGUI::drawInsEdit() {
               macroList.push_back(FurnaceGUIMacroDesc("Load LFSR",&ins->std.ex1Macro,0,12,160,uiColors[GUI_COLOR_MACRO_OTHER],false,NULL,NULL,true));
             } else if (ins->type==DIV_INS_GBA_MINMOD) {
               macroList.push_back(FurnaceGUIMacroDesc("Special",&ins->std.ex1Macro,0,ex1Max,96,uiColors[GUI_COLOR_MACRO_OTHER],false,NULL,NULL,true,minModModeBits));
+            } else if (ins->type==DIV_INS_BIFURCATOR) {
+              macroList.push_back(FurnaceGUIMacroDesc("Load Value",&ins->std.ex1Macro,0,ex1Max,160,uiColors[GUI_COLOR_MACRO_OTHER]));
             } else {
               macroList.push_back(FurnaceGUIMacroDesc("Duty",&ins->std.ex1Macro,0,ex1Max,160,uiColors[GUI_COLOR_MACRO_OTHER]));
             }
@@ -7282,6 +7333,8 @@ void FurnaceGUI::drawInsEdit() {
           if (ex2Max>0) {
             if (ins->type==DIV_INS_C64) {
               macroList.push_back(FurnaceGUIMacroDesc("Resonance",&ins->std.ex2Macro,0,ex2Max,64,uiColors[GUI_COLOR_MACRO_OTHER]));
+            } else if (ins->type==DIV_INS_SID2) {
+              macroList.push_back(FurnaceGUIMacroDesc("Resonance",&ins->std.ex2Macro,0,ex2Max,160,uiColors[GUI_COLOR_MACRO_OTHER]));
             } else if (ins->type==DIV_INS_FDS) {
               macroList.push_back(FurnaceGUIMacroDesc("Mod Speed",&ins->std.ex2Macro,0,ex2Max,160,uiColors[GUI_COLOR_MACRO_OTHER]));
             } else if (ins->type==DIV_INS_SU) {
@@ -7304,6 +7357,16 @@ void FurnaceGUI::drawInsEdit() {
             macroList.push_back(FurnaceGUIMacroDesc("Decay",&ins->std.ex6Macro,0,15,128,uiColors[GUI_COLOR_MACRO_OTHER]));
             macroList.push_back(FurnaceGUIMacroDesc("Sustain",&ins->std.ex7Macro,0,15,128,uiColors[GUI_COLOR_MACRO_OTHER]));
             macroList.push_back(FurnaceGUIMacroDesc("Release",&ins->std.ex8Macro,0,15,128,uiColors[GUI_COLOR_MACRO_OTHER]));
+          }
+          if (ins->type==DIV_INS_SID2) {
+            macroList.push_back(FurnaceGUIMacroDesc("Filter Toggle",&ins->std.ex3Macro,0,1,32,uiColors[GUI_COLOR_MACRO_OTHER],false,NULL,NULL,true));
+            macroList.push_back(FurnaceGUIMacroDesc("Special",&ins->std.ex4Macro,0,3,48,uiColors[GUI_COLOR_MACRO_OTHER],false,NULL,NULL,true,sid2ControlBits));
+            macroList.push_back(FurnaceGUIMacroDesc("Attack",&ins->std.ex5Macro,0,15,128,uiColors[GUI_COLOR_MACRO_OTHER]));
+            macroList.push_back(FurnaceGUIMacroDesc("Decay",&ins->std.ex6Macro,0,15,128,uiColors[GUI_COLOR_MACRO_OTHER]));
+            macroList.push_back(FurnaceGUIMacroDesc("Sustain",&ins->std.ex7Macro,0,15,128,uiColors[GUI_COLOR_MACRO_OTHER]));
+            macroList.push_back(FurnaceGUIMacroDesc("Release",&ins->std.ex8Macro,0,15,128,uiColors[GUI_COLOR_MACRO_OTHER]));
+            macroList.push_back(FurnaceGUIMacroDesc("Noise Mode",&ins->std.fmsMacro,0,3,64,uiColors[GUI_COLOR_MACRO_OTHER]));
+            macroList.push_back(FurnaceGUIMacroDesc("Wave Mix",&ins->std.amsMacro,0,3,64,uiColors[GUI_COLOR_MACRO_OTHER]));
           }
           if (ins->type==DIV_INS_AY || ins->type==DIV_INS_AY8930 || (ins->type==DIV_INS_X1_010 && !ins->amiga.useSample)) {
             macroList.push_back(FurnaceGUIMacroDesc("AutoEnv Num",&ins->std.ex3Macro,0,15,160,uiColors[GUI_COLOR_MACRO_OTHER]));
@@ -7469,7 +7532,7 @@ void FurnaceGUI::drawInsEdit() {
           memset(oldData,0,256*sizeof(int));
           memcpy(oldData,lastMacroDesc.macro->val,lastMacroDesc.macro->len*sizeof(int));
 
-          lastMacroDesc.macro->len=MIN(128,((double)lastMacroDesc.macro->len*(macroScaleX/100.0)));
+          lastMacroDesc.macro->len=MIN(255,((double)lastMacroDesc.macro->len*(macroScaleX/100.0)));
 
           for (int i=0; i<lastMacroDesc.macro->len; i++) {
             int val=0;

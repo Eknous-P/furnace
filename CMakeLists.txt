@@ -75,6 +75,11 @@ else()
   set(WITH_RENDER_DX11_DEFAULT OFF)
   set(WITH_RENDER_DX9_DEFAULT OFF)
 endif()
+if (APPLE)
+  set(WITH_RENDER_METAL_DEFAULT ON)
+else()
+  set(WITH_RENDER_METAL_DEFAULT OFF)
+endif()
 
 if (ANDROID)
   set(USE_GLES_DEFAULT ON)
@@ -100,6 +105,7 @@ option(WITH_RENDER_OPENGL "Whether to build with the OpenGL render backend." ${W
 option(WITH_RENDER_OPENGL1 "Whether to build with the OpenGL 1.1 render backend." ${WITH_RENDER_OPENGL1_DEFAULT})
 option(WITH_RENDER_DX11 "Whether to build with the DirectX 11 render backend." ${WITH_RENDER_DX11_DEFAULT})
 option(WITH_RENDER_DX9 "Whether to build with the DirectX 9 render backend." ${WITH_RENDER_DX9_DEFAULT})
+option(WITH_RENDER_METAL "Whether to build with the Metal render backend." ${WITH_RENDER_METAL_DEFAULT})
 option(USE_GLES "Use OpenGL ES for the OpenGL render backend." ${USE_GLES_DEFAULT})
 option(USE_FREETYPE "Use FreeType for font rendering." ON)
 option(SYSTEM_FFTW "Use a system-installed version of FFTW instead of the vendored one" OFF)
@@ -116,6 +122,12 @@ option(WITH_DEMOS "Install demo songs" ON)
 option(WITH_INSTRUMENTS "Install instruments" ON)
 option(WITH_WAVETABLES "Install wavetables" ON)
 option(SHOW_OPEN_ASSETS_MENU_ENTRY "Show option to open built-in assets directory (on supported platforms)" OFF)
+if (APPLE)
+  option(FORCE_APPLE_BIN "Force enable binary installation to /bin" OFF)
+else()
+  # not Apple - not needed
+  set(FORCE_APPLE_BIN OFF)
+endif()
 
 set(DEPENDENCIES_INCLUDE_DIRS extern/IconFontCppHeaders src/icon)
 
@@ -397,15 +409,10 @@ else()
   endif()
 endif()
 
-if (BUILD_GUI)
-  if (NOT WITH_RENDER_SDL AND NOT WITH_RENDER_OPENGL AND NOT WITH_RENDER_OPENGL1 AND NOT WITH_RENDER_DX11 AND NOT WITH_RENDER_DX9)
-    message(FATAL_ERROR "No render backends selected!")
-  endif()
-endif()
-
 set(AUDIO_SOURCES
 src/audio/abstract.cpp
 src/audio/midi.cpp
+src/audio/pipe.cpp
 )
 
 if (USE_SDL2)
@@ -505,6 +512,9 @@ extern/YMF276-LLE/fmopn2.c
 extern/ESFMu/esfm.c
 extern/ESFMu/esfm_registers.c
 extern/emu2413/emu2413.c
+extern/YM2608-LLE/fmopna_2608.c
+extern/YM2608-LLE/fmopna_2610.c
+extern/YM2608-LLE/fmopna_2612.c
 
 extern/pwrnoise/pwrnoise.c
 
@@ -623,6 +633,17 @@ src/engine/platform/sound/dave/dave.cpp
 
 src/engine/platform/sound/nds.cpp
 
+src/engine/platform/sound/sid2/envelope.cc
+src/engine/platform/sound/sid2/filter.cc
+src/engine/platform/sound/sid2/sid.cc
+src/engine/platform/sound/sid2/version.cc
+src/engine/platform/sound/sid2/voice.cc
+src/engine/platform/sound/sid2/wave8580_PS_.cc
+src/engine/platform/sound/sid2/wave8580_PST.cc
+src/engine/platform/sound/sid2/wave8580_P_T.cc
+src/engine/platform/sound/sid2/wave8580__ST.cc
+src/engine/platform/sound/sid2/wave.cc
+
 src/engine/platform/oplAInterface.cpp
 src/engine/platform/ym2608Interface.cpp
 src/engine/platform/ym2610Interface.cpp
@@ -635,6 +656,7 @@ src/engine/fileOps/fur.cpp
 src/engine/fileOps/mod.cpp
 src/engine/fileOps/s3m.cpp
 src/engine/fileOps/text.cpp
+src/engine/fileOps/tfm.cpp
 
 src/engine/blip_buf.c
 src/engine/brrUtils.c
@@ -735,6 +757,8 @@ src/engine/platform/dave.cpp
 src/engine/platform/gbadma.cpp
 src/engine/platform/gbaminmod.cpp
 src/engine/platform/nds.cpp
+src/engine/platform/bifurcator.cpp
+src/engine/platform/sid2.cpp
 src/engine/platform/pcmdac.cpp
 src/engine/platform/dummy.cpp
 
@@ -860,6 +884,7 @@ src/gui/sysManager.cpp
 src/gui/sysPartNumber.cpp
 src/gui/sysPicker.cpp
 src/gui/tutorial.cpp
+src/gui/userPresets.cpp
 src/gui/util.cpp
 src/gui/waveEdit.cpp
 src/gui/volMeter.cpp
@@ -954,6 +979,19 @@ endif()
 #    message(FATAL_ERROR "DirectX 9 render backend only for Windows!")
 #  endif()
 #endif()
+
+if (WITH_RENDER_METAL)
+  if (APPLE)
+    list(APPEND GUI_SOURCES src/gui/render/renderMetal.mm)
+    list(APPEND GUI_SOURCES extern/imgui_patched/backends/imgui_impl_metal.mm)
+    list(APPEND DEPENDENCIES_DEFINES HAVE_RENDER_METAL)
+    list(APPEND DEPENDENCIES_LIBRARIES "-framework Metal")
+    list(APPEND DEPENDENCIES_LIBRARIES "-framework MetalKit")
+    message(STATUS "UI render backend: Metal")
+  else()
+    message(FATAL_ERROR "Metal render backend only for Apple operating systems!")
+  endif()
+endif()
 
 if (NOT WIN32 AND NOT APPLE)
   CHECK_INCLUDE_FILE(sys/io.h SYS_IO_FOUND)
@@ -1160,7 +1198,9 @@ if (NOT ANDROID OR TERMUX)
     endforeach()
     install(FILES res/logo.png RENAME furnace.png DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/1024x1024/apps)
   else()
-    install(TARGETS furnace RUNTIME DESTINATION bin)
+    if (NOT APPLE OR FORCE_APPLE_BIN)
+      install(TARGETS furnace RUNTIME DESTINATION bin)
+    endif()
   endif()
 
   set(CPACK_PACKAGE_NAME "Furnace")

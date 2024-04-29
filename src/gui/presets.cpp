@@ -216,6 +216,19 @@ void FurnaceGUI::initSystemPresets() {
       CH(DIV_SYSTEM_SNES, 1.0f, 0, "")
     }
   );
+    SUB_ENTRY(
+      "Super Game Boy", {
+        CH(DIV_SYSTEM_GB, 1.0f, 0, "customClock=4295455"),
+        CH(DIV_SYSTEM_SNES, 1.0f, 0, "")
+      },
+      "tickRate=61.44697015935724"
+    );
+    SUB_ENTRY(
+      "Super Game Boy 2", {
+        CH(DIV_SYSTEM_GB, 1.0f, 0, ""),
+        CH(DIV_SYSTEM_SNES, 1.0f, 0, "")
+      }
+    );
   ENTRY(
     "Mattel Intellivision", {
       CH(DIV_SYSTEM_AY8910, 1.0f, 0, "chipType=3")
@@ -1021,7 +1034,7 @@ void FurnaceGUI::initSystemPresets() {
     );
     SUB_ENTRY(
       "Tandy 1000", {
-        CH(DIV_SYSTEM_SMS, 1.0f, 0, "chipType=5"), // NCR 8496 or SN76496 or Tandy PSSJ(with 8 bit DAC)
+        CH(DIV_SYSTEM_SMS, 1.0f, 0, "chipType=5"), // NCR 8496 or SN76496 or Tandy PSSJ (with 8 bit DAC)
         CH(DIV_SYSTEM_PCSPKR, 1.0f, 0, "")
       }
     );
@@ -1240,7 +1253,7 @@ void FurnaceGUI::initSystemPresets() {
     "Alpha Denshi", {}
   );
     SUB_ENTRY(
-      "Alpha denshi Alpha-68K", {
+      "Alpha Denshi Alpha-68K", {
         CH(DIV_SYSTEM_YM2203, 1.0f, 0, "clockSel=3"), // 3MHz
         CH(DIV_SYSTEM_OPLL, 1.0f, 0, "clockSel=0"), // 3.58MHz
         CH(DIV_SYSTEM_PCM_DAC, 1.0f, 0,
@@ -1250,7 +1263,7 @@ void FurnaceGUI::initSystemPresets() {
       }
     );
     SUB_ENTRY(
-      "Alpha denshi Alpha-68K (extended channel 3)", {
+      "Alpha Denshi Alpha-68K (extended channel 3)", {
         CH(DIV_SYSTEM_YM2203_EXT, 1.0f, 0, "clockSel=3"), // 3MHz
         CH(DIV_SYSTEM_OPLL, 1.0f, 0, "clockSel=0"), // 3.58MHz
         CH(DIV_SYSTEM_PCM_DAC, 1.0f, 0,
@@ -1260,7 +1273,7 @@ void FurnaceGUI::initSystemPresets() {
       }
     );
     SUB_ENTRY(
-      "Alpha denshi Alpha-68K (drums mode)", {
+      "Alpha Denshi Alpha-68K (drums mode)", {
         CH(DIV_SYSTEM_YM2203, 1.0f, 0, "clockSel=3"), // 3MHz
         CH(DIV_SYSTEM_OPLL_DRUMS, 1.0f, 0, "clockSel=0"), // 3.58MHz
         CH(DIV_SYSTEM_PCM_DAC, 1.0f, 0,
@@ -1270,7 +1283,7 @@ void FurnaceGUI::initSystemPresets() {
       }
     );
     SUB_ENTRY(
-      "Alpha denshi Alpha-68K (extended channel 3; drums mode)", {
+      "Alpha Denshi Alpha-68K (extended channel 3; drums mode)", {
         CH(DIV_SYSTEM_YM2203_EXT, 1.0f, 0, "clockSel=3"), // 3MHz
         CH(DIV_SYSTEM_OPLL_DRUMS, 1.0f, 0, "clockSel=0"), // 3.58MHz
         CH(DIV_SYSTEM_PCM_DAC, 1.0f, 0,
@@ -1280,7 +1293,7 @@ void FurnaceGUI::initSystemPresets() {
       }
     );
     SUB_ENTRY(
-      "Alpha denshi Equites", {
+      "Alpha Denshi Equites", {
         CH(DIV_SYSTEM_MSM5232, 1.0f, 0, "customClock=6144000"),
         CH(DIV_SYSTEM_AY8910, 1.0f, 0, "clockSel=14"),
         CH(DIV_SYSTEM_PCM_DAC, 1.0f, 0, 
@@ -1358,7 +1371,7 @@ void FurnaceGUI::initSystemPresets() {
     "Capcom", {}
   );
     SUB_ENTRY(
-      "Capcom Exed Eyes", {
+      "Capcom Exed Exes", {
         CH(DIV_SYSTEM_AY8910, 1.0f, 0, "clockSel=4"), // 1.5MHz
         CH(DIV_SYSTEM_SMS, 1.0f, 0,
           "clockSel=4\n"
@@ -1434,28 +1447,28 @@ void FurnaceGUI::initSystemPresets() {
       }
     );
     SUB_ENTRY(
-      "Data East Arcade", { // Bad dudes, Robocop, etc
+      "Data East Arcade", { // Bad Dudes, RoboCop, etc
         CH(DIV_SYSTEM_YM2203, 1.0f, 0, "clockSel=5"), // 1.5MHz
         CH(DIV_SYSTEM_OPL2, 1.0f, 0, "clockSel=3"), // 3MHz
         CH(DIV_SYSTEM_MSM6295, 1.0f, 0, "") // 1 to 1.056MHz; various per games or optional
       }
     );
     SUB_ENTRY(
-      "Data East Arcade (extended channel 3)", { // Bad dudes, Robocop, etc
+      "Data East Arcade (extended channel 3)", { // Bad Dudes, RoboCop, etc
         CH(DIV_SYSTEM_YM2203_EXT, 1.0f, 0, "clockSel=5"), // 1.5MHz
         CH(DIV_SYSTEM_OPL2, 1.0f, 0, "clockSel=3"), // 3MHz
         CH(DIV_SYSTEM_MSM6295, 1.0f, 0, "") // 1 to 1.056MHz; various per games or optional
       }
     );
     SUB_ENTRY(
-      "Data East Arcade (drums mode)", { // Bad dudes, Robocop, etc
+      "Data East Arcade (drums mode)", { // Bad Dudes, RoboCop, etc
         CH(DIV_SYSTEM_YM2203, 1.0f, 0, "clockSel=5"), // 1.5MHz
         CH(DIV_SYSTEM_OPL2_DRUMS, 1.0f, 0, "clockSel=3"), // 3MHz
         CH(DIV_SYSTEM_MSM6295, 1.0f, 0, "") // 1 to 1.056MHz; various per games or optional
       }
     );
     SUB_ENTRY(
-      "Data East Arcade (extended channel 3; drums mode)", { // Bad dudes, Robocop, etc
+      "Data East Arcade (extended channel 3; drums mode)", { // Bad Dudes, RoboCop, etc
         CH(DIV_SYSTEM_YM2203_EXT, 1.0f, 0, "clockSel=5"), // 1.5MHz
         CH(DIV_SYSTEM_OPL2_DRUMS, 1.0f, 0, "clockSel=3"), // 3MHz
         CH(DIV_SYSTEM_MSM6295, 1.0f, 0, "") // 1 to 1.056MHz; various per games or optional
@@ -1481,7 +1494,7 @@ void FurnaceGUI::initSystemPresets() {
         CH(DIV_SYSTEM_YM2203, 1.0f, 0, "clockSel=2"), // 4.0275MHz (32.22MHz / 8); optional
         CH(DIV_SYSTEM_MSM6295, 1.0f, 0, ""), // 1.007MHz (32.22MHz / 32)
         CH(DIV_SYSTEM_MSM6295, 1.0f, 0, "clockSel=8") // 2.014MHz (32.22MHz / 16); optional
-        // HuC6280 is for control them, internal sound isn't used
+        // HuC6280 is for controlling them; internal sound isn't used
       }
     );
     SUB_ENTRY(
@@ -1490,7 +1503,7 @@ void FurnaceGUI::initSystemPresets() {
         CH(DIV_SYSTEM_YM2203_EXT, 1.0f, 0, "clockSel=2"), // 4.0275MHz (32.22MHz / 8); optional
         CH(DIV_SYSTEM_MSM6295, 1.0f, 0, ""), // 1.007MHz (32.22MHz / 32)
         CH(DIV_SYSTEM_MSM6295, 1.0f, 0, "clockSel=8") // 2.014MHz (32.22MHz / 16); optional
-        // HuC6280 is for control them, internal sound isn't used
+        // HuC6280 is for controlling them; internal sound isn't used
       }
     );
     SUB_ENTRY(
@@ -2211,13 +2224,13 @@ void FurnaceGUI::initSystemPresets() {
       }
     );
     SUB_ENTRY(
-      "Seibu Kaihatsu Raiden", { // Raiden, Seibu cup soccer, Zero team, etc
+      "Seibu Kaihatsu Raiden", { // Raiden, Seibu Cup Soccer, Zero Team, etc
         CH(DIV_SYSTEM_OPL2, 1.0f, 0, ""), // YM3812 3.58MHz
         CH(DIV_SYSTEM_MSM6295, 1.0f, 0, "") // 1 or 1.023MHz (28.636363MHz / 28); various per games
       }
     );
     SUB_ENTRY(
-      "Seibu Kaihatsu Raiden (drums mode)", { // Raiden, Seibu cup soccer, Zero team, etc
+      "Seibu Kaihatsu Raiden (drums mode)", { // Raiden, Seibu Cup Soccer, Zero Team, etc
         CH(DIV_SYSTEM_OPL2_DRUMS, 1.0f, 0, ""), // YM3812 3.58MHz
         CH(DIV_SYSTEM_MSM6295, 1.0f, 0, "") // 1 or 1.023MHz (28.636363MHz / 28); various per games
       }
@@ -3018,6 +3031,16 @@ void FurnaceGUI::initSystemPresets() {
       CH(DIV_SYSTEM_NDS, 1.0f, 0, "")
     }
   );
+  ENTRY(
+    "Bifurcator", {
+      CH(DIV_SYSTEM_BIFURCATOR, 1.0f, 0, "")
+    }
+  );
+  ENTRY(
+    "SID2", {
+      CH(DIV_SYSTEM_SID2, 1.0f, 0, "")
+    }
+  );
   CATEGORY_END;
 
   CATEGORY_BEGIN("DefleMask-compatible","these configurations are compatible with DefleMask.\nselect this if you need to save as .dmf or work with that program.");
@@ -3102,11 +3125,9 @@ void FurnaceGUI::initSystemPresets() {
   CATEGORY_END;
 }
 
-FurnaceGUISysDef::FurnaceGUISysDef(const char* n, std::initializer_list<FurnaceGUISysDefChip> def, const char* e):
-  name(n),
-  extra((e==NULL)?"":e) {
-  orig=def;
+void FurnaceGUISysDef::bake() {
   int index=0;
+  definition="";
   for (FurnaceGUISysDefChip& i: orig) {
     definition+=fmt::sprintf(
       "id%d=%d\nvol%d=%f\npan%d=%f\nflags%d=%s\n",
@@ -3126,12 +3147,19 @@ FurnaceGUISysDef::FurnaceGUISysDef(const char* n, std::initializer_list<FurnaceG
   }
 }
 
+FurnaceGUISysDef::FurnaceGUISysDef(const char* n, std::initializer_list<FurnaceGUISysDefChip> def, const char* e):
+  name(n),
+  extra((e==NULL)?"":e) {
+  orig=def;
+  bake();
+}
+
 FurnaceGUISysDef::FurnaceGUISysDef(const char* n, const char* def, DivEngine* e):
   name(n),
-  definition(def) {
+  definition(taDecodeBase64(def)) {
   // extract definition
   DivConfig conf;
-  conf.loadFromBase64(def);
+  conf.loadFromMemory(definition.c_str());
   for (int i=0; i<DIV_MAX_CHIPS; i++) {
     String nextStr=fmt::sprintf("id%d",i);
     int id=conf.getInt(nextStr.c_str(),0);
@@ -3148,365 +3176,11 @@ FurnaceGUISysDef::FurnaceGUISysDef(const char* n, const char* def, DivEngine* e)
     float panFR=conf.getFloat(nextStr.c_str(),0.0f);
     conf.remove(nextStr.c_str());
     nextStr=fmt::sprintf("flags%d",i);
-    String flags=conf.getString(nextStr.c_str(),"");
+    String flags=taDecodeBase64(conf.getString(nextStr.c_str(),"").c_str());
     conf.remove(nextStr.c_str());
 
     orig.push_back(FurnaceGUISysDefChip(e->systemFromFileFur(id),vol,pan,flags.c_str(),panFR));
   }
   // extract extra
   extra=conf.toString();
-}
-
-// functions for loading/saving user presets
-#ifdef _WIN32
-#define PRESETS_FILE "\\presets.cfg"
-#else
-#define PRESETS_FILE "/presets.cfg"
-#endif
-
-#define REDUNDANCY_NUM_ATTEMPTS 5
-#define CHECK_BUF_SIZE 8192
-
-std::vector<FurnaceGUISysDef>* digDeep(std::vector<FurnaceGUISysDef>& entries, int depth) {
-  if (depth==0) return &entries;
-  std::vector<FurnaceGUISysDef>& result=entries;
-
-  for (int i=0; i<depth; i++) {
-    if (result.empty()) {
-      logW("digDeep: %d is as far as it goes!",depth);
-      break;
-    }
-    result=result.at(result.size()).subDefs;
-  }
-  return &result;
-}
-
-bool FurnaceGUI::loadUserPresets(bool redundancy) {
-  String path=e->getConfigPath()+PRESETS_FILE;
-  String line;
-  logD("opening user presets: %s",path);
-
-  FILE* f=NULL;
-
-  if (redundancy) {
-    unsigned char* readBuf=new unsigned char[CHECK_BUF_SIZE];
-    size_t readBufLen=0;
-    for (int i=0; i<REDUNDANCY_NUM_ATTEMPTS; i++) {
-      bool viable=false;
-      if (i>0) {
-        line=fmt::sprintf("%s.%d",path,i);
-      } else {
-        line=path;
-      }
-      logV("trying: %s",line);
-
-      // try to open config
-      f=ps_fopen(line.c_str(),"rb");
-      // check whether we could open it
-      if (f==NULL) {
-        logV("fopen(): %s",strerror(errno));
-        continue;
-      }
-
-      // check whether there's something
-      while (!feof(f)) {
-        readBufLen=fread(readBuf,1,CHECK_BUF_SIZE,f);
-        if (ferror(f)) {
-          logV("fread(): %s",strerror(errno));
-          break;
-        }
-
-        for (size_t j=0; j<readBufLen; j++) {
-          if (readBuf[j]==0) {
-            viable=false;
-            logW("a zero?");
-            break;
-          }
-          if (readBuf[j]!='\r' && readBuf[j]!='\n' && readBuf[j]!=' ') {
-            viable=true;
-          }
-        }
-
-        if (viable) break;
-      }
-
-      // there's something
-      if (viable) {
-        if (fseek(f,0,SEEK_SET)==-1) {
-          logV("fseek(): %s",strerror(errno));
-          viable=false;
-        } else {
-          break;
-        }
-      }
-      
-      // close it (because there's nothing)
-      fclose(f);
-      f=NULL;
-    }
-    delete[] readBuf;
-
-    // we couldn't read at all
-    if (f==NULL) {
-      logD("presets file does not exist");
-      return false;
-    }
-  } else {
-    f=ps_fopen(path.c_str(),"rb");
-    if (f==NULL) {
-      logD("presets file does not exist");
-      return false;
-    }
-  }
-
-  // now read stuff
-  FurnaceGUISysCategory* userCategory=NULL;
-
-  for (FurnaceGUISysCategory& i: sysCategories) {
-    if (strcmp(i.name,"User")==0) {
-      userCategory=&i;
-      break;
-    }
-  }
-
-  if (userCategory==NULL) {
-    logE("could not find user category!");
-    fclose(f);
-    return false;
-  }
-
-  userCategory->systems.clear();
-
-  char nextLine[4096];
-  while (!feof(f)) {
-    if (fgets(nextLine,4095,f)==NULL) {
-      break;
-    }
-    int indent=0;
-    bool readIndent=true;
-    bool keyOrValue=false;
-    String key="";
-    String value="";
-    for (char* i=nextLine; *i; i++) {
-      if ((*i)=='\n') break;
-      if (readIndent) {
-        if ((*i)==' ') {
-          indent++;
-        } else {
-          readIndent=false;
-        }
-      }
-      if (!readIndent) {
-        if (keyOrValue) {
-          value+=*i;
-        } else {
-          if ((*i)=='=') {
-            keyOrValue=true;
-          } else {
-            key+=*i;
-          }
-        }
-      }
-    }
-    indent>>=1;
-
-    if (!key.empty() && !value.empty()) {
-      std::vector<FurnaceGUISysDef>* where=digDeep(userCategory->systems,indent);
-      where->push_back(FurnaceGUISysDef(key.c_str(),value.c_str(),e));
-    }
-  }
-
-  fclose(f);
-  return true;
-}
-
-void writeSubEntries(FILE* f, std::vector<FurnaceGUISysDef>& entries, int depth) {
-  for (FurnaceGUISysDef& i: entries) {
-    String safeName;
-    safeName.reserve(i.name.size());
-    bool beginning=false;
-    for (char j: i.name) {
-      if (beginning && j==' ') continue;
-      if (j=='=') continue;
-      if (j<0x20) continue;
-      safeName+=j;
-    }
-    
-    String data;
-    for (int i=0; i<depth; i++) {
-      data+="  ";
-    }
-    data+=fmt::sprintf("%s=%s\n",safeName,i.definition);
-    fputs(data.c_str(),f);
-
-    writeSubEntries(f,i.subDefs,depth+1);
-  }
-}
-
-bool FurnaceGUI::saveUserPresets(bool redundancy) {
-  String path=e->getConfigPath()+PRESETS_FILE;
-  FurnaceGUISysCategory* userCategory=NULL;
-
-  for (FurnaceGUISysCategory& i: sysCategories) {
-    if (strcmp(i.name,"User")==0) {
-      userCategory=&i;
-      break;
-    }
-  }
-
-  if (userCategory==NULL) {
-    logE("could not find user category!");
-    return false;
-  }
-
-  if (redundancy) {
-    char oldPath[4096];
-    char newPath[4096];
-
-    if (fileExists(path.c_str())==1) {
-      logD("rotating preset files...");
-      for (int i=4; i>=0; i--) {
-        if (i>0) {
-          snprintf(oldPath,4095,"%s.%d",path.c_str(),i);
-        } else {
-          strncpy(oldPath,path.c_str(),4095);
-        }
-        snprintf(newPath,4095,"%s.%d",path.c_str(),i+1);
-
-        if (i>=4) {
-          logV("remove %s",oldPath);
-          deleteFile(oldPath);
-        } else {
-          logV("move %s to %s",oldPath,newPath);
-          moveFiles(oldPath,newPath);
-        }
-      }
-    }
-  }
-  logD("saving user presets: %s",path);
-  FILE* f=ps_fopen(path.c_str(),"wb");
-  if (f==NULL) {
-    logW("could not write presets! %s",strerror(errno));
-    return false;
-  }
-
-  writeSubEntries(f,userCategory->systems,0);
-
-  fclose(f);
-  logD("presets written successfully.");
-  return true;
-}
-
-// user presets management
-void FurnaceGUI::printPresets(std::vector<FurnaceGUISysDef>& items, size_t depth, std::vector<int>& depthStack) {
-  if (depth>0) ImGui::Indent();
-  int index=0;
-  for (FurnaceGUISysDef& i: items) {
-    bool isSelected=(selectedUserPreset.size()==(depth+1));
-    if (isSelected) {
-      for (size_t j=0; j<=depth; j++) {
-        int item=-1;
-        if (j>=depthStack.size()) {
-          item=index;
-        } else {
-          item=depthStack[j];
-        }
-
-        if (selectedUserPreset[j]!=item) {
-          isSelected=false;
-          break;
-        }
-      }
-    }
-    ImGui::PushID(index+1);
-    if (ImGui::Selectable(i.name.c_str(),isSelected)) {
-      selectedUserPreset=depthStack;
-      selectedUserPreset.push_back(index);
-    }
-    ImGui::PopID();
-    if (!i.subDefs.empty()) {
-      depthStack.push_back(index);
-      ImGui::PushID(index);
-      printPresets(i.subDefs,depth+1,depthStack);
-      ImGui::PopID();
-      depthStack.pop_back();
-    }
-    index++;
-  }
-  if (depth>0) ImGui::Unindent();
-}
-
-FurnaceGUISysDef* FurnaceGUI::selectPreset(std::vector<FurnaceGUISysDef>& items) {
-  FurnaceGUISysDef* ret=NULL;
-  for (size_t i=0; i<selectedUserPreset.size(); i++) {
-    if (selectedUserPreset[i]<0 || selectedUserPreset[i]>(int)items.size()) return NULL;
-    ret=&items[selectedUserPreset[i]];
-    if (i<selectedUserPreset.size()-1) {
-      items=ret->subDefs;
-    }
-  }
-  return ret;
-}
-
-void FurnaceGUI::drawUserPresets() {
-  if (nextWindow==GUI_WINDOW_USER_PRESETS) {
-    userPresetsOpen=true;
-    ImGui::SetNextWindowFocus();
-    nextWindow=GUI_WINDOW_NOTHING;
-  }
-  if (!userPresetsOpen) return;
-  if (ImGui::Begin("User Presets",&userPresetsOpen,globalWinFlags)) {
-    FurnaceGUISysCategory* userCategory=NULL;
-    for (FurnaceGUISysCategory& i: sysCategories) {
-      if (strcmp(i.name,"User")==0) {
-        userCategory=&i;
-        break;
-      }
-    }
-
-    std::vector<int> depthStack;
-
-    if (userCategory==NULL) {
-      ImGui::Text("Error! User category does not exist!");
-    } else if (ImGui::BeginTable("UserPresets",2,ImGuiTableFlags_BordersInnerV)) {
-      // preset list
-      ImGui::TableNextRow();
-      ImGui::TableNextColumn();
-      if (ImGui::Button(ICON_FA_PLUS "##AddPreset")) {
-        userCategory->systems.push_back(FurnaceGUISysDef("New Preset",{}));
-        selectedUserPreset.clear();
-        selectedUserPreset.push_back(userCategory->systems.size()-1);
-      }
-      printPresets(userCategory->systems,0,depthStack);
-
-      // editor
-      ImGui::TableNextColumn();
-      if (selectedUserPreset.empty()) {
-        ImGui::Text("select a preset");
-      } else {
-        FurnaceGUISysDef* preset=selectPreset(userCategory->systems);
-
-        if (preset!=NULL) {
-          ImGui::AlignTextToFramePadding();
-          ImGui::Text("Name");
-          ImGui::SameLine();
-          ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-          ImGui::InputText("##PName",&preset->name);
-          ImGui::Separator();
-          ImGui::Text("the rest...");
-        }
-      }
-
-      ImGui::EndTable();
-    }
-
-    if (ImGui::Button("Save and Close")) {
-      userPresetsOpen=false;
-    }
-  }
-  if (!userPresetsOpen) {
-    saveUserPresets(true);
-  }
-  if (ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows)) curWindow=GUI_WINDOW_USER_PRESETS;
-  ImGui::End();
 }

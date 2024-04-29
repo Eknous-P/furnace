@@ -154,7 +154,8 @@ const char* pokeyCores[]={
 
 const char* opnCores[]={
   "ymfm only",
-  "Nuked-OPN2 (FM) + ymfm (SSG/ADPCM)"
+  "Nuked-OPN2 (FM) + ymfm (SSG/ADPCM)",
+  "YM2608-LLE"
 };
 
 const char* opl2Cores[]={
@@ -405,6 +406,12 @@ void FurnaceGUI::drawSettings() {
             settingsChanged=true;
           }
 #endif
+#ifdef HAVE_RENDER_METAL
+          if (ImGui::Selectable("Metal",curRenderBackend=="Metal")) {
+            settings.renderBackend="Metal";
+            settingsChanged=true;
+          }
+#endif
 #ifdef HAVE_RENDER_GL
 #ifdef USE_GLES
           if (ImGui::Selectable("OpenGL ES 2.0",curRenderBackend=="OpenGL ES 2.0")) {
@@ -482,13 +489,15 @@ void FurnaceGUI::drawSettings() {
           settingsChanged=true;
         }
 
-        bool renderClearPosB=settings.renderClearPos;
-        if (ImGui::Checkbox("Late render clear",&renderClearPosB)) {
-          settings.renderClearPos=renderClearPosB;
-          settingsChanged=true;
-        }
-        if (ImGui::IsItemHovered()) {
-          ImGui::SetTooltip("calls rend->clear() after rend->present(). might reduce UI latency by one frame in some drivers.");
+        if (settings.renderBackend!="Metal") {
+          bool renderClearPosB=settings.renderClearPos;
+          if (ImGui::Checkbox("Late render clear",&renderClearPosB)) {
+            settings.renderClearPos=renderClearPosB;
+            settingsChanged=true;
+          }
+          if (ImGui::IsItemHovered()) {
+            ImGui::SetTooltip("calls rend->clear() after rend->present(). might reduce UI latency by one frame in some drivers.");
+          }
         }
 
         bool powerSaveB=settings.powerSave;
@@ -1698,13 +1707,35 @@ void FurnaceGUI::drawSettings() {
           ImGui::TableNextRow();
           ImGui::TableNextColumn();
           ImGui::AlignTextToFramePadding();
-          ImGui::Text("OPN/OPNA/OPNB");
+          ImGui::Text("OPN");
           ImGui::TableNextColumn();
           ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-          if (ImGui::Combo("##OPNCore",&settings.opnCore,opnCores,2)) settingsChanged=true;
+          if (ImGui::Combo("##OPNCore",&settings.opn1Core,opnCores,3)) settingsChanged=true;
           ImGui::TableNextColumn();
           ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-          if (ImGui::Combo("##OPNCoreRender",&settings.opnCoreRender,opnCores,2)) settingsChanged=true;
+          if (ImGui::Combo("##OPNCoreRender",&settings.opn1CoreRender,opnCores,3)) settingsChanged=true;
+
+          ImGui::TableNextRow();
+          ImGui::TableNextColumn();
+          ImGui::AlignTextToFramePadding();
+          ImGui::Text("OPNA");
+          ImGui::TableNextColumn();
+          ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+          if (ImGui::Combo("##OPNACore",&settings.opnaCore,opnCores,3)) settingsChanged=true;
+          ImGui::TableNextColumn();
+          ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+          if (ImGui::Combo("##OPNACoreRender",&settings.opnaCoreRender,opnCores,3)) settingsChanged=true;
+
+          ImGui::TableNextRow();
+          ImGui::TableNextColumn();
+          ImGui::AlignTextToFramePadding();
+          ImGui::Text("OPNB");
+          ImGui::TableNextColumn();
+          ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+          if (ImGui::Combo("##OPNBCore",&settings.opnbCore,opnCores,3)) settingsChanged=true;
+          ImGui::TableNextColumn();
+          ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+          if (ImGui::Combo("##OPNBCoreRender",&settings.opnbCoreRender,opnCores,3)) settingsChanged=true;
 
           ImGui::TableNextRow();
           ImGui::TableNextColumn();
@@ -2400,6 +2431,12 @@ void FurnaceGUI::drawSettings() {
           settingsChanged=true;
         }
 
+        bool inputRepeatB=settings.inputRepeat;
+        if (ImGui::Checkbox("Keyboard note/value input repeat (hold key to input continuously)",&inputRepeatB)) {
+          settings.inputRepeat=inputRepeatB;
+          settingsChanged=true;
+        }
+
         ImGui::Text("Effect input behavior:");
         ImGui::Indent();
         if (ImGui::RadioButton("Move down##eicb0",settings.effectCursorDir==0)) {
@@ -2744,6 +2781,42 @@ void FurnaceGUI::drawSettings() {
             settingsChanged=true;
           }
           ImGui::Unindent();
+        }
+
+        ImGui::Text("Oversample");
+
+        ImGui::SameLine();
+        if (ImGui::RadioButton("1×##fos1",settings.fontOversample==1)) {
+          settings.fontOversample=1;
+          settingsChanged=true;
+        }
+        if (ImGui::IsItemHovered()) {
+          ImGui::SetTooltip("saves video memory. reduces font rendering quality.\nuse for pixel/bitmap fonts.");
+        }
+        ImGui::SameLine();
+        if (ImGui::RadioButton("2×##fos2",settings.fontOversample==2)) {
+          settings.fontOversample=2;
+          settingsChanged=true;
+        }
+        if (ImGui::IsItemHovered()) {
+          ImGui::SetTooltip("default.");
+        }
+        ImGui::SameLine();
+        if (ImGui::RadioButton("3×##fos3",settings.fontOversample==3)) {
+          settings.fontOversample=3;
+          settingsChanged=true;
+        }
+        if (ImGui::IsItemHovered()) {
+          ImGui::SetTooltip("slightly better font rendering quality.\nuses more video memory.");
+        }
+
+        bool loadFallbackB=settings.loadFallback;
+        if (ImGui::Checkbox("Load fallback font",&loadFallbackB)) {
+          settings.loadFallback=loadFallbackB;
+          settingsChanged=true;
+        }
+        if (ImGui::IsItemHovered()) {
+          ImGui::SetTooltip("disable to save video memory.");
         }
 
         bool loadJapaneseB=settings.loadJapanese;
@@ -3699,6 +3772,7 @@ void FurnaceGUI::drawSettings() {
           UI_COLOR_CONFIG(GUI_COLOR_INSTR_SM8521,"SM8521");
           UI_COLOR_CONFIG(GUI_COLOR_INSTR_PV1000,"PV-1000");
           UI_COLOR_CONFIG(GUI_COLOR_INSTR_K053260,"K053260");
+          UI_COLOR_CONFIG(GUI_COLOR_INSTR_TED,"TED");
           UI_COLOR_CONFIG(GUI_COLOR_INSTR_C140,"C140");
           UI_COLOR_CONFIG(GUI_COLOR_INSTR_C219,"C219");
           UI_COLOR_CONFIG(GUI_COLOR_INSTR_ESFM,"ESFM");
@@ -3708,6 +3782,8 @@ void FurnaceGUI::drawSettings() {
           UI_COLOR_CONFIG(GUI_COLOR_INSTR_NDS,"Nintendo DS");
           UI_COLOR_CONFIG(GUI_COLOR_INSTR_GBA_DMA,"GBA DMA");
           UI_COLOR_CONFIG(GUI_COLOR_INSTR_GBA_MINMOD,"GBA MinMod");
+          UI_COLOR_CONFIG(GUI_COLOR_INSTR_BIFURCATOR,"Bifurcator");
+          UI_COLOR_CONFIG(GUI_COLOR_INSTR_SID2,"SID2");
           UI_COLOR_CONFIG(GUI_COLOR_INSTR_UNKNOWN,"Other/Unknown");
           ImGui::TreePop();
         }
@@ -4068,7 +4144,7 @@ void FurnaceGUI::readConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
     settings.centerPopup=conf.getInt("centerPopup",1);
 
     settings.vibrationStrength=conf.getFloat("vibrationStrength",0.5f);
-    settings.vibrationLength=conf.getInt("vibrationLength",100);
+    settings.vibrationLength=conf.getInt("vibrationLength",20);
   }
 
   if (groups&GUI_SETTINGS_AUDIO) {
@@ -4159,6 +4235,8 @@ void FurnaceGUI::readConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
     settings.insTypeMenu=conf.getInt("insTypeMenu",1);
 
     settings.selectAssetOnLoad=conf.getInt("selectAssetOnLoad",1);
+
+    settings.inputRepeat=conf.getInt("inputRepeat",0);
   }
 
   if (groups&GUI_SETTINGS_FONT) {
@@ -4178,12 +4256,14 @@ void FurnaceGUI::readConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
     settings.loadChinese=conf.getInt("loadChinese",0);
     settings.loadChineseTraditional=conf.getInt("loadChineseTraditional",0);
     settings.loadKorean=conf.getInt("loadKorean",0);
+    settings.loadFallback=conf.getInt("loadFallback",1);
 
     settings.fontBackend=conf.getInt("fontBackend",FONT_BACKEND_DEFAULT);
     settings.fontHinting=conf.getInt("fontHinting",0);
     settings.fontBitmap=conf.getInt("fontBitmap",0);
     settings.fontAutoHint=conf.getInt("fontAutoHint",1);
     settings.fontAntiAlias=conf.getInt("fontAntiAlias",1);
+    settings.fontOversample=conf.getInt("fontOversample",2);
   }
 
   if (groups&GUI_SETTINGS_APPEARANCE) {
@@ -4289,7 +4369,9 @@ void FurnaceGUI::readConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
     settings.fdsCore=conf.getInt("fdsCore",0);
     settings.c64Core=conf.getInt("c64Core",0);
     settings.pokeyCore=conf.getInt("pokeyCore",1);
-    settings.opnCore=conf.getInt("opnCore",1);
+    settings.opn1Core=conf.getInt("opn1Core",1);
+    settings.opnaCore=conf.getInt("opnaCore",1);
+    settings.opnbCore=conf.getInt("opnbCore",1);
     settings.opl2Core=conf.getInt("opl2Core",0);
     settings.opl3Core=conf.getInt("opl3Core",0);
     settings.esfmCore=conf.getInt("esfmCore",0);
@@ -4314,7 +4396,9 @@ void FurnaceGUI::readConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
     settings.fdsCoreRender=conf.getInt("fdsCoreRender",1);
     settings.c64CoreRender=conf.getInt("c64CoreRender",1);
     settings.pokeyCoreRender=conf.getInt("pokeyCoreRender",1);
-    settings.opnCoreRender=conf.getInt("opnCoreRender",1);
+    settings.opn1CoreRender=conf.getInt("opn1CoreRender",1);
+    settings.opnaCoreRender=conf.getInt("opnaCoreRender",1);
+    settings.opnbCoreRender=conf.getInt("opnbCoreRender",1);
     settings.opl2CoreRender=conf.getInt("opl2CoreRender",0);
     settings.opl3CoreRender=conf.getInt("opl3CoreRender",0);
     settings.esfmCoreRender=conf.getInt("esfmCoreRender",0);
@@ -4356,7 +4440,9 @@ void FurnaceGUI::readConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
   clampSetting(settings.fdsCore,0,1);
   clampSetting(settings.c64Core,0,2);
   clampSetting(settings.pokeyCore,0,1);
-  clampSetting(settings.opnCore,0,1);
+  clampSetting(settings.opn1Core,0,2);
+  clampSetting(settings.opnaCore,0,2);
+  clampSetting(settings.opnbCore,0,2);
   clampSetting(settings.opl2Core,0,2);
   clampSetting(settings.opl3Core,0,2);
   clampSetting(settings.esfmCore,0,1);
@@ -4379,7 +4465,9 @@ void FurnaceGUI::readConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
   clampSetting(settings.fdsCoreRender,0,1);
   clampSetting(settings.c64CoreRender,0,2);
   clampSetting(settings.pokeyCoreRender,0,1);
-  clampSetting(settings.opnCoreRender,0,1);
+  clampSetting(settings.opn1CoreRender,0,2);
+  clampSetting(settings.opnaCoreRender,0,2);
+  clampSetting(settings.opnbCoreRender,0,2);
   clampSetting(settings.opl2CoreRender,0,2);
   clampSetting(settings.opl3CoreRender,0,2);
   clampSetting(settings.esfmCoreRender,0,1);
@@ -4435,6 +4523,7 @@ void FurnaceGUI::readConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
   clampSetting(settings.loadChinese,0,1);
   clampSetting(settings.loadChineseTraditional,0,1);
   clampSetting(settings.loadKorean,0,1);
+  clampSetting(settings.loadFallback,0,1);
   clampSetting(settings.fmLayout,0,6);
   clampSetting(settings.susPosition,0,1);
   clampSetting(settings.effectCursorDir,0,2);
@@ -4531,6 +4620,7 @@ void FurnaceGUI::readConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
   clampSetting(settings.fontBitmap,0,1);
   clampSetting(settings.fontAutoHint,0,2);
   clampSetting(settings.fontAntiAlias,0,1);
+  clampSetting(settings.fontOversample,1,3);
   clampSetting(settings.selectAssetOnLoad,0,1);
   clampSetting(settings.basicColors,0,1);
   clampSetting(settings.playbackTime,0,1);
@@ -4542,6 +4632,7 @@ void FurnaceGUI::readConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
   clampSetting(settings.displayRenderTime,0,1);
   clampSetting(settings.vibrationStrength,0.0f,1.0f);
   clampSetting(settings.vibrationLength,10,500);
+  clampSetting(settings.inputRepeat,0,1);
 
   if (settings.exportLoops<0.0) settings.exportLoops=0.0;
   if (settings.exportFadeOut<0.0) settings.exportFadeOut=0.0;  
@@ -4694,6 +4785,8 @@ void FurnaceGUI::writeConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
     conf.set("insTypeMenu",settings.insTypeMenu);
     
     conf.set("selectAssetOnLoad",settings.selectAssetOnLoad);
+
+    conf.set("inputRepeat",settings.inputRepeat);
   }
 
   // font
@@ -4714,12 +4807,14 @@ void FurnaceGUI::writeConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
     conf.set("loadChinese",settings.loadChinese);
     conf.set("loadChineseTraditional",settings.loadChineseTraditional);
     conf.set("loadKorean",settings.loadKorean);
+    conf.set("loadFallback",settings.loadFallback);
 
     conf.set("fontBackend",settings.fontBackend);
     conf.set("fontHinting",settings.fontHinting);
     conf.set("fontBitmap",settings.fontBitmap);
     conf.set("fontAutoHint",settings.fontAutoHint);
     conf.set("fontAntiAlias",settings.fontAntiAlias);
+    conf.set("fontOversample",settings.fontOversample);
   }
 
   // appearance
@@ -4829,7 +4924,9 @@ void FurnaceGUI::writeConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
     conf.set("fdsCore",settings.fdsCore);
     conf.set("c64Core",settings.c64Core);
     conf.set("pokeyCore",settings.pokeyCore);
-    conf.set("opnCore",settings.opnCore);
+    conf.set("opn1Core",settings.opn1Core);
+    conf.set("opnaCore",settings.opnaCore);
+    conf.set("opnbCore",settings.opnbCore);
     conf.set("opl2Core",settings.opl2Core);
     conf.set("opl3Core",settings.opl3Core);
     conf.set("esfmCore",settings.esfmCore);
@@ -4854,7 +4951,9 @@ void FurnaceGUI::writeConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
     conf.set("fdsCoreRender",settings.fdsCoreRender);
     conf.set("c64CoreRender",settings.c64CoreRender);
     conf.set("pokeyCoreRender",settings.pokeyCoreRender);
-    conf.set("opnCoreRender",settings.opnCoreRender);
+    conf.set("opn1CoreRender",settings.opn1CoreRender);
+    conf.set("opnaCoreRender",settings.opnaCoreRender);
+    conf.set("opnbCoreRender",settings.opnbCoreRender);
     conf.set("opl2CoreRender",settings.opl2CoreRender);
     conf.set("opl3CoreRender",settings.opl3CoreRender);
     conf.set("esfmCoreRender",settings.esfmCoreRender);
@@ -4912,7 +5011,9 @@ void FurnaceGUI::commitSettings() {
     settings.fdsCore!=e->getConfInt("fdsCore",0) ||
     settings.c64Core!=e->getConfInt("c64Core",0) ||
     settings.pokeyCore!=e->getConfInt("pokeyCore",1) ||
-    settings.opnCore!=e->getConfInt("opnCore",1) ||
+    settings.opn1Core!=e->getConfInt("opn1Core",1) ||
+    settings.opnaCore!=e->getConfInt("opnaCore",1) ||
+    settings.opnbCore!=e->getConfInt("opnbCore",1) ||
     settings.opl2Core!=e->getConfInt("opl2Core",0) ||
     settings.opl3Core!=e->getConfInt("opl3Core",0) ||
     settings.esfmCore!=e->getConfInt("esfmCore",0) ||
@@ -5134,6 +5235,14 @@ bool FurnaceGUI::exportLayout(String path) {
   }
   fclose(f);
   return true;
+}
+
+bool FurnaceGUI::importConfig(String path) {
+  return false;
+}
+
+bool FurnaceGUI::exportConfig(String path) {
+  return false;
 }
 
 void FurnaceGUI::resetColors() {
@@ -5388,10 +5497,12 @@ void FurnaceGUI::applyUISettings(bool updateFonts) {
     }
   }
   
-  // chan osc work pool
-  if (chanOscWorkPool!=NULL) {
-    delete chanOscWorkPool;
-    chanOscWorkPool=NULL;
+  if (updateFonts) {
+    // chan osc work pool
+    if (chanOscWorkPool!=NULL) {
+      delete chanOscWorkPool;
+      chanOscWorkPool=NULL;
+    }
   }
 
   for (int i=0; i<64; i++) {
@@ -5680,9 +5791,9 @@ void FurnaceGUI::applyUISettings(bool updateFonts) {
     ImFontConfig fontConfH;
 
     fontConf.OversampleV=1;
-    fontConf.OversampleH=2;
+    fontConf.OversampleH=settings.fontOversample;
     fontConfP.OversampleV=1;
-    fontConfP.OversampleH=2;
+    fontConfP.OversampleH=settings.fontOversample;
     fontConfB.OversampleV=1;
     fontConfB.OversampleH=1;
     fontConfH.OversampleV=1;
@@ -5779,7 +5890,9 @@ void FurnaceGUI::applyUISettings(bool updateFonts) {
     }
 
     // two fallback fonts
-    mainFont=addFontZlib(font_liberationSans_compressed_data,font_liberationSans_compressed_size,MAX(1,e->getConfInt("mainFontSize",18)*dpiScale),&fc1,fontRange);
+    if (settings.loadFallback) {
+      mainFont=addFontZlib(font_liberationSans_compressed_data,font_liberationSans_compressed_size,MAX(1,e->getConfInt("mainFontSize",18)*dpiScale),&fc1,fontRange);
+    }
     if (settings.loadJapanese || settings.loadChinese || settings.loadChineseTraditional || settings.loadKorean) {
       mainFont=addFontZlib(font_unifont_compressed_data,font_unifont_compressed_size,MAX(1,e->getConfInt("mainFontSize",18)*dpiScale),&fc1,fontRange);
     }

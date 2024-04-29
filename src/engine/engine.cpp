@@ -36,6 +36,7 @@
 #ifdef HAVE_PA
 #include "../audio/pa.h"
 #endif
+#include "../audio/pipe.h"
 #include <math.h>
 #include <float.h>
 #include <fmt/printf.h>
@@ -155,7 +156,17 @@ const char* DivEngine::getEffectDesc(unsigned char effect, int chan, bool notNul
       return "FFxx: Stop song";
     default:
       if ((effect&0xf0)==0x90) {
-        return "9xxx: Set sample offset*256";
+        if (song.oldSampleOffset) {
+          return "9xxx: Set sample offset*256";
+        }
+        switch (effect) {
+          case 0x90:
+            return "90xx: Set sample offset (first byte)";
+          case 0x91:
+            return "91xx: Set sample offset (second byte, ×256)";
+          case 0x92:
+            return "92xx: Set sample offset (third byte, ×65536)";
+        }
       } else if (chan>=0 && chan<chans) {
         DivSysDef* sysDef=sysDefs[sysOfChan[chan]];
         auto iter=sysDef->effectHandlers.find(effect);
@@ -561,6 +572,9 @@ void DivEngine::initSongWithDesc(const char* description, bool inBase64, bool ol
   
   // extra attributes
   song.subsong[0]->hz=c.getDouble("tickRate",60.0);
+  if (song.subsong[0]->hz<1.0) song.subsong[0]->hz=1.0;
+  if (song.subsong[0]->hz>999.0) song.subsong[0]->hz=999.0;
+
   song.author=getConfString("defaultAuthorName","");
 }
 
@@ -3522,8 +3536,9 @@ void DivEngine::setSamplePreviewVol(float vol) {
   previewVol=vol;
 }
 
-void DivEngine::setConsoleMode(bool enable) {
+void DivEngine::setConsoleMode(bool enable, bool statusOut) {
   consoleMode=enable;
+  disableStatusOut=!statusOut;
 }
 
 bool DivEngine::switchMaster(bool full) {
@@ -3800,6 +3815,9 @@ bool DivEngine::initAudioBackend() {
       output=new TAAudio;
 #endif
       break;
+    case DIV_AUDIO_PIPE:
+      output=new TAAudioPipe;
+      break;
     case DIV_AUDIO_DUMMY:
       output=new TAAudio;
       break;
@@ -3932,6 +3950,22 @@ bool DivEngine::preInit(bool noSafeMode) {
   logI("Furnace version " DIV_VERSION ".");
   
   loadConf();
+
+  if (!conf.has("opn1Core")) {
+    if (conf.has("opnCore")) {
+      conf.set("opn1Core",conf.getString("opnCore",""));
+    }
+  }
+  if (!conf.has("opnaCore")) {
+    if (conf.has("opnCore")) {
+      conf.set("opnaCore",conf.getString("opnCore",""));
+    }
+  }
+  if (!conf.has("opnbCore")) {
+    if (conf.has("opnCore")) {
+      conf.set("opnbCore",conf.getString("opnCore",""));
+    }
+  }
 
 #ifdef HAVE_SDL2
   String audioDriver=getConfString("sdlAudioDriver","");
