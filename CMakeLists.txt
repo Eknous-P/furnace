@@ -16,7 +16,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(CMAKE_PROJECT_VERSION_MAJOR 0)
 set(CMAKE_PROJECT_VERSION_MINOR 6)
-set(CMAKE_PROJECT_VERSION_PATCH 2)
+set(CMAKE_PROJECT_VERSION_PATCH 3)
 
 set(BUILD_GUI_DEFAULT ON)
 set(USE_SDL2_DEFAULT ON)
@@ -166,6 +166,7 @@ if (WIN32)
   # support Windows XP
   if (SUPPORT_XP)
     list(APPEND DEPENDENCIES_DEFINES "_WIN32_WINNT=0x0501")
+    list(APPEND DEPENDENCIES_DEFINES "SUPPORT_XP")
   endif()
 endif()
 
@@ -533,6 +534,8 @@ src/engine/platform/sound/nes/fds.c
 src/engine/platform/sound/nes/mmc5.c
 src/engine/platform/sound/vera_psg.c
 src/engine/platform/sound/vera_pcm.c
+
+src/engine/platform/sound/atomicssg/ssg.c
 
 src/engine/platform/sound/nes_nsfplay/5e01_apu.cpp
 src/engine/platform/sound/nes_nsfplay/5e01_dmc.cpp
@@ -1169,6 +1172,7 @@ if (NOT ANDROID OR TERMUX)
     include(GNUInstallDirs)
     install(TARGETS furnace RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
     install(FILES res/furnace.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
+    install(FILES res/mime.xml RENAME furnace.xml DESTINATION ${CMAKE_INSTALL_DATADIR}/mime/packages)
     if (NOT DONT_HAVE_GIT)
       install(FILES ${CMAKE_BINARY_DIR}/furnace.appdata.xml DESTINATION ${CMAKE_INSTALL_DATADIR}/metainfo)
     endif()

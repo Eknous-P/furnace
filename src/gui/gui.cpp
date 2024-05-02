@@ -4714,6 +4714,7 @@ bool FurnaceGUI::loop() {
       MEASURE(regView,drawRegView());
       MEASURE(memory,drawMemory());
       MEASURE(userPresets,drawUserPresets());
+      MEASURE(patManager,drawPatManager());
     } else {
       globalWinFlags=0;
       ImGui::DockSpaceOverViewport(NULL,lockLayout?(ImGuiDockNodeFlags_NoWindowMenuButton|ImGuiDockNodeFlags_NoMove|ImGuiDockNodeFlags_NoResize|ImGuiDockNodeFlags_NoCloseButton|ImGuiDockNodeFlags_NoDocking|ImGuiDockNodeFlags_NoDockingSplitMe|ImGuiDockNodeFlags_NoDockingSplitOther):0);
@@ -6911,8 +6912,8 @@ bool FurnaceGUI::init() {
   scrX=0;
   scrY=0;
 #else
-  scrW=scrConfW=e->getConfInt("lastWindowWidth",1280);
-  scrH=scrConfH=e->getConfInt("lastWindowHeight",800);
+  scrW=scrConfW=e->getConfInt("lastWindowWidth",GUI_WIDTH_DEFAULT);
+  scrH=scrConfH=e->getConfInt("lastWindowHeight",GUI_HEIGHT_DEFAULT);
   scrX=scrConfX=e->getConfInt("lastWindowX",SDL_WINDOWPOS_CENTERED);
   scrY=scrConfY=e->getConfInt("lastWindowY",SDL_WINDOWPOS_CENTERED);
   scrMax=e->getConfBool("lastWindowMax",false);
@@ -6965,19 +6966,18 @@ bool FurnaceGUI::init() {
   logV("window size: %dx%d",scrW,scrH);
 
   if (!initRender()) {
-    if (settings.renderBackend!="SDL") {
-      settings.renderBackend="SDL";
-      e->setConf("renderBackend","SDL");
+    if (settings.renderBackend!="Software") {
+      settings.renderBackend="Software";
+      e->setConf("renderBackend","Software");
       e->saveConf();
-      lastError=fmt::sprintf("could not init renderer!\r\nthe render backend has been set to a safe value. please restart Furnace.");
+      lastError=fmt::sprintf("could not init renderer!\r\nfalling back to software renderer. please restart Furnace.");
+    } else if (settings.renderBackend=="SDL") {
+      lastError=fmt::sprintf("could not init renderer! %s\r\nfalling back to software renderer. please restart Furnace.",SDL_GetError());
+      settings.renderBackend="Software";
+      e->setConf("renderBackend","Software");
+      e->saveConf();
     } else {
-      lastError=fmt::sprintf("could not init renderer! %s",SDL_GetError());
-      if (!settings.renderDriver.empty()) {
-        settings.renderDriver="";
-        e->setConf("renderDriver","");
-        e->saveConf();
-        lastError+=fmt::sprintf("\r\nthe render driver has been set to a safe value. please restart Furnace.");
-      }
+      lastError=fmt::sprintf("could not init renderer!");
     }
     return false;
   }
@@ -7067,19 +7067,18 @@ bool FurnaceGUI::init() {
   logD("starting render backend...");
   if (!rend->init(sdlWin,settings.vsync)) {
     logE("it failed...");
-    if (settings.renderBackend!="SDL") {
-      settings.renderBackend="SDL";
-      e->setConf("renderBackend","SDL");
+    if (settings.renderBackend!="Software") {
+      settings.renderBackend="Software";
+      e->setConf("renderBackend","Software");
       e->saveConf();
-      lastError=fmt::sprintf("could not init renderer!\r\nthe render backend has been set to a safe value. please restart Furnace.");
+      lastError=fmt::sprintf("could not init renderer!\r\nfalling back to software renderer. please restart Furnace.");
+    } else if (settings.renderBackend=="SDL") {
+      lastError=fmt::sprintf("could not init renderer! %s\r\nfalling back to software renderer. please restart Furnace.",SDL_GetError());
+      settings.renderBackend="Software";
+      e->setConf("renderBackend","Software");
+      e->saveConf();
     } else {
-      lastError=fmt::sprintf("could not init renderer! %s",SDL_GetError());
-      if (!settings.renderDriver.empty()) {
-        settings.renderDriver="";
-        e->setConf("renderDriver","");
-        e->saveConf();
-        lastError+=fmt::sprintf("\r\nthe render driver has been set to a safe value. please restart Furnace.");
-      }
+      lastError=fmt::sprintf("could not init renderer!");
     }
     return false;
   }
@@ -7536,12 +7535,12 @@ FurnaceGUI::FurnaceGUI():
   postWarnAction(GUI_WARN_GENERIC),
   mobScene(GUI_SCENE_PATTERN),
   fileDialog(NULL),
-  scrW(1280),
-  scrH(800),
-  scrConfW(1280),
-  scrConfH(800),
-  canvasW(1280),
-  canvasH(800),
+  scrW(GUI_WIDTH_DEFAULT),
+  scrH(GUI_HEIGHT_DEFAULT),
+  scrConfW(GUI_WIDTH_DEFAULT),
+  scrConfH(GUI_HEIGHT_DEFAULT),
+  canvasW(GUI_WIDTH_DEFAULT),
+  canvasH(GUI_HEIGHT_DEFAULT),
   scrX(SDL_WINDOWPOS_CENTERED),
   scrY(SDL_WINDOWPOS_CENTERED),
   scrConfX(SDL_WINDOWPOS_CENTERED),

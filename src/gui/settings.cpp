@@ -44,7 +44,7 @@
 #endif
 
 #ifdef HAVE_FREETYPE
-#define FONT_BACKEND_DEFAULT 0
+#define FONT_BACKEND_DEFAULT 1
 #else
 #define FONT_BACKEND_DEFAULT 0
 #endif
@@ -178,6 +178,11 @@ const char* esfmCores[]={
 const char* opllCores[]={
   "Nuked-OPLL",
   "emu2413"
+};
+
+const char* ayCores[]={
+  "MAME",
+  "AtomicSSG"
 };
 
 const char* coreQualities[]={
@@ -1780,6 +1785,17 @@ void FurnaceGUI::drawSettings() {
           ImGui::TableNextColumn();
           ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
           if (ImGui::Combo("##OPLLCoreRender",&settings.opllCoreRender,opllCores,2)) settingsChanged=true;
+
+          ImGui::TableNextRow();
+          ImGui::TableNextColumn();
+          ImGui::AlignTextToFramePadding();
+          ImGui::Text("AY-3-8910/SSG");
+          ImGui::TableNextColumn();
+          ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+          if (ImGui::Combo("##AYCore",&settings.ayCore,ayCores,2)) settingsChanged=true;
+          ImGui::TableNextColumn();
+          ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+          if (ImGui::Combo("##AYCoreRender",&settings.ayCoreRender,ayCores,2)) settingsChanged=true;
 
           ImGui::EndTable();
         }
@@ -4240,14 +4256,14 @@ void FurnaceGUI::readConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
   }
 
   if (groups&GUI_SETTINGS_FONT) {
-    settings.mainFontSize=conf.getInt("mainFontSize",18);
+    settings.mainFontSize=conf.getInt("mainFontSize",GUI_FONT_SIZE_DEFAULT);
     settings.headFontSize=conf.getInt("headFontSize",27);
-    settings.patFontSize=conf.getInt("patFontSize",18);
-    settings.iconSize=conf.getInt("iconSize",16);
+    settings.patFontSize=conf.getInt("patFontSize",GUI_FONT_SIZE_DEFAULT);
+    settings.iconSize=conf.getInt("iconSize",GUI_ICON_SIZE_DEFAULT);
 
-    settings.mainFont=conf.getInt("mainFont",0);
+    settings.mainFont=conf.getInt("mainFont",GUI_MAIN_FONT_DEFAULT);
     settings.headFont=conf.getInt("headFont",0);
-    settings.patFont=conf.getInt("patFont",0);
+    settings.patFont=conf.getInt("patFont",GUI_PAT_FONT_DEFAULT);
     settings.mainFontPath=conf.getString("mainFontPath","");
     settings.headFontPath=conf.getString("headFontPath","");
     settings.patFontPath=conf.getString("patFontPath","");
@@ -4259,15 +4275,15 @@ void FurnaceGUI::readConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
     settings.loadFallback=conf.getInt("loadFallback",1);
 
     settings.fontBackend=conf.getInt("fontBackend",FONT_BACKEND_DEFAULT);
-    settings.fontHinting=conf.getInt("fontHinting",0);
+    settings.fontHinting=conf.getInt("fontHinting",GUI_FONT_HINTING_DEFAULT);
     settings.fontBitmap=conf.getInt("fontBitmap",0);
     settings.fontAutoHint=conf.getInt("fontAutoHint",1);
-    settings.fontAntiAlias=conf.getInt("fontAntiAlias",1);
-    settings.fontOversample=conf.getInt("fontOversample",2);
+    settings.fontAntiAlias=conf.getInt("fontAntiAlias",GUI_FONT_ANTIALIAS_DEFAULT);
+    settings.fontOversample=conf.getInt("fontOversample",GUI_OVERSAMPLE_DEFAULT);
   }
 
   if (groups&GUI_SETTINGS_APPEARANCE) {
-    settings.oscRoundedCorners=conf.getInt("oscRoundedCorners",1);
+    settings.oscRoundedCorners=conf.getInt("oscRoundedCorners",GUI_DECORATIONS_DEFAULT);
     settings.oscTakesEntireWindow=conf.getInt("oscTakesEntireWindow",0);
     settings.oscBorder=conf.getInt("oscBorder",1);
     settings.oscEscapesBoundary=conf.getInt("oscEscapesBoundary",0);
@@ -4283,11 +4299,11 @@ void FurnaceGUI::readConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
     settings.channelFont=conf.getInt("channelFont",1);
     settings.channelTextCenter=conf.getInt("channelTextCenter",1);
 
-    settings.roundedWindows=conf.getInt("roundedWindows",1);
-    settings.roundedButtons=conf.getInt("roundedButtons",1);
+    settings.roundedWindows=conf.getInt("roundedWindows",GUI_DECORATIONS_DEFAULT);
+    settings.roundedButtons=conf.getInt("roundedButtons",GUI_DECORATIONS_DEFAULT);
     settings.roundedMenus=conf.getInt("roundedMenus",0);
-    settings.roundedTabs=conf.getInt("roundedTabs",1);
-    settings.roundedScrollbars=conf.getInt("roundedScrollbars",1);
+    settings.roundedTabs=conf.getInt("roundedTabs",GUI_DECORATIONS_DEFAULT);
+    settings.roundedScrollbars=conf.getInt("roundedScrollbars",GUI_DECORATIONS_DEFAULT);
 
     settings.separateFMColors=conf.getInt("separateFMColors",0);
     settings.insEditColorize=conf.getInt("insEditColorize",0);
@@ -4376,6 +4392,7 @@ void FurnaceGUI::readConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
     settings.opl3Core=conf.getInt("opl3Core",0);
     settings.esfmCore=conf.getInt("esfmCore",0);
     settings.opllCore=conf.getInt("opllCore",0);
+    settings.ayCore=conf.getInt("ayCore",0);
 
     settings.bubsysQuality=conf.getInt("bubsysQuality",3);
     settings.dsidQuality=conf.getInt("dsidQuality",3);
@@ -4403,6 +4420,7 @@ void FurnaceGUI::readConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
     settings.opl3CoreRender=conf.getInt("opl3CoreRender",0);
     settings.esfmCoreRender=conf.getInt("esfmCoreRender",0);
     settings.opllCoreRender=conf.getInt("opllCoreRender",0);
+    settings.ayCoreRender=conf.getInt("ayCoreRender",0);
 
     settings.bubsysQualityRender=conf.getInt("bubsysQualityRender",3);
     settings.dsidQualityRender=conf.getInt("dsidQualityRender",3);
@@ -4447,6 +4465,7 @@ void FurnaceGUI::readConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
   clampSetting(settings.opl3Core,0,2);
   clampSetting(settings.esfmCore,0,1);
   clampSetting(settings.opllCore,0,1);
+  clampSetting(settings.ayCore,0,1);
   clampSetting(settings.bubsysQuality,0,5);
   clampSetting(settings.dsidQuality,0,5);
   clampSetting(settings.gbQuality,0,5);
@@ -4472,6 +4491,7 @@ void FurnaceGUI::readConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
   clampSetting(settings.opl3CoreRender,0,2);
   clampSetting(settings.esfmCoreRender,0,1);
   clampSetting(settings.opllCoreRender,0,1);
+  clampSetting(settings.ayCoreRender,0,1);
   clampSetting(settings.bubsysQualityRender,0,5);
   clampSetting(settings.dsidQualityRender,0,5);
   clampSetting(settings.gbQualityRender,0,5);
@@ -4931,6 +4951,7 @@ void FurnaceGUI::writeConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
     conf.set("opl3Core",settings.opl3Core);
     conf.set("esfmCore",settings.esfmCore);
     conf.set("opllCore",settings.opllCore);
+    conf.set("ayCore",settings.ayCore);
 
     conf.set("bubsysQuality",settings.bubsysQuality);
     conf.set("dsidQuality",settings.dsidQuality);
@@ -4958,6 +4979,7 @@ void FurnaceGUI::writeConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
     conf.set("opl3CoreRender",settings.opl3CoreRender);
     conf.set("esfmCoreRender",settings.esfmCoreRender);
     conf.set("opllCoreRender",settings.opllCoreRender);
+    conf.set("ayCoreRender",settings.ayCoreRender);
 
     conf.set("bubsysQualityRender",settings.bubsysQualityRender);
     conf.set("dsidQualityRender",settings.dsidQualityRender);
@@ -5018,6 +5040,7 @@ void FurnaceGUI::commitSettings() {
     settings.opl3Core!=e->getConfInt("opl3Core",0) ||
     settings.esfmCore!=e->getConfInt("esfmCore",0) ||
     settings.opllCore!=e->getConfInt("opllCore",0) ||
+    settings.ayCore!=e->getConfInt("ayCore",0) ||
     settings.bubsysQuality!=e->getConfInt("bubsysQuality",3) ||
     settings.dsidQuality!=e->getConfInt("dsidQuality",3) ||
     settings.gbQuality!=e->getConfInt("gbQuality",3) ||
@@ -5256,6 +5279,7 @@ void FurnaceGUI::resetKeybinds() {
     if (guiActions[i].defaultBind==-1) continue;
     actionKeys[i]=guiActions[i].defaultBind;
   }
+  decodeKeyMap(noteKeys,DEFAULT_NOTE_KEYS);
   parseKeybinds();
 }
 
@@ -5843,7 +5867,7 @@ void FurnaceGUI::applyUISettings(bool updateFonts) {
 
     if (settings.mainFont==6 && settings.mainFontPath.empty()) {
       logW("UI font path is empty! reverting to default font");
-      settings.mainFont=0;
+      settings.mainFont=GUI_MAIN_FONT_DEFAULT;
     }
     if (settings.headFont==6 && settings.headFontPath.empty()) {
       logW("header font path is empty! reverting to default font");
@@ -5851,7 +5875,7 @@ void FurnaceGUI::applyUISettings(bool updateFonts) {
     }
     if (settings.patFont==6 && settings.patFontPath.empty()) {
       logW("pattern font path is empty! reverting to default font");
-      settings.patFont=0;
+      settings.patFont=GUI_PAT_FONT_DEFAULT;
     }
 
     ImFontConfig fc1;
@@ -5863,7 +5887,7 @@ void FurnaceGUI::applyUISettings(bool updateFonts) {
     if (settings.mainFont==6) { // custom font
       if ((mainFont=ImGui::GetIO().Fonts->AddFontFromFileTTF(settings.mainFontPath.c_str(),MAX(1,e->getConfInt("mainFontSize",18)*dpiScale),&fontConf,fontRange))==NULL) {
         logW("could not load UI font! reverting to default font");
-        settings.mainFont=0;
+        settings.mainFont=GUI_MAIN_FONT_DEFAULT;
         if ((mainFont=addFontZlib(builtinFont[settings.mainFont],builtinFontLen[settings.mainFont],MAX(1,e->getConfInt("mainFontSize",18)*dpiScale),&fontConf,fontRange))==NULL) {
           logE("could not load UI font! falling back to Proggy Clean.");
           mainFont=ImGui::GetIO().Fonts->AddFontDefault();
@@ -5874,7 +5898,7 @@ void FurnaceGUI::applyUISettings(bool updateFonts) {
         if ((mainFont=ImGui::GetIO().Fonts->AddFontFromFileTTF(SYSTEM_FONT_PATH_2,MAX(1,e->getConfInt("mainFontSize",18)*dpiScale),&fontConf,fontRange))==NULL) {
           if ((mainFont=ImGui::GetIO().Fonts->AddFontFromFileTTF(SYSTEM_FONT_PATH_3,MAX(1,e->getConfInt("mainFontSize",18)*dpiScale),&fontConf,fontRange))==NULL) {
             logW("could not load UI font! reverting to default font");
-            settings.mainFont=0;
+            settings.mainFont=GUI_MAIN_FONT_DEFAULT;
             if ((mainFont=addFontZlib(builtinFont[settings.mainFont],builtinFontLen[settings.mainFont],MAX(1,e->getConfInt("mainFontSize",18)*dpiScale),&fontConf,fontRange))==NULL) {
               logE("could not load UI font! falling back to Proggy Clean.");
               mainFont=ImGui::GetIO().Fonts->AddFontDefault();
@@ -5920,7 +5944,7 @@ void FurnaceGUI::applyUISettings(bool updateFonts) {
       if (settings.patFont==6) { // custom font
         if ((patFont=ImGui::GetIO().Fonts->AddFontFromFileTTF(settings.patFontPath.c_str(),MAX(1,e->getConfInt("patFontSize",18)*dpiScale),&fontConfP,upTo800))==NULL) {
           logW("could not load pattern font! reverting to default font");
-          settings.patFont=0;
+          settings.patFont=GUI_PAT_FONT_DEFAULT;
           if ((patFont=addFontZlib(builtinFontM[settings.patFont],builtinFontMLen[settings.patFont],MAX(1,e->getConfInt("patFontSize",18)*dpiScale),&fontConfP,upTo800))==NULL) {
             logE("could not load pattern font! falling back to Proggy Clean.");
             patFont=ImGui::GetIO().Fonts->AddFontDefault();
@@ -5931,7 +5955,7 @@ void FurnaceGUI::applyUISettings(bool updateFonts) {
           if ((patFont=ImGui::GetIO().Fonts->AddFontFromFileTTF(SYSTEM_PAT_FONT_PATH_2,MAX(1,e->getConfInt("patFontSize",18)*dpiScale),&fontConfP,upTo800))==NULL) {
             if ((patFont=ImGui::GetIO().Fonts->AddFontFromFileTTF(SYSTEM_PAT_FONT_PATH_3,MAX(1,e->getConfInt("patFontSize",18)*dpiScale),&fontConfP,upTo800))==NULL) {
               logW("could not load pattern font! reverting to default font");
-              settings.patFont=0;
+              settings.patFont=GUI_PAT_FONT_DEFAULT;
               if ((patFont=addFontZlib(builtinFontM[settings.patFont],builtinFontMLen[settings.patFont],MAX(1,e->getConfInt("patFontSize",18)*dpiScale),&fontConfP,upTo800))==NULL) {
                 logE("could not load pattern font! falling back to Proggy Clean.");
                 patFont=ImGui::GetIO().Fonts->AddFontDefault();

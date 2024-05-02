@@ -112,6 +112,30 @@ enum FurnaceGUIRenderBackend {
 #endif
 #endif
 
+#ifdef SUPPORT_XP
+#define GUI_WIDTH_DEFAULT 800
+#define GUI_HEIGHT_DEFAULT 600
+#define GUI_MAIN_FONT_DEFAULT 3
+#define GUI_PAT_FONT_DEFAULT 3
+#define GUI_FONT_SIZE_DEFAULT 13
+#define GUI_ICON_SIZE_DEFAULT 12
+#define GUI_OVERSAMPLE_DEFAULT 1
+#define GUI_FONT_ANTIALIAS_DEFAULT 0
+#define GUI_FONT_HINTING_DEFAULT 1
+#define GUI_DECORATIONS_DEFAULT 0
+#else
+#define GUI_WIDTH_DEFAULT 1280
+#define GUI_HEIGHT_DEFAULT 800
+#define GUI_MAIN_FONT_DEFAULT 0
+#define GUI_PAT_FONT_DEFAULT 0
+#define GUI_FONT_SIZE_DEFAULT 18
+#define GUI_ICON_SIZE_DEFAULT 16
+#define GUI_OVERSAMPLE_DEFAULT 2
+#define GUI_FONT_ANTIALIAS_DEFAULT 1
+#define GUI_FONT_HINTING_DEFAULT 0
+#define GUI_DECORATIONS_DEFAULT 1
+#endif
+
 // TODO:
 // - add colors for FM envelope and waveform
 // - maybe add "alternate" color for FM modulators/carriers (a bit difficult)
@@ -1667,6 +1691,7 @@ class FurnaceGUI {
     int opl3Core;
     int esfmCore;
     int opllCore;
+    int ayCore;
     int bubsysQuality;
     int dsidQuality;
     int gbQuality;
@@ -1692,6 +1717,7 @@ class FurnaceGUI {
     int opl3CoreRender;
     int esfmCoreRender;
     int opllCoreRender;
+    int ayCoreRender;
     int bubsysQualityRender;
     int dsidQualityRender;
     int gbQualityRender;
@@ -1889,10 +1915,10 @@ class FurnaceGUI {
 
     Settings():
       settingsChanged(false),
-      mainFontSize(18),
-      patFontSize(18),
+      mainFontSize(GUI_FONT_SIZE_DEFAULT),
+      patFontSize(GUI_FONT_SIZE_DEFAULT),
       headFontSize(27),
-      iconSize(16),
+      iconSize(GUI_ICON_SIZE_DEFAULT),
       audioEngine(DIV_AUDIO_SDL),
       audioQuality(0),
       audioHiPass(1),
@@ -1911,6 +1937,7 @@ class FurnaceGUI {
       opl3Core(0),
       esfmCore(0),
       opllCore(0),
+      ayCore(0),
       bubsysQuality(3),
       dsidQuality(3),
       gbQuality(3),
@@ -1936,6 +1963,7 @@ class FurnaceGUI {
       opl3CoreRender(0),
       esfmCoreRender(0),
       opllCoreRender(0),
+      ayCoreRender(0),
       bubsysQualityRender(3),
       dsidQualityRender(3),
       gbQualityRender(3),
@@ -2097,7 +2125,7 @@ class FurnaceGUI {
       fontBitmap(0),
       fontAutoHint(1),
       fontAntiAlias(1),
-      fontOversample(2),
+      fontOversample(GUI_OVERSAMPLE_DEFAULT),
       selectAssetOnLoad(1),
       basicColors(1),
       playbackTime(1),
@@ -2132,7 +2160,11 @@ class FurnaceGUI {
     bool introPlayed;
     bool protoWelcome;
     Tutorial():
+#ifdef SUPPORT_XP
+      introPlayed(true),
+#else
       introPlayed(false),
+#endif
       protoWelcome(false) {
     }
   } tutorial;
