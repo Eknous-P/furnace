@@ -16,7 +16,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(CMAKE_PROJECT_VERSION_MAJOR 0)
 set(CMAKE_PROJECT_VERSION_MINOR 6)
-set(CMAKE_PROJECT_VERSION_PATCH 2)
+set(CMAKE_PROJECT_VERSION_PATCH 3)
 
 set(BUILD_GUI_DEFAULT ON)
 set(USE_SDL2_DEFAULT ON)
@@ -69,21 +69,30 @@ else()
 endif()
 
 set(WITH_RENDER_SDL_DEFAULT ON)
-if (APPLE)
-  set(WITH_RENDER_OPENGL_DEFAULT OFF)
-else()
-  set(WITH_RENDER_OPENGL_DEFAULT ON)
-endif()
+set(WITH_RENDER_OPENGL_DEFAULT ON)
 if (WIN32)
   set(WITH_RENDER_DX11_DEFAULT ON)
+  set(WITH_RENDER_DX9_DEFAULT ON)
 else()
   set(WITH_RENDER_DX11_DEFAULT OFF)
+  set(WITH_RENDER_DX9_DEFAULT OFF)
+endif()
+if (APPLE)
+  set(WITH_RENDER_METAL_DEFAULT ON)
+else()
+  set(WITH_RENDER_METAL_DEFAULT OFF)
 endif()
 
 if (ANDROID)
   set(USE_GLES_DEFAULT ON)
+  set(WITH_RENDER_OPENGL1_DEFAULT OFF)
 else()
   set(USE_GLES_DEFAULT OFF)
+  if (APPLE)
+    set(WITH_RENDER_OPENGL1_DEFAULT OFF)
+  else()
+    set(WITH_RENDER_OPENGL1_DEFAULT ON)
+  endif()
 endif()
 
 option(BUILD_GUI "Build the tracker (disable to build only a headless player)" ${BUILD_GUI_DEFAULT})
@@ -95,7 +104,10 @@ option(WITH_JACK "Whether to build with JACK support. Auto-detects if JACK is av
 option(WITH_PORTAUDIO "Whether to build with PortAudio for audio output." ${WITH_PORTAUDIO_DEFAULT})
 option(WITH_RENDER_SDL "Whether to build with the SDL_Renderer render backend." ${WITH_RENDER_SDL_DEFAULT})
 option(WITH_RENDER_OPENGL "Whether to build with the OpenGL render backend." ${WITH_RENDER_OPENGL_DEFAULT})
+option(WITH_RENDER_OPENGL1 "Whether to build with the OpenGL 1.1 render backend." ${WITH_RENDER_OPENGL1_DEFAULT})
 option(WITH_RENDER_DX11 "Whether to build with the DirectX 11 render backend." ${WITH_RENDER_DX11_DEFAULT})
+option(WITH_RENDER_DX9 "Whether to build with the DirectX 9 render backend." ${WITH_RENDER_DX9_DEFAULT})
+option(WITH_RENDER_METAL "Whether to build with the Metal render backend." ${WITH_RENDER_METAL_DEFAULT})
 option(WITH_RTHP "Whether to build with real-time hardware playback support" ${WITH_RTHP_DEFAULT})
 option(USE_GLES "Use OpenGL ES for the OpenGL render backend." ${USE_GLES_DEFAULT})
 option(USE_FREETYPE "Use FreeType for font rendering." ON)
@@ -113,6 +125,12 @@ option(WITH_DEMOS "Install demo songs" ON)
 option(WITH_INSTRUMENTS "Install instruments" ON)
 option(WITH_WAVETABLES "Install wavetables" ON)
 option(SHOW_OPEN_ASSETS_MENU_ENTRY "Show option to open built-in assets directory (on supported platforms)" OFF)
+if (APPLE)
+  option(FORCE_APPLE_BIN "Force enable binary installation to /bin" OFF)
+else()
+  # not Apple - not needed
+  set(FORCE_APPLE_BIN OFF)
+endif()
 
 set(DEPENDENCIES_INCLUDE_DIRS extern/IconFontCppHeaders src/icon)
 
@@ -151,6 +169,7 @@ if (WIN32)
   # support Windows XP
   if (SUPPORT_XP)
     list(APPEND DEPENDENCIES_DEFINES "_WIN32_WINNT=0x0501")
+    list(APPEND DEPENDENCIES_DEFINES "SUPPORT_XP")
   endif()
 endif()
 
@@ -394,15 +413,10 @@ else()
   endif()
 endif()
 
-if (BUILD_GUI)
-  if (NOT WITH_RENDER_SDL AND NOT WITH_RENDER_OPENGL AND NOT WITH_RENDER_DX11)
-    message(FATAL_ERROR "No render backends selected!")
-  endif()
-endif()
-
 set(AUDIO_SOURCES
 src/audio/abstract.cpp
 src/audio/midi.cpp
+src/audio/pipe.cpp
 )
 
 if (USE_SDL2)
@@ -535,6 +549,9 @@ extern/YMF276-LLE/fmopn2.c
 extern/ESFMu/esfm.c
 extern/ESFMu/esfm_registers.c
 extern/emu2413/emu2413.c
+extern/YM2608-LLE/fmopna_2608.c
+extern/YM2608-LLE/fmopna_2610.c
+extern/YM2608-LLE/fmopna_2612.c
 
 extern/pwrnoise/pwrnoise.c
 
@@ -553,6 +570,8 @@ src/engine/platform/sound/nes/fds.c
 src/engine/platform/sound/nes/mmc5.c
 src/engine/platform/sound/vera_psg.c
 src/engine/platform/sound/vera_pcm.c
+
+src/engine/platform/sound/atomicssg/ssg.c
 
 src/engine/platform/sound/nes_nsfplay/5e01_apu.cpp
 src/engine/platform/sound/nes_nsfplay/5e01_dmc.cpp
@@ -653,6 +672,17 @@ src/engine/platform/sound/dave/dave.cpp
 
 src/engine/platform/sound/nds.cpp
 
+src/engine/platform/sound/sid2/envelope.cc
+src/engine/platform/sound/sid2/filter.cc
+src/engine/platform/sound/sid2/sid.cc
+src/engine/platform/sound/sid2/version.cc
+src/engine/platform/sound/sid2/voice.cc
+src/engine/platform/sound/sid2/wave8580_PS_.cc
+src/engine/platform/sound/sid2/wave8580_PST.cc
+src/engine/platform/sound/sid2/wave8580_P_T.cc
+src/engine/platform/sound/sid2/wave8580__ST.cc
+src/engine/platform/sound/sid2/wave.cc
+
 src/engine/platform/oplAInterface.cpp
 src/engine/platform/ym2608Interface.cpp
 src/engine/platform/ym2610Interface.cpp
@@ -665,6 +695,7 @@ src/engine/fileOps/fur.cpp
 src/engine/fileOps/mod.cpp
 src/engine/fileOps/s3m.cpp
 src/engine/fileOps/text.cpp
+src/engine/fileOps/tfm.cpp
 
 src/engine/blip_buf.c
 src/engine/brrUtils.c
@@ -765,6 +796,8 @@ src/engine/platform/dave.cpp
 src/engine/platform/gbadma.cpp
 src/engine/platform/gbaminmod.cpp
 src/engine/platform/nds.cpp
+src/engine/platform/bifurcator.cpp
+src/engine/platform/sid2.cpp
 src/engine/platform/pcmdac.cpp
 src/engine/platform/dummy.cpp
 
@@ -785,6 +818,13 @@ if (WIN32)
   list(APPEND ENGINE_SOURCES res/furnace.rc)
 endif()
 
+if (APPLE)
+  if (CMAKE_OSX_DEPLOYMENT_TARGET VERSION_LESS 10.12)
+    list(APPEND DEPENDENCIES_INCLUDE_DIRS extern/macports-legacy-support/include)
+    list(APPEND ENGINE_SOURCES extern/macports-legacy-support/src/time.c)
+  endif()
+endif()
+
 set(CLI_SOURCES
 src/cli/cli.cpp
 )
@@ -795,6 +835,7 @@ extern/imgui_patched/imgui_draw.cpp
 extern/imgui_patched/imgui_tables.cpp
 extern/imgui_patched/imgui_widgets.cpp
 extern/imgui_patched/backends/imgui_impl_sdl2.cpp
+extern/imgui_software_renderer/imgui_sw.cpp
 extern/imgui_patched/misc/cpp/imgui_stdlib.cpp
 extern/igfd/ImGuiFileDialog.cpp
 
@@ -802,6 +843,7 @@ src/gui/plot_nolerp.cpp
 
 src/gui/render.cpp
 src/gui/render/abstract.cpp
+src/gui/render/renderSoftware.cpp
 
 src/gui/font_exo.cpp
 src/gui/font_liberationSans.cpp
@@ -814,6 +856,7 @@ src/gui/font_unifont.cpp
 src/gui/font_icon.cpp
 src/gui/font_furicon.cpp
 src/gui/fonts.cpp
+src/gui/fontzlib.cpp
 
 src/gui/image_icon.cpp
 src/gui/image_talogo.cpp
@@ -880,6 +923,7 @@ src/gui/sysManager.cpp
 src/gui/sysPartNumber.cpp
 src/gui/sysPicker.cpp
 src/gui/tutorial.cpp
+src/gui/userPresets.cpp
 src/gui/util.cpp
 src/gui/waveEdit.cpp
 src/gui/volMeter.cpp
@@ -919,12 +963,32 @@ if (WITH_RENDER_OPENGL)
   endif()
   if (WIN32)
     list(APPEND DEPENDENCIES_LIBRARIES opengl32)
+  elseif(APPLE)
+    list(APPEND DEPENDENCIES_LIBRARIES "-framework OpenGL")
   elseif(USE_GLES)
     list(APPEND DEPENDENCIES_LIBRARIES GLESv2)
   else()
     list(APPEND DEPENDENCIES_LIBRARIES GL)
   endif()
-  message(STATUS "UI render backend: OpenGL")
+  if (USE_GLES)
+    message(STATUS "UI render backend: OpenGL ES 2.0")
+  else()
+    message(STATUS "UI render backend: OpenGL 3.0/2.0")
+  endif()
+endif()
+
+if (WITH_RENDER_OPENGL1)
+  list(APPEND GUI_SOURCES src/gui/render/renderGL1.cpp)
+  list(APPEND GUI_SOURCES extern/imgui_patched/backends/imgui_impl_opengl2.cpp)
+  list(APPEND DEPENDENCIES_DEFINES HAVE_RENDER_GL1)
+  if (NOT WITH_RENDER_OPENGL)
+    if (WIN32)
+      list(APPEND DEPENDENCIES_LIBRARIES opengl32)
+    else()
+      list(APPEND DEPENDENCIES_LIBRARIES GL)
+    endif()
+  endif()
+  message(STATUS "UI render backend: OpenGL 1.1")
 endif()
 
 if (WITH_RENDER_DX11)
@@ -935,11 +999,36 @@ if (WITH_RENDER_DX11)
       list(APPEND GUI_SOURCES src/gui/render/renderDX11.cpp)
       list(APPEND GUI_SOURCES extern/imgui_patched/backends/imgui_impl_dx11.cpp)
       list(APPEND DEPENDENCIES_DEFINES HAVE_RENDER_DX11)
-      list(APPEND DEPENDENCIES_LIBRARIES d3d11)
+      list(APPEND DEPENDENCIES_LIBRARIES d3d11 dxgi)
       message(STATUS "UI render backend: DirectX 11")
     endif()
   else()
     message(FATAL_ERROR "DirectX 11 render backend only for Windows!")
+  endif()
+endif()
+
+#if (WITH_RENDER_DX9)
+#  if (WIN32)
+#    list(APPEND GUI_SOURCES src/gui/render/renderDX9.cpp)
+#    list(APPEND GUI_SOURCES extern/imgui_patched/backends/imgui_impl_dx9.cpp)
+#    list(APPEND DEPENDENCIES_DEFINES HAVE_RENDER_DX9)
+#    list(APPEND DEPENDENCIES_LIBRARIES d3d9)
+#    message(STATUS "UI render backend: DirectX 9")
+#  else()
+#    message(FATAL_ERROR "DirectX 9 render backend only for Windows!")
+#  endif()
+#endif()
+
+if (WITH_RENDER_METAL)
+  if (APPLE)
+    list(APPEND GUI_SOURCES src/gui/render/renderMetal.mm)
+    list(APPEND GUI_SOURCES extern/imgui_patched/backends/imgui_impl_metal.mm)
+    list(APPEND DEPENDENCIES_DEFINES HAVE_RENDER_METAL)
+    list(APPEND DEPENDENCIES_LIBRARIES "-framework Metal")
+    list(APPEND DEPENDENCIES_LIBRARIES "-framework MetalKit")
+    message(STATUS "UI render backend: Metal")
+  else()
+    message(FATAL_ERROR "Metal render backend only for Apple operating systems!")
   endif()
 endif()
 
@@ -1005,6 +1094,7 @@ if (BUILD_GUI)
   list(APPEND DEPENDENCIES_INCLUDE_DIRS
     extern/imgui_patched
     extern/imgui_patched/backends
+    extern/imgui_software_renderer
     extern/igfd
   )
   if (WIN32 OR APPLE)
@@ -1126,6 +1216,7 @@ if (NOT ANDROID OR TERMUX)
     include(GNUInstallDirs)
     install(TARGETS furnace RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
     install(FILES res/furnace.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
+    install(FILES res/mime.xml RENAME furnace.xml DESTINATION ${CMAKE_INSTALL_DATADIR}/mime/packages)
     if (NOT DONT_HAVE_GIT)
       install(FILES ${CMAKE_BINARY_DIR}/furnace.appdata.xml DESTINATION ${CMAKE_INSTALL_DATADIR}/metainfo)
     endif()
@@ -1155,7 +1246,9 @@ if (NOT ANDROID OR TERMUX)
     endforeach()
     install(FILES res/logo.png RENAME furnace.png DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/1024x1024/apps)
   else()
-    install(TARGETS furnace RUNTIME DESTINATION bin)
+    if (NOT APPLE OR FORCE_APPLE_BIN)
+      install(TARGETS furnace RUNTIME DESTINATION bin)
+    endif()
   endif()
 
   set(CPACK_PACKAGE_NAME "Furnace")

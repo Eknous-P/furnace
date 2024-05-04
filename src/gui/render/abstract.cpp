@@ -23,6 +23,14 @@ ImTextureID FurnaceGUIRender::getTextureID(FurnaceGUITexture* which) {
   return NULL;
 }
 
+float FurnaceGUIRender::getTextureU(FurnaceGUITexture* which) {
+  return 1.0;
+}
+
+float FurnaceGUIRender::getTextureV(FurnaceGUITexture* which) {
+  return 1.0;
+}
+
 bool FurnaceGUIRender::lockTexture(FurnaceGUITexture* which, void** data, int* pitch) {
   return false;
 }
@@ -93,6 +101,30 @@ int FurnaceGUIRender::getWindowFlags() {
   return 0;
 }
 
+int FurnaceGUIRender::getMaxTextureWidth() {
+  return 0;
+}
+
+int FurnaceGUIRender::getMaxTextureHeight() {
+  return 0;
+}
+
+const char* FurnaceGUIRender::getBackendName() {
+  return "Dummy";
+}
+
+const char* FurnaceGUIRender::getVendorName() {
+  return "N/A";
+}
+
+const char* FurnaceGUIRender::getDeviceName() {
+  return "N/A";
+}
+
+const char* FurnaceGUIRender::getAPIVersion() {
+  return "N/A";
+}
+
 void FurnaceGUIRender::setSwapInterval(int swapInterval) {
 }
 
@@ -114,14 +146,6 @@ void FurnaceGUIRender::quitGUI() {
 }
 
 bool FurnaceGUIRender::isDead() {
-  return false;
-}
-
-const char* FurnaceGUIRender::getStupidFragment() {
-  return "Only OpenGL";
-}
-
-bool FurnaceGUIRender::regenOscShader(const char* fragment) {
   return false;
 }
 

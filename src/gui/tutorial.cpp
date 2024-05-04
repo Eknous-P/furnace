@@ -453,7 +453,7 @@ struct FurnaceCV {
     newHiScore(false),
     playSongs(true),
     pleaseInitSongs(false),
-    lives(3),
+    lives(5),
     respawnTime(0),
     stage(0),
     shotType(0),
@@ -497,7 +497,11 @@ static const char* cvText[]={
 };
 
 void FurnaceGUI::syncTutorial() {
+#ifdef SUPPORT_XP
+  tutorial.introPlayed=e->getConfBool("tutIntroPlayed",true);
+#else
   tutorial.introPlayed=e->getConfBool("tutIntroPlayed",false);
+#endif
   tutorial.protoWelcome=e->getConfBool("tutProtoWelcome2",false);
 }
 
@@ -843,7 +847,7 @@ void FurnaceGUI::drawTutorial() {
 
         dl->AddRectFilled(ImVec2(0,0),ImVec2(canvasW,canvasH),0xff000000);
 
-        dl->AddImage(rend->getTextureID(cvTex),p0,p1);
+        dl->AddImage(rend->getTextureID(cvTex),p0,p1,ImVec2(0,0),ImVec2(rend->getTextureU(cvTex),rend->getTextureV(cvTex)));
 
         if (mobileUI) {
           dl->AddRect(dpadUpStart,dpadUpEnd,0xff0000ff,0,0,dpiScale);
@@ -1439,13 +1443,15 @@ void FurnaceCV::render(unsigned char joyIn) {
             textWait=0;
           }
         }
-      } else if (joyPressed&15 && curText<5) {
+      } else if (joyPressed&15 && curText<3) {
         textWait=1;
         typeAddr=NULL;
       }
       if (typeAddr==NULL) {
         if (--textWait<0) {
-          if (curText==2) {
+          if (curText==4) {
+            textWait=90;
+          } else if (curText==2) {
             memset(tile1,0,80*56*sizeof(short));
             inGame=true;
           } else {

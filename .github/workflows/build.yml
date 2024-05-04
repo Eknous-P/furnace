@@ -175,7 +175,7 @@ jobs:
           if [ '${{ matrix.config.arch }}' == 'arm64' ]; then
             CMAKE_EXTRA_ARGS+=('-DCMAKE_OSX_DEPLOYMENT_TARGET="11.0"' '-DCMAKE_OSX_ARCHITECTURES=arm64')
           else
-            CMAKE_EXTRA_ARGS+=('-DCMAKE_OSX_DEPLOYMENT_TARGET="10.9"')
+            CMAKE_EXTRA_ARGS+=('-DCMAKE_OSX_DEPLOYMENT_TARGET="10.9"' '-DCMAKE_OSX_ARCHITECTURES=x86_64')
           fi
         elif [ '${{ runner.os }}' == 'Linux' ] && [ '${{ matrix.config.arch }}' == 'armhf' ]; then
           CMAKE_EXTRA_ARGS+=('-DCMAKE_TOOLCHAIN_FILE=scripts/Cross-Linux-armhf.cmake')
@@ -261,11 +261,6 @@ jobs:
         rmdir orig
         rm Furnace-*-Darwin.dmg
 
-        if [ -e new/Furnace.app/Contents/Resources/bin/furnace ]; then
-          rm -v new/Furnace.app/Contents/Resources/bin/furnace
-          rmdir new/Furnace.app/Contents/Resources/bin
-        fi
-
         echo "copying extra stuff"
         cp -v ../LICENSE new/LICENSE.txt
         cp -v ../res/releaseReadme/stable-mac.txt new/README
@@ -315,6 +310,7 @@ jobs:
         rm -r share/icons
         rm -r share/licenses
         rm -r share/metainfo
+        rm -r share/mime
 
         rmdir share
 
@@ -333,6 +329,13 @@ jobs:
 
     - name: Upload artifact
       if: ${{ github.repository == 'tildearrow/furnace' && github.ref_name == 'master' }}
+      uses: actions/upload-artifact@v4.3.0
+      with:
+        name: ${{ steps.package-identify.outputs.id }}
+        path: ${{ steps.package-identify.outputs.filename }}
+
+    - name: Upload Metal artifact
+      if: ${{ github.repository == 'tildearrow/furnace' && github.ref_name == 'metal' }}
       uses: actions/upload-artifact@v4.3.0
       with:
         name: ${{ steps.package-identify.outputs.id }}

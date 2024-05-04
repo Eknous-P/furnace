@@ -531,10 +531,10 @@ void FurnaceGUI::doAction(int what) {
       moveCursorBottom(false);
       break;
     case GUI_ACTION_PAT_CURSOR_UP_COARSE:
-      moveCursor(0,-16,false);
+      moveCursor(0,-editStepCoarse,false);
       break;
     case GUI_ACTION_PAT_CURSOR_DOWN_COARSE:
-      moveCursor(0,16,false);
+      moveCursor(0,editStepCoarse,false);
       break;
     case GUI_ACTION_PAT_SELECTION_UP:
       moveCursor(0,-MAX(1,settings.scrollStep?editStep:1),true);
@@ -561,10 +561,10 @@ void FurnaceGUI::doAction(int what) {
       moveCursorBottom(true);
       break;
     case GUI_ACTION_PAT_SELECTION_UP_COARSE:
-      moveCursor(0,-16,true);
+      moveCursor(0,-editStepCoarse,true);
       break;
     case GUI_ACTION_PAT_SELECTION_DOWN_COARSE:
-      moveCursor(0,16,true);
+      moveCursor(0,editStepCoarse,true);
       break;
     case GUI_ACTION_PAT_DELETE:
       doDelete();
@@ -783,9 +783,19 @@ void FurnaceGUI::doAction(int what) {
 
     
     case GUI_ACTION_WAVE_LIST_ADD: {
+      std::vector<DivSystem> alreadyDone;
       waveSizeList.clear();
       for (int i=0; i<e->song.systemLen; i++) {
+        bool skip=false;
+        for (DivSystem j: alreadyDone) {
+          if (e->song.system[i]==j) {
+            skip=true;
+            break;
+          }
+        }
+        if (skip) continue;
         const DivSysDef* sysDef=e->getSystemDef(e->song.system[i]);
+        alreadyDone.push_back(e->song.system[i]);
         if (sysDef==NULL) continue;
 
         if (sysDef->waveHeight==0) continue;
