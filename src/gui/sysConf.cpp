@@ -453,13 +453,17 @@ bool FurnaceGUI::drawSysConf(int chan, int sysPos, DivSystem type, DivConfig& fl
         if (sampRate>65536) sampRate=65536;
         altered=true;
       } rightClickable
-      DivPlatformGBAMinMod* dispatch=(DivPlatformGBAMinMod*)e->getDispatch(chan);
-      float maxCPU=dispatch->maxCPU*100;
-      ImGui::Text("Actual sample rate: %d Hz", dispatch->chipClock);
-      if (maxCPU>90) ImGui::PushStyleColor(ImGuiCol_Text,uiColors[GUI_COLOR_WARNING]);
-      ImGui::Text("Max mixer CPU usage: %.0f%%", maxCPU);
-      if (maxCPU>90) ImGui::PopStyleColor();
-      FurnaceGUI::popWarningColor();
+      if (chan>=0) {
+        DivPlatformGBAMinMod* dispatch=(DivPlatformGBAMinMod*)e->getDispatch(chan);
+        if (dispatch!=NULL) {
+          float maxCPU=dispatch->maxCPU*100;
+          ImGui::Text("Actual sample rate: %d Hz", dispatch->chipClock);
+          if (maxCPU>90) ImGui::PushStyleColor(ImGuiCol_Text,uiColors[GUI_COLOR_WARNING]);
+          ImGui::Text("Max mixer CPU usage: %.0f%%",maxCPU);
+          if (maxCPU>90) ImGui::PopStyleColor();
+          FurnaceGUI::popWarningColor();
+        }
+      }
       if (altered) {
         e->lockSave([&]() {
           flags.set("volScale",volScale);
@@ -880,6 +884,10 @@ bool FurnaceGUI::drawSysConf(int chan, int sysPos, DivSystem type, DivConfig& fl
       }
       if (ImGui::RadioButton("1.75MHz (ZX Spectrum 48K)",clockSel==2)) {
         clockSel=2;
+        altered=true;
+      }
+      if (ImGui::RadioButton("1.99MHz (PC-88)",clockSel==15)) {
+        clockSel=15;
         altered=true;
       }
       if (ImGui::RadioButton("2MHz (Atari ST/Sharp X1)",clockSel==3)) {
@@ -2427,6 +2435,8 @@ bool FurnaceGUI::drawSysConf(int chan, int sysPos, DivSystem type, DivConfig& fl
     case DIV_SYSTEM_PV1000:
     case DIV_SYSTEM_VERA:
     case DIV_SYSTEM_C219:
+    case DIV_SYSTEM_BIFURCATOR:
+    case DIV_SYSTEM_POWERNOISE:
       break;
     case DIV_SYSTEM_YMU759:
     case DIV_SYSTEM_ESFM:
