@@ -529,6 +529,9 @@ enum FurnaceGUIWindows {
   GUI_WINDOW_CLOCK,
   GUI_WINDOW_GROOVES,
   GUI_WINDOW_XY_OSC,
+#ifdef WITH_RTHP
+  GUI_WINDOW_RTHP,
+#endif
   GUI_WINDOW_INTRO_MON,
   GUI_WINDOW_MEMORY,
   GUI_WINDOW_CS_PLAYER,
@@ -732,6 +735,9 @@ enum FurnaceGUIActions {
   GUI_ACTION_WINDOW_MEMORY,
   GUI_ACTION_WINDOW_CS_PLAYER,
   GUI_ACTION_WINDOW_USER_PRESETS,
+#ifdef WITH_RTHP
+  GUI_ACTION_WINDOW_RTHP,
+#endif
 
   GUI_ACTION_COLLAPSE_WINDOW,
   GUI_ACTION_CLOSE_WINDOW,
@@ -1892,6 +1898,7 @@ class FurnaceGUI {
     int frameRateLimit;
     int displayRenderTime;
     int inputRepeat;
+    int flashOnOverload;
     unsigned int maxUndoSteps;
     float vibrationStrength;
     int vibrationLength;
@@ -2135,6 +2142,7 @@ class FurnaceGUI {
       frameRateLimit(60),
       displayRenderTime(0),
       inputRepeat(0),
+      flashOnOverload(0),
       maxUndoSteps(100),
       vibrationStrength(0.5f),
       vibrationLength(20),
@@ -2197,6 +2205,9 @@ class FurnaceGUI {
   bool pianoOpen, notesOpen, channelsOpen, regViewOpen, logOpen, effectListOpen, chanOscOpen;
   bool subSongsOpen, findOpen, spoilerOpen, patManagerOpen, sysManagerOpen, clockOpen, speedOpen;
   bool groovesOpen, xyOscOpen, memoryOpen, csPlayerOpen, cvOpen, userPresetsOpen;
+#ifdef WITH_RTHP
+  bool rthpWindowOpen;
+#endif
 
   bool cvNotSerious;
 
@@ -2596,6 +2607,17 @@ class FurnaceGUI {
 
   std::vector<String> randomDemoSong;
 
+  // RTHP stuff
+#ifdef WITH_RTHP
+  RTHPContainer* rthp;
+  int RTHPImplementation;
+  std::vector<String> RTHPAvailPorts;
+  String RTHPPort;
+  bool RTHPInitialized;
+  int dumpedChip;
+  RTHPWrite lastWrite;
+#endif
+
   void drawExportAudio(bool onWindow=false);
   void drawExportVGM(bool onWindow=false);
   void drawExportZSM(bool onWindow=false);
@@ -2735,6 +2757,9 @@ class FurnaceGUI {
   void drawTutorial();
   void drawXYOsc();
   void drawUserPresets();
+#ifdef WITH_RTHP
+  void drawRTHPWindow();
+#endif
 
   void parseKeybinds();
   void promptKey(int which);
@@ -2874,6 +2899,9 @@ class FurnaceGUI {
     const char* noteName(short note, short octave);
     bool decodeNote(const char* what, short& note, short& octave);
     void bindEngine(DivEngine* eng);
+#ifdef WITH_RTHP
+    void bindRTHP(RTHPContainer* rthp);
+#endif
     void enableSafeMode();
     void updateScroll(int amount);
     void addScroll(int amount);

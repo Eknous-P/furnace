@@ -90,6 +90,12 @@ void FurnaceGUI::bindEngine(DivEngine* eng) {
   wavePreview.setEngine(e);
 }
 
+#ifdef WITH_RTHP
+void FurnaceGUI::bindRTHP(RTHPContainer* rthpi) {
+  rthp=rthpi;
+}
+#endif
+
 void FurnaceGUI::enableSafeMode() {
   safeMode=true;
 }
@@ -1048,6 +1054,11 @@ Collapsed=0\n\
 [Window][Oscilloscope (X-Y)]\n\
 Pos=60,60\n\
 Size=300,300\n\
+Collapsed=0\n\
+\n\
+[Window][Real-time Hardware Playback]\n\
+Pos=60,60\n\
+Size=320,240\n\
 Collapsed=0\n\
 \n\
 [Docking][Data]\n\
@@ -3520,6 +3531,9 @@ bool FurnaceGUI::loop() {
   DECLARE_METRIC(effectList)
   DECLARE_METRIC(userPresets)
   DECLARE_METRIC(popup)
+#ifdef WITH_RTHP
+  DECLARE_METRIC(rthpWindow)
+#endif
 
 #ifdef IS_MOBILE
   bool doThreadedInput=true;
@@ -4491,6 +4505,10 @@ bool FurnaceGUI::loop() {
         if (ImGui::MenuItem("play/edit controls",BIND_FOR(GUI_ACTION_WINDOW_EDIT_CONTROLS),editControlsOpen)) editControlsOpen=!editControlsOpen;
         if (ImGui::MenuItem("piano/input pad",BIND_FOR(GUI_ACTION_WINDOW_PIANO),pianoOpen)) pianoOpen=!pianoOpen;
         if (spoilerOpen) if (ImGui::MenuItem("spoiler",NULL,spoilerOpen)) spoilerOpen=!spoilerOpen;
+#ifdef WITH_RTHP
+        ImGui::Separator();
+        if (ImGui::MenuItem("real-time hardware playback",BIND_FOR(GUI_ACTION_WINDOW_RTHP),rthpWindowOpen)) rthpWindowOpen=!rthpWindowOpen;
+#endif
 
         ImGui::EndMenu();
       }
@@ -4758,6 +4776,9 @@ bool FurnaceGUI::loop() {
       MEASURE(log,drawLog());
       MEASURE(effectList,drawEffectList());
       MEASURE(userPresets,drawUserPresets());
+#ifdef WITH_RTHP
+      MEASURE(rthpWindow,drawRTHPWindow());
+#endif
     }
 
     // release selection if mouse released
@@ -6727,6 +6748,9 @@ bool FurnaceGUI::init() {
   findOpen=e->getConfBool("findOpen",false);
   spoilerOpen=e->getConfBool("spoilerOpen",false);
   userPresetsOpen=e->getConfBool("userPresetsOpen",false);
+#ifdef WITH_RTHP
+  rthpWindowOpen=e->getConfBool("rthpWindowOpen",false);
+#endif
 
   insListDir=e->getConfBool("insListDir",false);
   waveListDir=e->getConfBool("waveListDir",false);
@@ -6821,6 +6845,11 @@ bool FurnaceGUI::init() {
   xyOscThickness=e->getConfFloat("xyOscThickness",2.0f);
 
   cvHiScore=e->getConfInt("cvHiScore",25000);
+
+#ifdef WITH_RTHP
+  RTHPImplementation=e->getConfInt("RTHPImplementation",RTHP_ERTHP);
+  RTHPPort=e->getConfString("RTHPPort","");
+#endif
 
   syncSettings();
   syncTutorial();
@@ -7282,6 +7311,9 @@ void FurnaceGUI::commitState() {
   e->setConf("findOpen",findOpen);
   e->setConf("spoilerOpen",spoilerOpen);
   e->setConf("userPresetsOpen",userPresetsOpen);
+#ifdef WITH_RTHP
+  e->setConf("rthpWindowOpen",rthpWindowOpen);
+#endif
 
   // commit dir state
   e->setConf("insListDir",insListDir);
@@ -7370,6 +7402,12 @@ void FurnaceGUI::commitState() {
   e->setConf("xyOscDecayTime",xyOscDecayTime);
   e->setConf("xyOscIntensity",xyOscIntensity);
   e->setConf("xyOscThickness",xyOscThickness);
+
+  // commit rthp stuff
+#ifdef WITH_RTHP
+  e->setConf("RTHPImplementation",RTHPImplementation);
+  e->setConf("RTHPPort",RTHPPort);
+#endif
 
   // commit recent files
   for (int i=0; i<30; i++) {
@@ -7644,6 +7682,9 @@ FurnaceGUI::FurnaceGUI():
   cvOpen(false),
   userPresetsOpen(false),
   cvNotSerious(false),
+#ifdef WITH_RTHP
+  rthpWindowOpen(false),
+#endif
   shortIntro(false),
   insListDir(false),
   waveListDir(false),
@@ -7950,7 +7991,15 @@ FurnaceGUI::FurnaceGUI():
   curTutorialStep(0),
   audioExportType(0),
   dmfExportVersion(0),
-  curExportType(GUI_EXPORT_NONE) {
+  curExportType(GUI_EXPORT_NONE)
+#ifdef WITH_RTHP
+  ,RTHPImplementation(RTHP_ERTHP),
+  RTHPAvailPorts({}),
+  RTHPPort(""),
+  RTHPInitialized(false),
+  dumpedChip(0)
+#endif
+  {
   // value keys
   valueKeys[SDLK_0]=0;
   valueKeys[SDLK_1]=1;
