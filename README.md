@@ -92,6 +92,8 @@ for other operating systems, you may [build the source](#developer-info).
     - Commander X16 VERA
     - tildearrow Sound Unit
     - PowerNoise
+    - Bifurcator
+    - SID2
     - Generic PCM DAC
 - mix and match sound chips!
   - over 200 ready to use presets from computers, game consoles and arcade boards...
@@ -278,6 +280,7 @@ Available options:
 | `WITH_INSTRUMENTS` | `ON` | Install demo instruments on `make install` |
 | `WITH_WAVETABLES` | `ON` | Install wavetables on `make install` |
 | `SHOW_OPEN_ASSETS_MENU_ENTRY` | `OFF` | Show option to open built-in assets directory (on supported platforms) |
+| `CONSOLE_SUBSYSTEM` | `OFF` | Build with subsystem set to Console on Windows |
 | `FORCE_APPLE_BIN` | `OFF` | Enable installation of binaries (when doing `make install`) to PREFIX/bin on Apple platforms |
 
 (\*) `ON` if system-installed JACK detected, otherwise `OFF`
