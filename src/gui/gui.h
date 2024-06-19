@@ -36,6 +36,8 @@
 
 #include "fileDialog.h"
 
+#define FURNACE_APP_ID "org.tildearrow.furnace"
+
 #define rightClickable if (ImGui::IsItemClicked(ImGuiMouseButton_Right)) ImGui::SetKeyboardFocusHere(-1);
 #define ctrlWheeling ((ImGui::IsKeyDown(ImGuiKey_LeftCtrl) || ImGui::IsKeyDown(ImGuiKey_RightCtrl)) && wheelY!=0)
 
@@ -129,6 +131,10 @@ enum FurnaceGUIRenderBackend {
 #define GUI_FONT_ANTIALIAS_DEFAULT 1
 #define GUI_FONT_HINTING_DEFAULT 0
 #define GUI_DECORATIONS_DEFAULT 1
+#endif
+
+#ifdef HAVE_MOMO
+#define ngettext momo_ngettext
 #endif
 
 // TODO:
@@ -1683,6 +1689,7 @@ class FurnaceGUI {
   ImFont* bigFont;
   ImFont* headFont;
   ImWchar* fontRange;
+  ImWchar* fontRangeB;
   ImVec4 uiColors[GUI_COLOR_MAX];
   ImVec4 volColors[128];
   ImU32 pitchGrad[256];
@@ -1952,6 +1959,7 @@ class FurnaceGUI {
     String emptyLabel2;
     String sdlAudioDriver;
     String defaultAuthorName;
+    String locale;
     DivConfig initialSys;
 
     Settings():
@@ -2206,7 +2214,8 @@ class FurnaceGUI {
       emptyLabel("..."),
       emptyLabel2(".."),
       sdlAudioDriver(""),
-      defaultAuthorName("") {}
+      defaultAuthorName(""),
+      locale("") {}
   } settings;
 
   struct Tutorial {
@@ -2223,6 +2232,12 @@ class FurnaceGUI {
   } tutorial;
 
   char finalLayoutPath[4096];
+
+  bool localeRequiresJapanese;
+  bool localeRequiresChinese;
+  bool localeRequiresChineseTrad;
+  bool localeRequiresKorean;
+  std::vector<ImWchar> localeExtraRanges;
 
   DivInstrument* prevInsData;
 
@@ -2342,6 +2357,8 @@ class FurnaceGUI {
   std::vector<std::pair<DivInstrument*,bool>> pendingIns;
 
   std::vector<FurnaceGUISysCategory> sysCategories;
+
+  std::vector<String> audioLoadFormats;
 
   bool wavePreviewOn;
   SDL_Scancode wavePreviewKey;
@@ -2673,6 +2690,9 @@ class FurnaceGUI {
   void renderFMPreviewOPL(const DivInstrumentFM& params, int pos=0);
   void renderFMPreviewOPZ(const DivInstrumentFM& params, int pos=0);
   void renderFMPreviewESFM(const DivInstrumentFM& params, const DivInstrumentESFM& esfmParams, int pos=0);
+
+  // combo with locale
+  static bool LocalizedComboGetter(void* data, int idx, const char** out_text);
 
   // these ones offer ctrl-wheel fine value changes.
   bool CWSliderScalar(const char* label, ImGuiDataType data_type, void* p_data, const void* p_min, const void* p_max, const char* format=NULL, ImGuiSliderFlags flags=0);

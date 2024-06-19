@@ -52,10 +52,10 @@ class DivWorkPool;
 #define EXTERN_BUSY_BEGIN_SOFT e->softLocked=true; e->isBusy.lock();
 #define EXTERN_BUSY_END e->isBusy.unlock(); e->softLocked=false;
 
-#define DIV_UNSTABLE
+//#define DIV_UNSTABLE
 
-#define DIV_VERSION "dev211"
-#define DIV_ENGINE_VERSION 211
+#define DIV_VERSION "0.6.4"
+#define DIV_ENGINE_VERSION 212
 // for imports
 #define DIV_VERSION_MOD 0xff01
 #define DIV_VERSION_FC 0xff02
@@ -430,6 +430,7 @@ class DivEngine {
   String exportPath;
   std::thread* exportThread;
   int chans;
+  bool configLoaded;
   bool active;
   bool lowQuality;
   bool dcHiPass;
@@ -1295,6 +1296,9 @@ class DivEngine {
     // quit dispatch
     void quitDispatch();
 
+    // pre-pre-initialize the engine.
+    bool prePreInit();
+
     // pre-initialize the engine. returns whether Furnace should run in safe mode.
     bool preInit(bool noSafeMode=true);
 
@@ -1315,6 +1319,7 @@ class DivEngine {
       output(NULL),
       exportThread(NULL),
       chans(0),
+      configLoaded(false),
       active(false),
       lowQuality(false),
       dcHiPass(true),
