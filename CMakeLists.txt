@@ -918,6 +918,10 @@ src/gui/xyOsc.cpp
 src/gui/gui.cpp
 )
 
+set (RTHP_SOURCES
+src/rthp/impl/abstract.cpp
+)
+
 if (WIN32 AND NOT SUPPORT_XP)
   list(APPEND GUI_SOURCES extern/nfd-modified/src/nfd_common.cpp)
   list(APPEND GUI_SOURCES extern/nfd-modified/src/nfd_win.cpp)
@@ -1081,7 +1085,7 @@ if (WITH_LOCALE)
   endif()
 endif()
 
-set(USED_SOURCES ${ENGINE_SOURCES} ${AUDIO_SOURCES} ${CLI_SOURCES} src/main.cpp)
+set(USED_SOURCES ${ENGINE_SOURCES} ${AUDIO_SOURCES} ${CLI_SOURCES} ${RTHP_SOURCES} src/main.cpp)
 
 if (USE_BACKWARD)
   list(APPEND USED_SOURCES src/backtrace.cpp)
