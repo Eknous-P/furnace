@@ -36,6 +36,8 @@
 
 #include "fileDialog.h"
 
+#include "rthp.h"
+
 #define FURNACE_APP_ID "org.tildearrow.furnace"
 
 #define rightClickable if (ImGui::IsItemClicked(ImGuiMouseButton_Right)) ImGui::SetKeyboardFocusHere(-1);
@@ -539,6 +541,7 @@ enum FurnaceGUIWindows {
   GUI_WINDOW_MEMORY,
   GUI_WINDOW_CS_PLAYER,
   GUI_WINDOW_USER_PRESETS,
+  GUI_WINDOW_RTHP_CONTROL,
   GUI_WINDOW_SPOILER
 };
 
@@ -741,6 +744,7 @@ enum FurnaceGUIActions {
   GUI_ACTION_WINDOW_MEMORY,
   GUI_ACTION_WINDOW_CS_PLAYER,
   GUI_ACTION_WINDOW_USER_PRESETS,
+  GUI_ACTION_WINDOW_RTHP_CONTROL,
 
   GUI_ACTION_COLLAPSE_WINDOW,
   GUI_ACTION_CLOSE_WINDOW,
@@ -1570,6 +1574,7 @@ struct FurnaceCV;
 
 class FurnaceGUI {
   DivEngine* e;
+  RTHP* rthp;
 
   FurnaceGUIRenderBackend renderBackend;
   FurnaceGUIRender* rend;
@@ -2273,7 +2278,7 @@ class FurnaceGUI {
   bool mixerOpen, debugOpen, inspectorOpen, oscOpen, volMeterOpen, statsOpen, compatFlagsOpen;
   bool pianoOpen, notesOpen, channelsOpen, regViewOpen, logOpen, effectListOpen, chanOscOpen;
   bool subSongsOpen, findOpen, spoilerOpen, patManagerOpen, sysManagerOpen, clockOpen, speedOpen;
-  bool groovesOpen, xyOscOpen, memoryOpen, csPlayerOpen, cvOpen, userPresetsOpen;
+  bool groovesOpen, xyOscOpen, memoryOpen, csPlayerOpen, cvOpen, userPresetsOpen, rthpControlOpen;
 
   bool cvNotSerious;
 
@@ -2819,6 +2824,7 @@ class FurnaceGUI {
   void drawTutorial();
   void drawXYOsc();
   void drawUserPresets();
+  void drawRthpControl();
 
   void parseKeybinds();
   void promptKey(int which);
@@ -2963,6 +2969,7 @@ class FurnaceGUI {
     const char* noteName(short note, short octave);
     bool decodeNote(const char* what, short& note, short& octave);
     void bindEngine(DivEngine* eng);
+    void bindRTHP(RTHP* r);
     void enableSafeMode();
     void updateScroll(int amount);
     void addScroll(int amount);

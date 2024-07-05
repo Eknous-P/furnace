@@ -94,6 +94,10 @@ void FurnaceGUI::bindEngine(DivEngine* eng) {
   wavePreview.setEngine(e);
 }
 
+void FurnaceGUI::bindRTHP(RTHP* r) {
+  rthp=r;
+}
+
 void FurnaceGUI::enableSafeMode() {
   safeMode=true;
 }
@@ -3562,6 +3566,7 @@ bool FurnaceGUI::loop() {
   DECLARE_METRIC(log)
   DECLARE_METRIC(effectList)
   DECLARE_METRIC(userPresets)
+  DECLARE_METRIC(rthpControl)
   DECLARE_METRIC(popup)
 
 #ifdef IS_MOBILE
@@ -4139,6 +4144,7 @@ bool FurnaceGUI::loop() {
         IMPORT_CLOSE(memoryOpen);
         IMPORT_CLOSE(csPlayerOpen);
         IMPORT_CLOSE(userPresetsOpen);
+        IMPORT_CLOSE(rthpControlOpen);
       } else if (pendingLayoutImportStep==1) {
         // let the UI settle
       } else if (pendingLayoutImportStep==2) {
@@ -4534,6 +4540,7 @@ bool FurnaceGUI::loop() {
         if (ImGui::MenuItem(_("play/edit controls"),BIND_FOR(GUI_ACTION_WINDOW_EDIT_CONTROLS),editControlsOpen)) editControlsOpen=!editControlsOpen;
         if (ImGui::MenuItem(_("piano/input pad"),BIND_FOR(GUI_ACTION_WINDOW_PIANO),pianoOpen)) pianoOpen=!pianoOpen;
         if (spoilerOpen) if (ImGui::MenuItem(_("spoiler"),NULL,spoilerOpen)) spoilerOpen=!spoilerOpen;
+        if (ImGui::MenuItem("RTHP control",BIND_FOR(GUI_ACTION_WINDOW_RTHP_CONTROL),rthpControlOpen)) rthpControlOpen=!rthpControlOpen;
 
         ImGui::EndMenu();
       }
@@ -4749,6 +4756,7 @@ bool FurnaceGUI::loop() {
       MEASURE(regView,drawRegView());
       MEASURE(memory,drawMemory());
       MEASURE(userPresets,drawUserPresets());
+      MEASURE(rthpControl,drawRthpControl());
       MEASURE(patManager,drawPatManager());
     } else {
       globalWinFlags=0;
@@ -4793,6 +4801,7 @@ bool FurnaceGUI::loop() {
       MEASURE(log,drawLog());
       MEASURE(effectList,drawEffectList());
       MEASURE(userPresets,drawUserPresets());
+      MEASURE(rthpControl,drawRthpControl());
     }
 
     // release selection if mouse released
@@ -7348,6 +7357,7 @@ void FurnaceGUI::syncState() {
   findOpen=e->getConfBool("findOpen",false);
   spoilerOpen=e->getConfBool("spoilerOpen",false);
   userPresetsOpen=e->getConfBool("userPresetsOpen",false);
+  rthpControlOpen=e->getConfBool("rthpControlOpen",false);
 
   insListDir=e->getConfBool("insListDir",false);
   waveListDir=e->getConfBool("waveListDir",false);
@@ -7504,6 +7514,7 @@ void FurnaceGUI::commitState(DivConfig& conf) {
   conf.set("findOpen",findOpen);
   conf.set("spoilerOpen",spoilerOpen);
   conf.set("userPresetsOpen",userPresetsOpen);
+  conf.set("rthpControlOpen",rthpControlOpen);
 
   // commit dir state
   conf.set("insListDir",insListDir);
@@ -7877,6 +7888,7 @@ FurnaceGUI::FurnaceGUI():
   csPlayerOpen(false),
   cvOpen(false),
   userPresetsOpen(false),
+  rthpControlOpen(false),
   cvNotSerious(false),
   shortIntro(false),
   insListDir(false),

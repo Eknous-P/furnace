@@ -75,11 +75,15 @@ struct sigaction termsa;
 #include "gui/gui.h"
 #endif
 
+#include "rthp.h"
+
 DivEngine e;
 
 #ifdef HAVE_GUI
 FurnaceGUI g;
 #endif
+
+RTHP rthp;
 
 FurnaceCLI cli;
 
@@ -917,6 +921,7 @@ int main(int argc, char** argv) {
 #ifdef HAVE_GUI
   if (safeMode) g.enableSafeMode();
   g.bindEngine(&e);
+  g.bindRTHP(&rthp);
   if (!g.init()) {
     reportError(g.getLastError());
     finishLogFile();
