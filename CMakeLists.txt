@@ -941,6 +941,7 @@ endif()
 set (RTHP_SOURCES
 src/rthp/rthp.cpp
 src/rthp/impl/abstract.cpp
+src/rthp/impl/dummy.cpp
 src/rthp/impl/erthp.cpp
 ${SERIAL_SOURCES}
 )

@@ -28,6 +28,10 @@ int ERTHP::listDevices() {
   return devs.size();
 }
 
+bool ERTHP::isRunning() {
+  return running;
+}
+
 void ERTHP::setChip(int _chip) {
   (void)_chip;
   chip = 0;

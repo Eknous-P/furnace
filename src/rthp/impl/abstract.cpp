@@ -12,6 +12,10 @@ int RTHPImpl::init(int dev, unsigned int _rate, unsigned int tout) {
   return RTHP_SUCCESS;
 }
 
+bool RTHPImpl::isRunning() {
+  return false;
+}
+
 void RTHPImpl::setChip(int _chip) {
 
 }

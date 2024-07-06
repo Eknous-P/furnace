@@ -8,8 +8,12 @@
 #define RTHPPACKETSHORT_KEY '>'
 
 enum RTHPImplementations {
-  RTHP_IMPL_DUMMY,
-  RTHP_IMPL_ERTHP
+  RTHP_IMPL_NONE=-1,
+  RTHP_IMPL_DUMMY=0,
+
+  RTHP_IMPL_ERTHP,
+
+  RTHP_IMPL_MAX
 };
 
 enum RTHPPacketTypes {
@@ -108,6 +112,7 @@ class RTHPImpl {
      * 
      */
     virtual int init(int dev, unsigned int _rate, unsigned int tout);
+    virtual bool isRunning();
     virtual void setChip(int _chip);
     virtual int sendRegWrite(uint16_t addr, uint16_t value, RTHPPacketTypes packetType);
     virtual int sendRaw(char* data, size_t len);

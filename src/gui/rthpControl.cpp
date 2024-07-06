@@ -18,6 +18,7 @@
  */
 
 #include "gui.h"
+#include "guiConst.h"
 #include "imgui.h"
 
 void FurnaceGUI::drawRthpControl() {
@@ -28,10 +29,26 @@ void FurnaceGUI::drawRthpControl() {
   }
   if (!rthpControlOpen) return;
   if (ImGui::Begin("RTHP Control",&rthpControlOpen,globalWinFlags,"RTHP Control")) {
-    if (ImGui::Button("init")) rthp->setup(RTHP_IMPL_ERTHP);
+    ImGui::BeginDisabled(rthp->isRunning());
+    if (ImGui::BeginCombo("implementation",rthpImplementationNames[currentImpl+1])) {
+      for (int i=0; i<RTHP_IMPL_MAX; i++) {
+        if (ImGui::Selectable(rthpImplementationNames[i+1],currentImpl==i)) {
+          currentImpl = RTHPImplementations(i);
+          rthp->reset();
+          rthp->setup(currentImpl);
+        }
+      }
+      ImGui::EndCombo();
+    }
+    ImGui::EndDisabled();
+
     if (rthp->isSet()) {
-      ImGui::Text("%s",rthp->getImplInfo().name);
-      ImGui::Text("%s",rthp->getImplInfo().description);
+      ImGui::Text(
+        "INFORMATION:\n"
+        "name: %s\n"
+        "description: %s\n",
+        rthp->getImplInfo().name,rthp->getImplInfo().description
+      );
     }
   }
   if (ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows)) curWindow=GUI_WINDOW_RTHP_CONTROL;

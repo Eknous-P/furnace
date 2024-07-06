@@ -118,6 +118,12 @@ const int vgmVersions[7]={
   0x172
 };
 
+const char* rthpImplementationNames[]={
+  "<Select>",
+  "Dummy",
+  "E-RTHP"
+};
+
 // name, icon, letter icon
 const char* insTypes[DIV_INS_MAX+1][3]={
   {"SN76489/Sega PSG",ICON_FA_BAR_CHART,ICON_FUR_INS_STD},

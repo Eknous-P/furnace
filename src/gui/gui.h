@@ -2678,6 +2678,10 @@ class FurnaceGUI {
   // user presets window
   std::vector<int> selectedUserPreset;
 
+  // rthp
+  RTHPImplementations currentImpl;
+  
+
   std::vector<String> randomDemoSong;
 
   void drawExportAudio(bool onWindow=false);
