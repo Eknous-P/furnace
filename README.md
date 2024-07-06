@@ -1,3 +1,5 @@
+# THIS BRANCH IS OBSOLETE, GO TO RTHP2 !!!
+
 # Furnace (chiptune tracker)
 
 ![screenshot](papers/screenshot3.png)
