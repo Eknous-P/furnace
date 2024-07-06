@@ -1427,6 +1427,9 @@ void DivEngine::nextRow() {
 
 bool DivEngine::nextTick(bool noAccum, bool inhibitLowLat) {
   bool ret=false;
+  if (rthp) {
+    for (int i=0; i<song.systemLen; i++) getDispatch(i)->toggleRegisterDump(rthp->isRunning());
+  }
   if (divider<1) divider=1;
 
   if (lowLatency && !skipping && !inhibitLowLat) {
@@ -1768,6 +1771,7 @@ bool DivEngine::nextTick(bool noAccum, bool inhibitLowLat) {
     for (DivRegWrite& regWrite:regWrites) {
       rthp->send(i,regWrite.addr,regWrite.val);
     }
+    regWrites.clear();
   }
 
   if (!freelance) {

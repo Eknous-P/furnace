@@ -70,6 +70,21 @@ void RTHP::setPacketType(int type) {
 int RTHP::send(uint16_t addr, uint16_t value) {
   if (!i) return RTHP_ERROR;
   i->sendRegWrite(addr,value,packetType);
+  return RTHP_SUCCESS;
 }
-int RTHP::send(int chip, uint16_t addr, uint16_t value) {}
-int RTHP::send(char* data, size_t len) {}
+int RTHP::send(int chip, uint16_t addr, uint16_t value) {
+  if (!i) return RTHP_ERROR;
+  if (i->getInfo().flags&RTHPIMPLFLAGS_MULTICHIP) {
+    // implementation-specific logic here pls
+
+    // i->sendRegWrite(addr,value,packetType);
+  } else {
+    i->sendRegWrite(addr,value,packetType);
+  }
+  return RTHP_SUCCESS;
+}
+int RTHP::send(char* data, size_t len) {
+  if (!i) return RTHP_ERROR;
+  i->sendRaw(data,len);
+  return RTHP_SUCCESS;
+}
