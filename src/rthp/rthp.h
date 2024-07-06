@@ -1,12 +1,20 @@
 #include <stdint.h>
 #include "../ta-utils.h"
+#include <fmt/printf.h>
 
 #ifndef RTHP_H
 #define RTHP_H
 
+#define RTHPPACKETSHORT_KEY '>'
+
 enum RTHPImplementations {
   RTHP_IMPL_DUMMY,
   RTHP_IMPL_ERTHP
+};
+
+enum RTHPPacketTypes {
+  RTHP_PACKET_SHORT,
+  RTHP_PACKET_LONG // WIP
 };
 
 struct RTHPPacketShort {
@@ -51,7 +59,10 @@ struct RTHPImplInfo {
 struct RTHPDevice {
   int id;
   const char* name;
-
+  RTHPDevice( int _id, const char* _name) {
+    id = _id;
+    name = _name;
+  };
 };
 
 enum RTHPErrors {
@@ -67,8 +78,18 @@ enum RTHPErrors {
 
 class RTHPImpl {
   protected:
+    // the list of available devices
     std::vector<RTHPDevice> devs;
+    // the id of the current device
     int currectDev;
+    // (optional) the chip being dumped
+    unsigned int chip;
+    // (optional) the communication speed
+    unsigned int rate;
+    // (optional) the communication timeout
+    unsigned int timeout;
+    // whether the implementation is running and connected to a device
+    bool running;
     /*
      * 
      */
@@ -86,8 +107,9 @@ class RTHPImpl {
     /*
      * 
      */
-    virtual int init(int dev);
-    virtual int sendRegWrite(uint16_t addr, uint16_t value);
+    virtual int init(int dev, unsigned int _rate, unsigned int tout);
+    virtual void setChip(int _chip);
+    virtual int sendRegWrite(uint16_t addr, uint16_t value, RTHPPacketTypes packetType);
     virtual int sendRaw(char* data, size_t len);
     virtual int deinit();
     virtual ~RTHPImpl();
@@ -98,7 +120,14 @@ class RTHP {
     RTHPImpl* i;
     bool set, running;
     int impl, dumpedChip;
+    RTHPPacketTypes packetType;
   public:
+    bool isSet();
+    bool isRunning();
+    void setPacketType(int type);
+    int getPacketType();
+    RTHPImplInfo getImplInfo();
+
     int setup(int _impl);
     int reset();
     int send(uint16_t addr, uint16_t value);

@@ -805,6 +805,8 @@ int main(int argc, char** argv) {
     finishLogFile();
     return 0;
   }
+  // jank
+  e.bindRTHP(&rthp);
 
   if (!e.init()) {
     if (consoleMode) {

@@ -28,7 +28,11 @@ void FurnaceGUI::drawRthpControl() {
   }
   if (!rthpControlOpen) return;
   if (ImGui::Begin("RTHP Control",&rthpControlOpen,globalWinFlags,"RTHP Control")) {
-    
+    if (ImGui::Button("init")) rthp->setup(RTHP_IMPL_ERTHP);
+    if (rthp->isSet()) {
+      ImGui::Text("%s",rthp->getImplInfo().name);
+      ImGui::Text("%s",rthp->getImplInfo().description);
+    }
   }
   if (ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows)) curWindow=GUI_WINDOW_RTHP_CONTROL;
   ImGui::End();

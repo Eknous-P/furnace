@@ -8,11 +8,15 @@ int RTHPImpl::listDevices() {
   return 0;
 }
 
-int RTHPImpl::init(int dev) {
+int RTHPImpl::init(int dev, unsigned int _rate, unsigned int tout) {
   return RTHP_SUCCESS;
 }
 
-int RTHPImpl::sendRegWrite(uint16_t addr, uint16_t value) {
+void RTHPImpl::setChip(int _chip) {
+
+}
+
+int RTHPImpl::sendRegWrite(uint16_t addr, uint16_t value, RTHPPacketTypes packetType) {
   return RTHP_SUCCESS;
 }
 

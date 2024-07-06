@@ -1760,7 +1760,15 @@ bool DivEngine::nextTick(bool noAccum, bool inhibitLowLat) {
   }
 
   // system tick
-  for (int i=0; i<song.systemLen; i++) disCont[i].dispatch->tick(subticks==tickMult);
+  for (int i=0; i<song.systemLen; i++) {
+    disCont[i].dispatch->tick(subticks==tickMult);
+    // rthp stuffs
+    if (!rthp) continue;
+    std::vector<DivRegWrite>& regWrites=getDispatch(i)->getRegisterWrites();
+    for (DivRegWrite& regWrite:regWrites) {
+      rthp->send(i,regWrite.addr,regWrite.val);
+    }
+  }
 
   if (!freelance) {
     if (stepPlay!=1) {

@@ -4070,3 +4070,7 @@ bool DivEngine::quit(bool saveConfig) {
   song.unload();
   return true;
 }
+
+void DivEngine::bindRTHP(RTHP* r) {
+  rthp = r;
+}
