@@ -81,7 +81,7 @@ enum RTHPErrors {
 };
 
 class RTHPImpl {
-  protected:
+  // protected:
     // the list of available devices
     std::vector<RTHPDevice> devs;
     // the id of the current device
@@ -109,8 +109,10 @@ class RTHPImpl {
      */
     virtual int listDevices();
     /*
-     * 
+     * get the list of the deivces
+     * @return a std::vector of RTHPDevice's
      */
+    virtual std::vector<RTHPDevice> getDeviceList();
     virtual int init(int dev, unsigned int _rate, unsigned int tout);
     virtual bool isRunning();
     virtual void setChip(int _chip);
@@ -132,8 +134,10 @@ class RTHP {
     void setPacketType(int type);
     int getPacketType();
     RTHPImplInfo getImplInfo();
+    std::vector<RTHPDevice> getDevices();
 
     int setup(int _impl);
+    int init(int dev, unsigned int _rate, unsigned int tout);
     int reset();
     int send(uint16_t addr, uint16_t value);
     int send(int chip, uint16_t addr, uint16_t value);

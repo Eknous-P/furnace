@@ -8,6 +8,10 @@ int RTHPImpl::listDevices() {
   return 0;
 }
 
+std::vector<RTHPDevice> RTHPImpl::getDeviceList() {
+  return {};
+}
+
 int RTHPImpl::init(int dev, unsigned int _rate, unsigned int tout) {
   return RTHP_SUCCESS;
 }

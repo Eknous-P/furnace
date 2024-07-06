@@ -24,9 +24,15 @@ int RTHP::setup(int _impl) {
       break;
     default: return RTHP_ERROR;
   }
-  set=true;
   if (!i) return RTHP_ERROR;
+  set=true;
+  i->listDevices();
   return RTHP_SUCCESS;
+}
+
+int RTHP::init(int dev, unsigned int _rate, unsigned int tout) {
+  if (i) return i->init(dev, _rate, tout);
+  return RTHP_ERROR;
 }
 
 int RTHP::reset() {
@@ -41,6 +47,11 @@ int RTHP::reset() {
 
 RTHPImplInfo RTHP::getImplInfo() {
   return i->getInfo();
+}
+
+std::vector<RTHPDevice> RTHP::getDevices() {
+  if (i) return i->getDeviceList();
+  return {};
 }
 
 bool RTHP::isSet() {

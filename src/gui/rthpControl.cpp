@@ -50,6 +50,27 @@ void FurnaceGUI::drawRthpControl() {
         rthp->getImplInfo().name,rthp->getImplInfo().description
       );
     }
+    ImGui::BeginDisabled(currentImpl<0 || rthp->isRunning());
+    if (ImGui::InputInt("rate",&rthpRate)) {
+      if (rthpRate<0) rthpRate=0;
+    }
+    if (ImGui::InputInt("timeout",&rthpTimeout)) {
+      if (rthpTimeout<0) rthpTimeout=0;
+    }
+    std::vector<RTHPDevice> devs = rthp->getDevices();
+    if (devs.size()>0) {
+      if (ImGui::BeginCombo("device",devs[currentRTHPDevice].name)) {
+        for (unsigned long int i=0; i<devs.size(); i++) {
+          if (ImGui::Selectable(devs[i].name, currentRTHPDevice==i)) {
+            currentRTHPDevice = i;
+          }
+        }
+        ImGui::EndCombo();
+      }
+    }
+    if (ImGui::Button("init")) rthp->init(currentRTHPDevice,rthpRate,rthpTimeout);
+    ImGui::EndDisabled();
+
   }
   if (ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows)) curWindow=GUI_WINDOW_RTHP_CONTROL;
   ImGui::End();

@@ -15,6 +15,7 @@ ERTHP::ERTHP() {
   running = false;
   rate = 0;
   timeout = 0;
+  chip = 0;
 
   // port
 }
@@ -28,6 +29,10 @@ int ERTHP::listDevices() {
   return devs.size();
 }
 
+std::vector<RTHPDevice> ERTHP::getDeviceList() {
+  return devs;
+}
+
 bool ERTHP::isRunning() {
   return running;
 }
@@ -39,6 +44,7 @@ void ERTHP::setChip(int _chip) {
 
 int ERTHP::init(int dev, unsigned int _rate, unsigned int tout) {
   if (running) return RTHP_SUCCESS;
+  currectDev = dev;
   rate = _rate;
   timeout = tout;
   if (devs.size() < 1) return RTHP_ERROR;

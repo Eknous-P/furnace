@@ -8,6 +8,10 @@ int RTHPDummy::listDevices() {
   return 0;
 }
 
+std::vector<RTHPDevice> RTHPDummy::getDeviceList() {
+  return devs;
+}
+
 int RTHPDummy::init(int dev, unsigned int _rate, unsigned int tout) {
   running=true;
   return RTHP_SUCCESS;

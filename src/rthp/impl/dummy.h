@@ -11,6 +11,7 @@ class RTHPDummy: public RTHPImpl {
   public:
     RTHPImplInfo getInfo();
     int listDevices();
+    std::vector<RTHPDevice> getDeviceList();
     int init(int dev, unsigned int _rate, unsigned int tout);
     bool isRunning();
     void setChip(int _chip);

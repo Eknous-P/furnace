@@ -18,6 +18,7 @@ class ERTHP: public RTHPImpl {
   public:
     RTHPImplInfo getInfo();
     int listDevices();
+    std::vector<RTHPDevice> getDeviceList();
     int init(int dev, unsigned int rate, unsigned int tout);
     bool isRunning();
     void setChip(int _chip);

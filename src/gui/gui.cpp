@@ -8196,7 +8196,10 @@ FurnaceGUI::FurnaceGUI():
   curTutorialStep(0),
   dmfExportVersion(0),
   curExportType(GUI_EXPORT_NONE),
-  currentImpl(RTHP_IMPL_NONE) {
+  currentImpl(RTHP_IMPL_NONE),
+  rthpRate(0),
+  rthpTimeout(0),
+  currentRTHPDevice(0) {
   // value keys
   valueKeys[SDLK_0]=0;
   valueKeys[SDLK_1]=1;

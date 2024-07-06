@@ -2680,7 +2680,9 @@ class FurnaceGUI {
 
   // rthp
   RTHPImplementations currentImpl;
-  
+  int rthpRate;
+  int rthpTimeout;
+  unsigned long int currentRTHPDevice;
 
   std::vector<String> randomDemoSong;
 
