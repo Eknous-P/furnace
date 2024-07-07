@@ -22,7 +22,7 @@
 RTHPImplInfo ERTHP::getInfo() {
   return RTHPImplInfo(
     "E-RTHP",
-    "send shite through serial port aaa",
+    "use a plain serial port to send register writes to whatever",
     RTHPIMPLFLAGS_VARIABLESPEED|RTHPIMPLFLAGS_USESHORTPACKET|RTHPIMPLFLAGS_USERAWPACKET|RTHPIMPLFLAGS_PLUGNPLAY
   );
 }

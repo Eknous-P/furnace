@@ -19,6 +19,7 @@
 
 #include <stdint.h>
 #include "../ta-utils.h"
+#include "../ta-log.h"
 #include <fmt/printf.h>
 
 #ifndef RTHP_H
@@ -154,6 +155,7 @@ class RTHP {
     int getPacketType();
     RTHPImplInfo getImplInfo();
     std::vector<RTHPDevice> getDevices();
+    int scanDevices();
 
     int setup(int _impl);
     int init(int dev, unsigned int _rate, unsigned int tout);

@@ -67,7 +67,9 @@ void FurnaceGUI::drawRthpControl() {
         }
         ImGui::EndCombo();
       }
+      ImGui::SameLine();
     }
+    if (ImGui::Button("rescan")) rthp->scanDevices();
     if (ImGui::Button("init")) rthp->init(currentRTHPDevice,rthpRate,rthpTimeout);
     ImGui::EndDisabled();
 

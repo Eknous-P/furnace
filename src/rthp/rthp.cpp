@@ -33,7 +33,10 @@ RTHP::~RTHP() {
 }
 
 int RTHP::setup(int _impl) {
-  if (set) return RTHP_ERROR;
+  if (set) {
+    logW("RTHP: implementation already set!");
+    return RTHP_ERROR;
+  }
   switch (_impl) {
     case RTHP_IMPL_DUMMY:
       i=new RTHPDummy;
@@ -41,16 +44,23 @@ int RTHP::setup(int _impl) {
     case RTHP_IMPL_ERTHP:
       i=new ERTHP;
       break;
-    default: return RTHP_ERROR;
+    default:
+      logE("RTHP: no impl given to set!");
+      return RTHP_ERROR;
   }
-  if (!i) return RTHP_ERROR;
+  if (!i) {
+    logE("RTHP: failed to set implementation!");
+    return RTHP_ERROR;
+  }
   set=true;
   i->listDevices();
+  logV("RTHP: implementation %d set successfully", _impl);
   return RTHP_SUCCESS;
 }
 
 int RTHP::init(int dev, unsigned int _rate, unsigned int tout) {
   if (i) return i->init(dev, _rate, tout);
+  logE("RTHP: no impl set to init!");
   return RTHP_ERROR;
 }
 
@@ -60,6 +70,7 @@ int RTHP::reset() {
     delete i;
     i=NULL;
     set=false;
+    logV("RTHP: impl unset successfully");
   }
   return RTHP_SUCCESS;
 }
@@ -71,6 +82,11 @@ RTHPImplInfo RTHP::getImplInfo() {
 std::vector<RTHPDevice> RTHP::getDevices() {
   if (i) return i->getDeviceList();
   return {};
+}
+
+int RTHP::scanDevices() {
+  if (i) return i->listDevices();
+  return 0;
 }
 
 bool RTHP::isSet() {
@@ -91,6 +107,7 @@ int RTHP::send(uint16_t addr, uint16_t value) {
   i->sendRegWrite(addr,value,packetType);
   return RTHP_SUCCESS;
 }
+
 int RTHP::send(int chip, uint16_t addr, uint16_t value) {
   if (!i) return RTHP_ERROR;
   if (i->getInfo().flags&RTHPIMPLFLAGS_MULTICHIP) {
@@ -102,6 +119,7 @@ int RTHP::send(int chip, uint16_t addr, uint16_t value) {
   }
   return RTHP_SUCCESS;
 }
+
 int RTHP::send(char* data, size_t len) {
   if (!i) return RTHP_ERROR;
   i->sendRaw(data,len);
