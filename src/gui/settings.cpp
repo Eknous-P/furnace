@@ -5679,7 +5679,12 @@ void FurnaceGUI::commitSettings() {
 
   applyUISettings();
 
-  if (rend) rend->destroyFontsTexture();
+  if (rend) {
+    rend->destroyFontsTexture();
+    if (rend->areTexturesSquare()) {
+      ImGui::GetIO().Fonts->Flags|=ImFontAtlasFlags_Square;
+    }
+  }
   if (!ImGui::GetIO().Fonts->Build()) {
     logE("error while building font atlas!");
     showError(_("error while loading fonts! please check your settings."));
@@ -5688,7 +5693,12 @@ void FurnaceGUI::commitSettings() {
     patFont=mainFont;
     bigFont=mainFont;
     headFont=mainFont;
-    if (rend) rend->destroyFontsTexture();
+    if (rend) {
+      rend->destroyFontsTexture();
+      if (rend->areTexturesSquare()) {
+        ImGui::GetIO().Fonts->Flags|=ImFontAtlasFlags_Square;
+      }
+    }
     if (!ImGui::GetIO().Fonts->Build()) {
       logE("error again while building font atlas!");
     } else {
@@ -6653,6 +6663,7 @@ void FurnaceGUI::applyUISettings(bool updateFonts) {
       0xd569, 0xd569,
       0xd574, 0xd574,
       0xd604, 0xd604,
+      0
     };
     ImFontGlyphRangesBuilder range;
     ImVector<ImWchar> outRange;

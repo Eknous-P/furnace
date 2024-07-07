@@ -3998,7 +3998,7 @@ bool FurnaceGUI::loop() {
       continue;
     }
 
-    if (firstFrame && !safeMode) {
+    if (firstFrame && !safeMode && renderBackend!=GUI_BACKEND_SOFTWARE) {
       if (!tutorial.introPlayed || settings.alwaysPlayIntro==3 || (settings.alwaysPlayIntro==2 && curFileName.empty())) {
         unsigned char* introTemp=new unsigned char[intro_fur_len];
         memcpy(introTemp,intro_fur,intro_fur_len);
@@ -4079,6 +4079,9 @@ bool FurnaceGUI::loop() {
       rend->initGUI(sdlWin);
 
       logD("building font...");
+      if (rend->areTexturesSquare()) {
+        ImGui::GetIO().Fonts->Flags|=ImFontAtlasFlags_Square;
+      }
       if (!ImGui::GetIO().Fonts->Build()) {
         logE("error while building font atlas!");
         showError(_("error while loading fonts! please check your settings."));
@@ -4087,7 +4090,12 @@ bool FurnaceGUI::loop() {
         patFont=mainFont;
         bigFont=mainFont;
         headFont=mainFont;
-        if (rend) rend->destroyFontsTexture();
+        if (rend) {
+          rend->destroyFontsTexture();
+          if (rend->areTexturesSquare()) {
+            ImGui::GetIO().Fonts->Flags|=ImFontAtlasFlags_Square;
+          }
+        }
         if (!ImGui::GetIO().Fonts->Build()) {
           logE("error again while building font atlas!");
         }
@@ -6422,7 +6430,7 @@ bool FurnaceGUI::loop() {
 
     MEASURE_END(popup);
 
-    if (!tutorial.introPlayed || settings.alwaysPlayIntro!=0) {
+    if ((!tutorial.introPlayed || settings.alwaysPlayIntro!=0) && renderBackend!=GUI_BACKEND_SOFTWARE) {
       MEASURE_BEGIN(intro);
       initialScreenWipe=0;
       if (settings.alwaysPlayIntro==1) {
@@ -6701,7 +6709,12 @@ bool FurnaceGUI::loop() {
 
             applyUISettings();
 
-            if (rend) rend->destroyFontsTexture();
+            if (rend) {
+              rend->destroyFontsTexture();
+              if (rend->areTexturesSquare()) {
+                ImGui::GetIO().Fonts->Flags|=ImFontAtlasFlags_Square;
+              }
+            }
             if (!ImGui::GetIO().Fonts->Build()) {
               logE("error while building font atlas!");
               showError(_("error while loading fonts! please check your settings."));
@@ -6710,7 +6723,12 @@ bool FurnaceGUI::loop() {
               patFont=mainFont;
               bigFont=mainFont;
               headFont=mainFont;
-              if (rend) rend->destroyFontsTexture();
+              if (rend) {
+                rend->destroyFontsTexture();
+                if (rend->areTexturesSquare()) {
+                  ImGui::GetIO().Fonts->Flags|=ImFontAtlasFlags_Square;
+                }
+              }
               if (!ImGui::GetIO().Fonts->Build()) {
                 logE("error again while building font atlas!");
               } else {
@@ -6732,7 +6750,12 @@ bool FurnaceGUI::loop() {
       patFont=mainFont;
       bigFont=mainFont;
       headFont=mainFont;
-      if (rend) rend->destroyFontsTexture();
+      if (rend) {
+        rend->destroyFontsTexture();
+        if (rend->areTexturesSquare()) {
+          ImGui::GetIO().Fonts->Flags|=ImFontAtlasFlags_Square;
+        }
+      }
       if (!ImGui::GetIO().Fonts->Build()) {
         logE("error again while building font atlas!");
       } else {
@@ -7068,6 +7091,8 @@ bool FurnaceGUI::init() {
 
   updateWindowTitle();
 
+  logV("max texture size: %dx%d",rend->getMaxTextureWidth(),rend->getMaxTextureHeight());
+
   rend->clear(ImVec4(0.0,0.0,0.0,1.0));
   rend->present();
 
@@ -7140,6 +7165,9 @@ bool FurnaceGUI::init() {
   applyUISettings();
 
   logD("building font...");
+  if (rend->areTexturesSquare()) {
+    ImGui::GetIO().Fonts->Flags|=ImFontAtlasFlags_Square;
+  }
   if (!ImGui::GetIO().Fonts->Build()) {
     logE("error while building font atlas!");
     showError(_("error while loading fonts! please check your settings."));
@@ -7148,7 +7176,9 @@ bool FurnaceGUI::init() {
     patFont=mainFont;
     bigFont=mainFont;
     headFont=mainFont;
-    if (rend) rend->destroyFontsTexture();
+    if (rend) {
+      rend->destroyFontsTexture();
+    }
     if (!ImGui::GetIO().Fonts->Build()) {
       logE("error again while building font atlas!");
     }
