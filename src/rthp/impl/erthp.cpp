@@ -67,14 +67,15 @@ int ERTHP::init(int dev, unsigned int _rate, unsigned int tout) {
   rate = _rate;
   timeout = tout;
   if (devs.size() < 1) return RTHP_ERROR;
+  port.setPort(devs[currectDev].name);
+  port.setBaudrate(rate);
+  port.setTimeout(serial::Timeout::max(),timeout,0,timeout,0);
   try {
-    port.setPort(devs[currectDev].name);
-    port.setBaudrate(rate);
-    port.setTimeout(serial::Timeout::max(),timeout,0,timeout,0);
-  } catch (std::exception& xc) {
-    return RTHP_ERROR;
+    port.open();
+  } catch (std::exception& e) {
+    logE("ERTHP: init failed! %s",e.what());
+    return RTHP_INITERROR;
   }
-  port.open();
   if (!port.isOpen()) return RTHP_PORT_CLOSED;
   running = true;
   
@@ -82,17 +83,29 @@ int ERTHP::init(int dev, unsigned int _rate, unsigned int tout) {
 }
 
 int ERTHP::sendRegWrite(uint16_t addr, uint16_t value, RTHPPacketTypes packetType) {
-  switch (packetType) {
-    case RTHP_PACKET_SHORT:
-      port.write(fmt::sprintf("%c%c%c%c",RTHPPACKETSHORT_KEY,value&0xff,addr&0xff,addr>>8));
-      break;
-    default: return RTHP_ERROR;
+  try {
+    switch (packetType) {
+      case RTHP_PACKET_SHORT:
+        port.write(fmt::sprintf("%c%c%c%c",RTHPPACKETSHORT_KEY,value&0xff,addr&0xff,addr>>8));
+        break;
+      default: return RTHP_ERROR;
+    }
+  } catch (std::exception& e) {
+    logE("ERTHP: send failed! %s",e.what());
+    deinit();
+    return RTHP_WRITEERROR;
   }
   return RTHP_SUCCESS;
 }
 
 int ERTHP::sendRaw(char* data, size_t len) {
-  port.write((uint8_t*)data,len);
+  try {
+    port.write((uint8_t*)data,len);
+  } catch (std::exception& e) {
+    logE("ERTHP: send failed! %s",e.what());
+    deinit();
+    return RTHP_WRITEERROR;
+  }
   return RTHP_SUCCESS;
 }
 

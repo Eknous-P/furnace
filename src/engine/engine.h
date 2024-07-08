@@ -1302,6 +1302,9 @@ class DivEngine {
     // bind RTHP
     void bindRTHP(RTHP* r);
 
+    // get RTHP pointer (for pc speaker uhh)
+    RTHP* getRTHP();
+
     // init dispatch
     void initDispatch(bool isRender=false);
 

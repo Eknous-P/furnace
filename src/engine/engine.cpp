@@ -4074,3 +4074,7 @@ bool DivEngine::quit(bool saveConfig) {
 void DivEngine::bindRTHP(RTHP* r) {
   rthp = r;
 }
+
+RTHP* DivEngine::getRTHP() {
+  return rthp;
+}

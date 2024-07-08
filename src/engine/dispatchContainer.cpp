@@ -543,6 +543,7 @@ void DivDispatchContainer::init(DivSystem sys, DivEngine* eng, int chanCount, do
     }
     case DIV_SYSTEM_PCSPKR:
       dispatch=new DivPlatformPCSpeaker;
+      ((DivPlatformPCSpeaker*)dispatch)->bindRTHP(eng->getRTHP());
       break;
     case DIV_SYSTEM_POKEMINI:
       dispatch=new DivPlatformPokeMini;
