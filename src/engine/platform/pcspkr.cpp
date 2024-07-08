@@ -695,6 +695,9 @@ void DivPlatformPCSpeaker::quit() {
   if (beepFD>=0 && realOutMethod<3) close(beepFD);
 #endif
   delete oscBuf;
+  if (rthp) {
+    rthp=NULL;
+  }
 }
 
 DivPlatformPCSpeaker::~DivPlatformPCSpeaker() {
