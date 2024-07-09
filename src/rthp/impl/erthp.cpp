@@ -23,8 +23,9 @@ RTHPImplInfo ERTHP::getInfo() {
   return RTHPImplInfo(
     "E-RTHP",
     "use a plain serial port to send register writes to whatever",
-    RTHPIMPLFLAGS_VARIABLESPEED|RTHPIMPLFLAGS_USESHORTPACKET|RTHPIMPLFLAGS_USERAWPACKET|RTHPIMPLFLAGS_PLUGNPLAY,
-    {DIV_SYSTEM_OPLL,DIV_SYSTEM_OPLL_DRUMS,DIV_SYSTEM_PCSPKR,DIV_SYSTEM_BIFURCATOR}
+    RTHPIMPLFLAGS_VARIABLESPEED|RTHPIMPLFLAGS_USESHORTPACKET|RTHPIMPLFLAGS_USERAWPACKET|RTHPIMPLFLAGS_PLUGNPLAY|RTHPIMPLFLAGS_USEINFOPACKET,
+    {DIV_SYSTEM_OPLL,DIV_SYSTEM_OPLL_DRUMS,DIV_SYSTEM_PCSPKR,DIV_SYSTEM_BIFURCATOR},
+    RTHPOSFLAGS_LINUX|RTHPOSFLAGS_WINDOWS
   );
 }
 
@@ -88,6 +89,7 @@ int ERTHP::sendRegWrite(uint16_t addr, uint16_t value, RTHPPacketTypes packetTyp
     switch (packetType) {
       case RTHP_PACKET_SHORT:
         port.write(fmt::sprintf("%c%c%c%c",RTHPPACKETSHORT_KEY,value&0xff,addr&0xff,addr>>8));
+        port.waitByteTimes(3);
         break;
       default: return RTHP_ERROR;
     }
@@ -102,6 +104,18 @@ int ERTHP::sendRegWrite(uint16_t addr, uint16_t value, RTHPPacketTypes packetTyp
 int ERTHP::sendRaw(char* data, size_t len) {
   try {
     port.write((uint8_t*)data,len);
+  } catch (std::exception& e) {
+    logE("ERTHP: send failed! %s",e.what());
+    deinit();
+    return RTHP_WRITEERROR;
+  }
+  return RTHP_SUCCESS;
+}
+
+int ERTHP::sendSongInfo(RTHPPacketInfo p) {
+  try {
+    port.write(fmt::sprintf("%c\x00%s\x00%s",p.key,p.sname,p.sauth));
+    port.flushOutput();
   } catch (std::exception& e) {
     logE("ERTHP: send failed! %s",e.what());
     deinit();

@@ -54,6 +54,7 @@ int RTHP::setup(int _impl) {
     logE("RTHP: failed to set implementation!");
     return RTHP_ERROR;
   }
+
   set=true;
   i->listDevices();
   logV("RTHP: implementation %d set successfully", _impl);
@@ -164,5 +165,16 @@ int RTHP::send(char* data, size_t len) {
   if (!i) return RTHP_ERROR;
   if (!canDump) return RTHP_CANNOTDUMP;
   i->sendRaw(data,len);
+  return RTHP_SUCCESS;
+}
+
+int RTHP::sendInfo(DivSong* s) {
+  if (!i) return RTHP_ERROR;
+  if ((i->getInfo().flags&RTHPIMPLFLAGS_USEINFOPACKET)==0) return RTHP_CANNOTDUMP;
+  i->sendSongInfo(RTHPPacketInfo(
+    (uint8_t)RTHPPACKETINFO_KEY,
+    s->name,
+    s->author
+  ));
   return RTHP_SUCCESS;
 }

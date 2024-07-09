@@ -36,6 +36,7 @@ class RTHPDummy: public RTHPImpl {
     void setChip(int _chip);
     int sendRegWrite(uint16_t addr, uint16_t value, RTHPPacketTypes packetType);
     int sendRaw(char* data, size_t len);
+    int sendSongInfo(RTHPPacketInfo p);
     int deinit();
     RTHPDummy();
     ~RTHPDummy();

@@ -27,6 +27,7 @@
 #define RTHP_H
 
 #define RTHPPACKETSHORT_KEY '>'
+#define RTHPPACKETINFO_KEY '$'
 
 enum RTHPImplementations {
   RTHP_IMPL_NONE=-1,
@@ -49,14 +50,25 @@ struct RTHPPacketShort {
   uint8_t addr_high;
 };
 
+struct RTHPPacketInfo {
+  uint8_t key;
+  String sname;
+  String sauth;
+  RTHPPacketInfo(uint8_t k, String sn, String sa) {
+    key=k,
+    sname=sn;
+    sauth=sa;
+  }
+};
+
 enum RTHPInplFeatureFlags {
   // data can be both sent and received
   RTHPIMPLFLAGS_BIDIRECTIONAL = 1,
   // data transfer speed can be changed
   RTHPIMPLFLAGS_VARIABLESPEED = 2,
-  // can use the short packet
+  // can read short packet
   RTHPIMPLFLAGS_USESHORTPACKET = 4,
-  // can use the long packet (WIP)
+  // can read long packet (WIP)
   RTHPIMPLFLAGS_USELONGPACKET = 8,
   // can use a custom packet (WIP)
   RTHPIMPLFLAGS_USECUSTOMPACKET = 16,
@@ -67,19 +79,28 @@ enum RTHPInplFeatureFlags {
   // can dump multiple chips
   RTHPIMPLFLAGS_MULTICHIP = 128,
   // can dump sample data (WIP)
-  RTHPIMPLFLAGS_SAMPLEDUMP = 256
+  RTHPIMPLFLAGS_SAMPLEDUMP = 256,
+  // can read info packet
+  RTHPIMPLFLAGS_USEINFOPACKET = 512
+};
+
+enum RTHPOSCompatFlags {
+  RTHPOSFLAGS_LINUX = 1,
+  RTHPOSFLAGS_WINDOWS = 2
 };
 
 struct RTHPImplInfo {
   const char* name;
   const char* description;
   int flags;
+  short osCompat;
   std::vector<DivSystem> chipWhitelist;
-  RTHPImplInfo(const char* n, const char* d, int f, std::vector<DivSystem> l) {
+  RTHPImplInfo(const char* n, const char* d, int f, std::vector<DivSystem> l, short o) {
     name = n;
     description = d;
     flags = f;
     chipWhitelist = l;
+    osCompat = o;
   };
 };
 
@@ -144,6 +165,7 @@ class RTHPImpl {
     virtual void setChip(int _chip);
     virtual int sendRegWrite(uint16_t addr, uint16_t value, RTHPPacketTypes packetType);
     virtual int sendRaw(char* data, size_t len);
+    virtual int sendSongInfo(RTHPPacketInfo p);
     virtual int deinit();
     virtual ~RTHPImpl();
 };
@@ -173,6 +195,7 @@ class RTHP {
     int send(uint16_t addr, uint16_t value);
     int send(int chip, uint16_t addr, uint16_t value);
     int send(char* data, size_t len);
+    int sendInfo(DivSong* s);
     int dumpSamples();
     RTHP();
     ~RTHP();

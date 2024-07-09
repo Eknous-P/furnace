@@ -20,7 +20,7 @@
 #include "dummy.h"
 
 RTHPImplInfo RTHPDummy::getInfo() {
-  return RTHPImplInfo("RTHP Dummy Implementation","does absolutely nothing",0,{});
+  return RTHPImplInfo("RTHP Dummy Implementation","does absolutely nothing",0,{},0xffff);
 }
 
 int RTHPDummy::listDevices() {
@@ -49,6 +49,10 @@ int RTHPDummy::sendRegWrite(uint16_t addr, uint16_t value, RTHPPacketTypes packe
 }
 
 int RTHPDummy::sendRaw(char* data, size_t len) {
+  return RTHP_SUCCESS;
+}
+
+int RTHPDummy::sendSongInfo(RTHPPacketInfo p) {
   return RTHP_SUCCESS;
 }
 
