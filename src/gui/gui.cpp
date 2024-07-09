@@ -2349,7 +2349,7 @@ int FurnaceGUI::load(String path) {
     // warn the user
     showWarning(_("you have loaded a backup!\nif you need to, please save it somewhere.\n\nDO NOT RELY ON THE BACKUP SYSTEM FOR AUTO-SAVE!\nFurnace will not save backups of backups."),GUI_WARN_GENERIC);
   }
-  if (e->song.systemLen-1 > dumpedChip) dumpedChip=0;
+  if (e->song.systemLen-1 < dumpedChip) dumpedChip=0;
   rthp->scanWhitelist(&(e->song),dumpedChip);
   return 0;
 }

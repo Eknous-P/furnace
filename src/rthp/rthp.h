@@ -74,8 +74,8 @@ struct RTHPImplInfo {
   const char* name;
   const char* description;
   int flags;
-  std::initializer_list<DivSystem> chipWhitelist;
-  RTHPImplInfo(const char* n, const char* d, int f, std::initializer_list<DivSystem> l) {
+  std::vector<DivSystem> chipWhitelist;
+  RTHPImplInfo(const char* n, const char* d, int f, std::vector<DivSystem> l) {
     name = n;
     description = d;
     flags = f;

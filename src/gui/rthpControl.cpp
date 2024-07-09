@@ -75,7 +75,10 @@ void FurnaceGUI::drawRthpControl() {
       if (ImGui::Button(devs.size()>0?"rescan":"scan devices")) rthp->scanDevices();
     }
     if (!rthp->isRunning()) {
-      if (ImGui::Button("init")) rthp->init(currentRTHPDevice,rthpRate,rthpTimeout);
+      if (ImGui::Button("init")) {
+        rthp->init(currentRTHPDevice,rthpRate,rthpTimeout);
+        rthp->scanWhitelist(&(e->song),dumpedChip);
+      }
     }
     ImGui::EndDisabled();
     if (rthp->isRunning()) {
@@ -94,6 +97,12 @@ void FurnaceGUI::drawRthpControl() {
           ImGui::PushStyleColor(ImGuiCol_Text,ImGui::GetColorU32(uiColors[GUI_COLOR_ERROR]));
           ImGui::Text("this chip is not supported by %s",rthp->getImplInfo().name);
           ImGui::PopStyleColor();
+        } else {
+          if (e->song.system[dumpedChip] == DIV_SYSTEM_PCSPKR) {
+          ImGui::PushStyleColor(ImGuiCol_Text,ImGui::GetColorU32(uiColors[GUI_COLOR_WARNING]));
+          ImGui::Text("PC Speaker is a special case: go to chip manager and set speaker type to \"use system beeper\" ");
+          ImGui::PopStyleColor();
+          }
         }
       }
     }
