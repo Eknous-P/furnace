@@ -21,6 +21,8 @@
 #include "guiConst.h"
 #include "imgui.h"
 
+#define chipName(c) e->getSystemDef(e->song.system[c])->name
+
 void FurnaceGUI::drawRthpControl() {
   if (nextWindow==GUI_WINDOW_RTHP_CONTROL) {
     rthpControlOpen=true;
@@ -69,9 +71,36 @@ void FurnaceGUI::drawRthpControl() {
       }
       ImGui::SameLine();
     }
-    if (ImGui::Button("rescan")) rthp->scanDevices();
-    if (ImGui::Button("init")) rthp->init(currentRTHPDevice,rthpRate,rthpTimeout);
+    if (rthp->isSet()) {
+      if (ImGui::Button(devs.size()>0?"rescan":"scan devices")) rthp->scanDevices();
+    }
+    if (!rthp->isRunning()) {
+      if (ImGui::Button("init")) rthp->init(currentRTHPDevice,rthpRate,rthpTimeout);
+    }
     ImGui::EndDisabled();
+    if (rthp->isRunning()) {
+      if ((rthp->getImplInfo().flags&RTHPIMPLFLAGS_MULTICHIP)==0) {
+        if (ImGui::BeginCombo("chip",chipName(dumpedChip))) {
+          for (int i=0; i<e->song.systemLen; i++) {
+            if (ImGui::Selectable(chipName(i),dumpedChip==i)) {
+              dumpedChip=i;
+              rthp->scanWhitelist(&(e->song),dumpedChip);
+              rthp->setDumpedChip(dumpedChip);
+            }
+          }
+          ImGui::EndCombo();
+        }
+        if (!rthp->canDumpChip()) {
+          ImGui::PushStyleColor(ImGuiCol_Text,ImGui::GetColorU32(uiColors[GUI_COLOR_ERROR]));
+          ImGui::Text("this chip is not supported by %s",rthp->getImplInfo().name);
+          ImGui::PopStyleColor();
+        }
+      }
+    }
+    if (ImGui::Button("reset")) {
+      rthp->reset();
+      currentImpl=RTHP_IMPL_NONE;
+    }
 
   }
   if (ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows)) curWindow=GUI_WINDOW_RTHP_CONTROL;

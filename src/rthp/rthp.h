@@ -21,6 +21,7 @@
 #include "../ta-utils.h"
 #include "../ta-log.h"
 #include <fmt/printf.h>
+#include "../engine/song.h"
 
 #ifndef RTHP_H
 #define RTHP_H
@@ -73,10 +74,12 @@ struct RTHPImplInfo {
   const char* name;
   const char* description;
   int flags;
-  RTHPImplInfo(const char* n, const char* d, int f) {
+  std::initializer_list<DivSystem> chipWhitelist;
+  RTHPImplInfo(const char* n, const char* d, int f, std::initializer_list<DivSystem> l) {
     name = n;
     description = d;
     flags = f;
+    chipWhitelist = l;
   };
 };
 
@@ -89,7 +92,7 @@ struct RTHPDevice {
   };
 };
 
-enum RTHPErrors {
+enum RTHPExitCodes {
   RTHP_SUCCESS = 0,
   RTHP_ERROR = -1,
 
@@ -97,6 +100,7 @@ enum RTHPErrors {
   RTHP_PORT_CLOSED,
   
   RTHP_WRITEERROR = -200,
+  RTHP_CANNOTDUMP,
 
   RTHP_INITERROR = -300,
 
@@ -147,7 +151,7 @@ class RTHPImpl {
 class RTHP {
   private:
     RTHPImpl* i;
-    bool set, running;
+    bool set, running, canDump;
     int impl, dumpedChip;
     RTHPPacketTypes packetType;
   public:
@@ -158,9 +162,13 @@ class RTHP {
     RTHPImplInfo getImplInfo();
     std::vector<RTHPDevice> getDevices();
     int scanDevices();
+    void setDumpedChip(int c);
+    int getDumpedChip();
+    bool canDumpChip();
 
     int setup(int _impl);
     int init(int dev, unsigned int _rate, unsigned int tout);
+    int scanWhitelist(DivSong* s, int c);
     int reset();
     int send(uint16_t addr, uint16_t value);
     int send(int chip, uint16_t addr, uint16_t value);

@@ -26,6 +26,8 @@ RTHP::RTHP() {
   running=false;
   impl=0;
   i=NULL;
+  dumpedChip=0;
+  canDump=false;
 }
 
 RTHP::~RTHP() {
@@ -64,6 +66,30 @@ int RTHP::init(int dev, unsigned int _rate, unsigned int tout) {
   return RTHP_ERROR;
 }
 
+int RTHP::scanWhitelist(DivSong* s, int c) {
+  if (!i) return RTHP_ERROR;
+  std::vector<DivSystem> whitelist = i->getInfo().chipWhitelist;
+  canDump = false;
+  if (i->getInfo().flags&RTHPIMPLFLAGS_MULTICHIP) {
+    for (DivSystem c:whitelist) {
+      for (int j=0; j<s->systemLen; j++) {
+        if (c == s->system[j]) {
+          canDump = true;
+          return RTHP_SUCCESS;
+        }
+      }
+    }
+  } else {
+    for (DivSystem ch:whitelist) {
+      if (ch == s->system[c]) {
+        canDump = true;
+        return RTHP_SUCCESS;
+      }
+    }
+  }
+  return RTHP_SUCCESS;
+}
+
 int RTHP::reset() {
   if (set) {
     i->deinit();
@@ -89,6 +115,18 @@ int RTHP::scanDevices() {
   return 0;
 }
 
+void RTHP::setDumpedChip(int c) {
+  dumpedChip = c;
+}
+  
+int RTHP::getDumpedChip() {
+  return dumpedChip;
+}
+
+bool RTHP::canDumpChip() {
+  return canDump;
+}
+
 bool RTHP::isSet() {
   return set;
 }
@@ -104,12 +142,14 @@ void RTHP::setPacketType(int type) {
 
 int RTHP::send(uint16_t addr, uint16_t value) {
   if (!i) return RTHP_ERROR;
+  if (!canDump) return RTHP_CANNOTDUMP;
   i->sendRegWrite(addr,value,packetType);
   return RTHP_SUCCESS;
 }
 
 int RTHP::send(int chip, uint16_t addr, uint16_t value) {
   if (!i) return RTHP_ERROR;
+  if (!canDump) return RTHP_CANNOTDUMP;
   if (i->getInfo().flags&RTHPIMPLFLAGS_MULTICHIP) {
     // implementation-specific logic here pls
 
@@ -122,6 +162,7 @@ int RTHP::send(int chip, uint16_t addr, uint16_t value) {
 
 int RTHP::send(char* data, size_t len) {
   if (!i) return RTHP_ERROR;
+  if (!canDump) return RTHP_CANNOTDUMP;
   i->sendRaw(data,len);
   return RTHP_SUCCESS;
 }

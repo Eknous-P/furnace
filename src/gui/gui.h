@@ -2684,6 +2684,7 @@ class FurnaceGUI {
   int rthpRate;
   int rthpTimeout;
   unsigned long int currentRTHPDevice;
+  int dumpedChip;
 
   std::vector<String> randomDemoSong;
 

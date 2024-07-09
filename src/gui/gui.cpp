@@ -2349,6 +2349,8 @@ int FurnaceGUI::load(String path) {
     // warn the user
     showWarning(_("you have loaded a backup!\nif you need to, please save it somewhere.\n\nDO NOT RELY ON THE BACKUP SYSTEM FOR AUTO-SAVE!\nFurnace will not save backups of backups."),GUI_WARN_GENERIC);
   }
+  if (e->song.systemLen-1 > dumpedChip) dumpedChip=0;
+  rthp->scanWhitelist(&(e->song),dumpedChip);
   return 0;
 }
 
@@ -8229,7 +8231,8 @@ FurnaceGUI::FurnaceGUI():
   currentImpl(RTHP_IMPL_NONE),
   rthpRate(0),
   rthpTimeout(0),
-  currentRTHPDevice(0) {
+  currentRTHPDevice(0),
+  dumpedChip(0) {
   // value keys
   valueKeys[SDLK_0]=0;
   valueKeys[SDLK_1]=1;

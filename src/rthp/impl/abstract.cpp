@@ -20,7 +20,7 @@
 #include "../rthp.h"
 
 RTHPImplInfo RTHPImpl::getInfo() {
-  return RTHPImplInfo(NULL,NULL,0);
+  return RTHPImplInfo(NULL,NULL,0,{});
 }
 
 int RTHPImpl::listDevices() {
