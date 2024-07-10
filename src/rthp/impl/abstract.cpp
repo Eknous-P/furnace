@@ -40,19 +40,31 @@ bool RTHPImpl::isRunning() {
 }
 
 void RTHPImpl::setChip(int _chip) {
-
+  // . . .
 }
 
-int RTHPImpl::sendRegWrite(uint16_t addr, uint16_t value, RTHPPacketTypes packetType) {
+int RTHPImpl::sendPacket(RTHPPacketLegacy p) {
   return RTHP_SUCCESS;
 }
 
-int RTHPImpl::sendSongInfo(RTHPPacketInfo p) {
+int RTHPImpl::sendPacket(RTHPPacketShort p) {
+  return RTHP_SUCCESS;
+}
+
+int RTHPImpl::sendPacket(RTHPPacketInfo p) {
   return RTHP_SUCCESS;
 }
 
 int RTHPImpl::sendRaw(char* data, size_t len) {
   return RTHP_SUCCESS;
+}
+
+int RTHPImpl::receive(char* buf, uint8_t len) {
+  return RTHP_SUCCESS;
+}
+
+uint8_t RTHPImpl::receive() {
+  return 0;
 }
 
 int RTHPImpl::deinit() {

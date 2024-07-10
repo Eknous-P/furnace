@@ -41,9 +41,12 @@ class ERTHP: public RTHPImpl {
     int init(int dev, unsigned int rate, unsigned int tout);
     bool isRunning();
     void setChip(int _chip);
-    int sendRegWrite(uint16_t addr, uint16_t value, RTHPPacketTypes packetType);
+    int sendPacket(RTHPPacketLegacy p);
+    int sendPacket(RTHPPacketShort p);
+    int sendPacket(RTHPPacketInfo p);
     int sendRaw(char* data, size_t len);
-    int sendSongInfo(RTHPPacketInfo p);
+    int receive(char* buf, uint8_t len);
+    uint8_t receive();
     int deinit();
     ERTHP();
     ~ERTHP();

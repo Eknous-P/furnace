@@ -44,7 +44,15 @@ void RTHPDummy::setChip(int _chip) {
   chip=_chip;
 }
 
-int RTHPDummy::sendRegWrite(uint16_t addr, uint16_t value, RTHPPacketTypes packetType) {
+int RTHPDummy::sendPacket(RTHPPacketLegacy p) {
+  return RTHP_SUCCESS;
+}
+
+int RTHPDummy::sendPacket(RTHPPacketShort p) {
+  return RTHP_SUCCESS;
+}
+
+int RTHPDummy::sendPacket(RTHPPacketInfo p) {
   return RTHP_SUCCESS;
 }
 
@@ -52,8 +60,13 @@ int RTHPDummy::sendRaw(char* data, size_t len) {
   return RTHP_SUCCESS;
 }
 
-int RTHPDummy::sendSongInfo(RTHPPacketInfo p) {
+int RTHPDummy::receive(char* buf, uint8_t len) {
+  memset(buf,0,len);
   return RTHP_SUCCESS;
+}
+
+uint8_t RTHPDummy::receive() {
+  return 0;
 }
 
 int RTHPDummy::deinit() {

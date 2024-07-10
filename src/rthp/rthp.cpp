@@ -142,26 +142,30 @@ void RTHP::setPacketType(int type) {
 }
 
 int RTHP::send(uint16_t addr, uint16_t value) {
-  if (!i) return RTHP_ERROR;
-  if (!canDump) return RTHP_CANNOTDUMP;
-  i->sendRegWrite(addr,value,packetType);
-  return RTHP_SUCCESS;
+  return send(0,addr,value);
 }
 
 int RTHP::send(int chip, uint16_t addr, uint16_t value) {
   if (!i) return RTHP_ERROR;
   if (!canDump) return RTHP_CANNOTDUMP;
-  if (i->getInfo().flags&RTHPIMPLFLAGS_MULTICHIP) {
-    // implementation-specific logic here pls
-
-    // i->sendRegWrite(addr,value,packetType);
-  } else {
-    i->sendRegWrite(addr,value,packetType);
+  switch (packetType) {
+    // first two packet types are single-chip only!
+    case RTHP_PACKET_LEGACY:
+      if (chip == dumpedChip) {
+        i->sendPacket(RTHPPacketLegacy(addr,value));
+      }
+      break;
+    case RTHP_PACKET_SHORT:
+      if (chip == dumpedChip) {
+        i->sendPacket(RTHPPacketShort(addr,value));
+      }
+      break;
+    default: break;
   }
   return RTHP_SUCCESS;
 }
 
-int RTHP::send(char* data, size_t len) {
+int RTHP::sendRaw(char* data, size_t len) {
   if (!i) return RTHP_ERROR;
   if (!canDump) return RTHP_CANNOTDUMP;
   i->sendRaw(data,len);
@@ -171,10 +175,6 @@ int RTHP::send(char* data, size_t len) {
 int RTHP::sendInfo(DivSong* s) {
   if (!i) return RTHP_ERROR;
   if ((i->getInfo().flags&RTHPIMPLFLAGS_USEINFOPACKET)==0) return RTHP_CANNOTDUMP;
-  i->sendSongInfo(RTHPPacketInfo(
-    (uint8_t)RTHPPACKETINFO_KEY,
-    s->name,
-    s->author
-  ));
+  i->sendPacket(RTHPPacketInfo(s->name,s->author));
   return RTHP_SUCCESS;
 }

@@ -23,7 +23,7 @@ RTHPImplInfo ERTHP::getInfo() {
   return RTHPImplInfo(
     "E-RTHP",
     "use a plain serial port to send register writes to whatever",
-    RTHPIMPLFLAGS_VARIABLESPEED|RTHPIMPLFLAGS_USESHORTPACKET|RTHPIMPLFLAGS_USERAWPACKET|RTHPIMPLFLAGS_PLUGNPLAY|RTHPIMPLFLAGS_USEINFOPACKET,
+    RTHPIMPLFLAGS_VARIABLESPEED|RTHPIMPLFLAGS_USELEGACYPACKET|RTHPIMPLFLAGS_USERAWPACKET|RTHPIMPLFLAGS_PLUGNPLAY|RTHPIMPLFLAGS_USEINFOPACKET|RTHPIMPLFLAGS_USELEGACYPACKET,
     {DIV_SYSTEM_OPLL,DIV_SYSTEM_OPLL_DRUMS,DIV_SYSTEM_PCSPKR,DIV_SYSTEM_BIFURCATOR},
     RTHPOSFLAGS_LINUX|RTHPOSFLAGS_WINDOWS
   );
@@ -84,44 +84,78 @@ int ERTHP::init(int dev, unsigned int _rate, unsigned int tout) {
   return RTHP_SUCCESS;
 }
 
-int ERTHP::sendRegWrite(uint16_t addr, uint16_t value, RTHPPacketTypes packetType) {
+int ERTHP::sendPacket(RTHPPacketLegacy p) {
   try {
-    switch (packetType) {
-      case RTHP_PACKET_SHORT:
-        port.write(fmt::sprintf("%c%c%c%c",RTHPPACKETSHORT_KEY,value&0xff,addr&0xff,addr>>8));
-        port.waitByteTimes(3);
-        break;
-      default: return RTHP_ERROR;
-    }
+    return port.write(
+      fmt::sprintf("%c%c%c%c",p.key,p.data,p.addr_low,p.addr_high)
+    ) == 4?RTHP_SUCCESS:RTHP_WRITEBAD;
   } catch (std::exception& e) {
     logE("ERTHP: send failed! %s",e.what());
     deinit();
     return RTHP_WRITEERROR;
   }
-  return RTHP_SUCCESS;
+  return RTHP_UNKNOWN;
+}
+
+int ERTHP::sendPacket(RTHPPacketShort p) {
+  try {
+    return port.write(
+      fmt::sprintf("%c%c%c%c",p.key1,p.key2,p.data,p.addr)
+    ) == 4?RTHP_SUCCESS:RTHP_WRITEBAD;
+  } catch (std::exception& e) {
+    logE("ERTHP: send failed! %s",e.what());
+    deinit();
+    return RTHP_WRITEERROR;
+  }
+  return RTHP_UNKNOWN;
+}
+
+int ERTHP::sendPacket(RTHPPacketInfo p) {
+  try {
+    return port.write(
+      fmt::sprintf("%c%c%s%s",p.key1,p.key2,p.sname,p.sauth)
+    ) > 4?RTHP_SUCCESS:RTHP_WRITEBAD;
+  } catch (std::exception& e) {
+    logE("ERTHP: send failed! %s",e.what());
+    deinit();
+    return RTHP_WRITEERROR;
+  }
+  return RTHP_UNKNOWN;
 }
 
 int ERTHP::sendRaw(char* data, size_t len) {
   try {
-    port.write((uint8_t*)data,len);
+    return port.write((uint8_t*)data,len) == len?RTHP_SUCCESS:RTHP_WRITEBAD;
   } catch (std::exception& e) {
     logE("ERTHP: send failed! %s",e.what());
     deinit();
     return RTHP_WRITEERROR;
   }
-  return RTHP_SUCCESS;
+  return RTHP_UNKNOWN;
 }
 
-int ERTHP::sendSongInfo(RTHPPacketInfo p) {
+int ERTHP::receive(char* buf, uint8_t len) {
   try {
-    port.write(fmt::sprintf("%c\x00%s\x00%s",p.key,p.sname,p.sauth));
-    port.flushOutput();
+    return port.read((uint8_t*)buf,len) == len?RTHP_SUCCESS:RTHP_WRITEBAD;
   } catch (std::exception& e) {
     logE("ERTHP: send failed! %s",e.what());
     deinit();
     return RTHP_WRITEERROR;
   }
-  return RTHP_SUCCESS;
+  return RTHP_UNKNOWN;
+}
+
+uint8_t ERTHP::receive() {
+  uint8_t ret;
+  try {
+    port.read(&ret,1);
+    return ret;
+  } catch (std::exception& e) {
+    logE("ERTHP: send failed! %s",e.what());
+    deinit();
+    return 0;
+  }
+  return 0;
 }
 
 int ERTHP::deinit() {
