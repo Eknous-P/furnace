@@ -124,6 +124,20 @@ const char* rthpImplementationNames[]={
   "E-RTHP"
 };
 
+const char* rthpImplFlagNames[]={
+  "Bidirectional",
+  "Variable communication rate",
+  "Can send RTHPPacketShort",
+  "Can send RTHPPacketLong",
+  "Can send a custom packet",
+  "Can send raw data",
+  "Device can be disconnected during operation",
+  "Supports multiple chips",
+  "Can send samples",
+  "Can send song information",
+  "Can send legacy packet (RTHPPacketLegacy)"
+};
+
 // name, icon, letter icon
 const char* insTypes[DIV_INS_MAX+1][3]={
   {"SN76489/Sega PSG",ICON_FA_BAR_CHART,ICON_FUR_INS_STD},

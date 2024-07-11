@@ -104,9 +104,9 @@ enum RTHPInplFeatureFlags {
   RTHPIMPLFLAGS_BIDIRECTIONAL = 1,
   // data transfer speed can be changed
   RTHPIMPLFLAGS_VARIABLESPEED = 2,
-  // can read legacy packet (rthp v1)
-  RTHPIMPLFLAGS_USELSHORTPACKET = 4,
-  // can read long packet (WIP)
+  // can do legacy packet (rthp v1)
+  RTHPIMPLFLAGS_USESHORTPACKET = 4,
+  // can do long packet (WIP)
   RTHPIMPLFLAGS_USELONGPACKET = 8,
   // can use a custom packet (WIP)
   RTHPIMPLFLAGS_USECUSTOMPACKET = 16,
@@ -118,9 +118,9 @@ enum RTHPInplFeatureFlags {
   RTHPIMPLFLAGS_MULTICHIP = 128,
   // can dump sample data (WIP)
   RTHPIMPLFLAGS_SAMPLEDUMP = 256,
-  // can read info packet
+  // can do info packet
   RTHPIMPLFLAGS_USEINFOPACKET = 512,
-  // can read legacy packet (rthp v1)
+  // can do legacy packet (rthp v1)
   RTHPIMPLFLAGS_USELEGACYPACKET = 1024,
 };
 

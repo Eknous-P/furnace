@@ -20,8 +20,10 @@
 #include "gui.h"
 #include "guiConst.h"
 #include "imgui.h"
+#include "IconsFontAwesome4.h"
+#include <fmt/printf.h>
 
-#define chipName(c) e->getSystemDef(e->song.system[c])->name
+#define chipName(c) getSystemName(e->song.system[c])
 
 void FurnaceGUI::drawRthpControl() {
   if (nextWindow==GUI_WINDOW_RTHP_CONTROL) {
@@ -45,12 +47,43 @@ void FurnaceGUI::drawRthpControl() {
     ImGui::EndDisabled();
 
     if (rthp->isSet()) {
-      ImGui::Text(
-        "INFORMATION:\n"
-        "name: %s\n"
-        "description: %s\n",
-        rthp->getImplInfo().name,rthp->getImplInfo().description
-      );
+      if (ImGui::TreeNode("Information")) {
+        
+        ImGui::Text(
+          "name: %s\n"
+          "description: %s\n",
+          rthp->getImplInfo().name,rthp->getImplInfo().description
+        );
+        if (ImGui::TreeNode("more...")) {
+          ImGui::Text("flags...");
+          ImGui::Indent();
+          for (unsigned char i=0; i<11; i++) {
+            // ImGui::Text("%s %s",
+            // ((rthp->getImplInfo().flags>>i)&1)>0?ICON_FA_CHECK:ICON_FA_TIMES,
+            // rthpImplFlagNames[i]);
+            bool flagValue = ((rthp->getImplInfo().flags>>i)&1);
+            if (flagValue) {
+              ImGui::PushStyleColor(ImGuiCol_Text,ImGui::GetColorU32(uiColors[GUI_COLOR_TOGGLE_ON]));
+              ImGui::Text(ICON_FA_CHECK);
+            } else {
+              ImGui::PushStyleColor(ImGuiCol_Text,ImGui::GetColorU32(uiColors[GUI_COLOR_ERROR]));
+              ImGui::Text(ICON_FA_TIMES);
+            }
+            ImGui::PopStyleColor();
+            ImGui::SameLine();
+            ImGui::Text("%s",rthpImplFlagNames[i]);
+          }
+          ImGui::TreePop();
+          ImGui::Unindent();
+          ImGui::Text("supported chips");
+          ImGui::Indent();
+          for (DivSystem s:rthp->getImplInfo().chipWhitelist) {
+            ImGui::Text("%s",getSystemName(s));
+          }
+          ImGui::Unindent();
+        }
+        ImGui::TreePop();
+      }
     }
     ImGui::BeginDisabled(currentImpl<0 || rthp->isRunning());
     if (ImGui::InputInt("rate",&rthpRate)) {
@@ -83,9 +116,14 @@ void FurnaceGUI::drawRthpControl() {
     ImGui::EndDisabled();
     if (rthp->isRunning()) {
       if ((rthp->getImplInfo().flags&RTHPIMPLFLAGS_MULTICHIP)==0) {
-        if (ImGui::BeginCombo("chip",chipName(dumpedChip))) {
+        if (ImGui::BeginCombo("chip",
+          fmt::sprintf("%d: %s",dumpedChip,chipName(dumpedChip)).c_str()
+        )) {
           for (int i=0; i<e->song.systemLen; i++) {
-            if (ImGui::Selectable(chipName(i),dumpedChip==i)) {
+            if (ImGui::Selectable(
+              fmt::sprintf("%d: %s",i,chipName(i)).c_str(),
+              dumpedChip==i)
+            ) {
               dumpedChip=i;
               rthp->scanWhitelist(&(e->song),dumpedChip);
               rthp->setDumpedChip(dumpedChip);
