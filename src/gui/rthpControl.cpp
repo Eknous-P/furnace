@@ -111,6 +111,7 @@ void FurnaceGUI::drawRthpControl() {
       if (ImGui::Button("init")) {
         rthp->init(currentRTHPDevice,rthpRate,rthpTimeout);
         rthp->scanWhitelist(&(e->song),dumpedChip);
+        rthp->sendInfo(&(e->song));
       }
     }
     ImGui::EndDisabled();
@@ -143,6 +144,7 @@ void FurnaceGUI::drawRthpControl() {
           }
         }
       }
+      rthp->setPacketType(RTHP_PACKET_SHORT);
     }
     if (ImGui::Button("reset")) {
       rthp->reset();

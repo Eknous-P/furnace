@@ -113,7 +113,7 @@ int ERTHP::sendPacket(RTHPPacketShort p) {
 int ERTHP::sendPacket(RTHPPacketInfo p) {
   try {
     return port.write(
-      fmt::sprintf("%c%c%s%s",p.key1,p.key2,p.sname,p.sauth)
+      fmt::sprintf("%c%c%s\xff%s\xff",p.key1,p.key2,p.sname,p.sauth)
     ) > 4?RTHP_SUCCESS:RTHP_WRITEBAD;
   } catch (std::exception& e) {
     logE("ERTHP: send failed! %s",e.what());

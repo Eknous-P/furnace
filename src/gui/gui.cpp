@@ -2351,6 +2351,7 @@ int FurnaceGUI::load(String path) {
   }
   if (e->song.systemLen-1 < dumpedChip) dumpedChip=0;
   rthp->scanWhitelist(&(e->song),dumpedChip);
+  rthp->sendInfo(&(e->song));
   return 0;
 }
 
