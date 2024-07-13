@@ -2686,6 +2686,7 @@ class FurnaceGUI {
   unsigned long int currentRTHPDevice;
   int dumpedChip;
   int rthpPacket;
+  unsigned char customParamValues[256];
 
   std::vector<String> randomDemoSong;
 

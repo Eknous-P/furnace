@@ -20,7 +20,7 @@
 #include "../rthp.h"
 
 RTHPImplInfo RTHPImpl::getInfo() {
-  return RTHPImplInfo(NULL,NULL,0,{},0);
+  return RTHPImplInfo(NULL,NULL,0,{},0,{},0);
 }
 
 int RTHPImpl::listDevices() {
@@ -52,6 +52,10 @@ int RTHPImpl::sendPacket(RTHPPacketShort p) {
 }
 
 int RTHPImpl::sendPacket(RTHPPacketInfo p) {
+  return RTHP_SUCCESS;
+}
+
+int RTHPImpl::sendPacket(RTHPPacketParameter p) {
   return RTHP_SUCCESS;
 }
 

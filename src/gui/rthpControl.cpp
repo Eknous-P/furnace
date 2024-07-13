@@ -158,6 +158,17 @@ void FurnaceGUI::drawRthpControl() {
       if (ImGui::IsItemHovered()) {
         ImGui::SetTooltip("make sure your device supports the selected packet!");
       }
+      if (rthp->getImplInfo().customParamCount) {
+        for (int i=0; i<rthp->getImplInfo().customParamCount; i++) {
+          int value = customParamValues[i];
+          if (ImGui::InputInt(rthp->getImplInfo().customParamNames[i],&value,1,16)) {
+            if (value<0) value=0;
+            if (value>255) value=255;
+            customParamValues[i]=value&0xff;
+            if (rthp->sendParam((uint8_t)i,(uint8_t)customParamValues[i])!=RTHP_SUCCESS) logE("RTHP: parameter send failed!");
+          }
+        }
+      }
     }
     if (ImGui::Button("reset")) {
       rthp->reset();

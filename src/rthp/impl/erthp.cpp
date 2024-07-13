@@ -25,7 +25,9 @@ RTHPImplInfo ERTHP::getInfo() {
     "use a plain serial port to send register writes to whatever",
     RTHPIMPLFLAGS_VARIABLESPEED|RTHPIMPLFLAGS_USESHORTPACKET|RTHPIMPLFLAGS_USERAWPACKET|RTHPIMPLFLAGS_PLUGNPLAY|RTHPIMPLFLAGS_USEINFOPACKET|RTHPIMPLFLAGS_USELEGACYPACKET,
     {DIV_SYSTEM_OPLL,DIV_SYSTEM_OPLL_DRUMS,DIV_SYSTEM_PCSPKR,DIV_SYSTEM_BIFURCATOR},
-    RTHPOSFLAGS_LINUX|RTHPOSFLAGS_WINDOWS
+    RTHPOSFLAGS_LINUX|RTHPOSFLAGS_WINDOWS,
+    {"Display mode"},
+    1
   );
 }
 
@@ -72,6 +74,7 @@ int ERTHP::init(int dev, unsigned int _rate, unsigned int tout) {
   port.setPort(devs[currectDev].name);
   port.setBaudrate(rate);
   port.setTimeout(serial::Timeout::max(),timeout,0,timeout,0);
+  
   try {
     port.open();
   } catch (std::exception& e) {
@@ -88,7 +91,7 @@ int ERTHP::sendPacket(RTHPPacketLegacy p) {
   try {
     return port.write(
       fmt::sprintf("%c%c%c%c",p.key,p.data,p.addr_low,p.addr_high)
-    ) == 4?RTHP_SUCCESS:RTHP_WRITEBAD;
+    ) == sizeof(RTHPPacketLegacy)?RTHP_SUCCESS:RTHP_WRITEBAD;
   } catch (std::exception& e) {
     logE("ERTHP: send failed! %s",e.what());
     deinit();
@@ -101,7 +104,7 @@ int ERTHP::sendPacket(RTHPPacketShort p) {
   try {
     return port.write(
       fmt::sprintf("%c%c%c%c",p.key1,p.key2,p.data,p.addr)
-    ) == 4?RTHP_SUCCESS:RTHP_WRITEBAD;
+    ) == sizeof(RTHPPacketShort)?RTHP_SUCCESS:RTHP_WRITEBAD;
   } catch (std::exception& e) {
     logE("ERTHP: send failed! %s",e.what());
     deinit();
@@ -123,6 +126,19 @@ int ERTHP::sendPacket(RTHPPacketInfo p) {
   return RTHP_UNKNOWN;
 }
 
+int ERTHP::sendPacket(RTHPPacketParameter p) {
+  try {
+    return port.write(
+      fmt::sprintf("%c%c%c%c",p.key1,p.key2,p.param,p.value)
+    ) == sizeof(RTHPPacketParameter)?RTHP_SUCCESS:RTHP_WRITEBAD;
+  } catch (std::exception& e) {
+    logE("ERTHP: send failed! %s",e.what());
+    deinit();
+    return RTHP_WRITEERROR;
+  }
+  return RTHP_UNKNOWN;
+}
+
 int ERTHP::sendRaw(char* data, size_t len) {
   try {
     return port.write((uint8_t*)data,len) == len?RTHP_SUCCESS:RTHP_WRITEBAD;
@@ -136,11 +152,11 @@ int ERTHP::sendRaw(char* data, size_t len) {
 
 int ERTHP::receive(char* buf, uint8_t len) {
   try {
-    return port.read((uint8_t*)buf,len) == len?RTHP_SUCCESS:RTHP_WRITEBAD;
+    return port.read((uint8_t*)buf,len) == len?RTHP_SUCCESS:RTHP_ERROR;
   } catch (std::exception& e) {
-    logE("ERTHP: send failed! %s",e.what());
+    logE("ERTHP: receive failed! %s",e.what());
     deinit();
-    return RTHP_WRITEERROR;
+    return RTHP_ERROR;
   }
   return RTHP_UNKNOWN;
 }

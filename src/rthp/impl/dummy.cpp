@@ -20,7 +20,7 @@
 #include "dummy.h"
 
 RTHPImplInfo RTHPDummy::getInfo() {
-  return RTHPImplInfo("RTHP Dummy Implementation","does absolutely nothing",0,{},0xffff);
+  return RTHPImplInfo("RTHP Dummy Implementation","does absolutely nothing",0,{},0xffff,{},0);
 }
 
 int RTHPDummy::listDevices() {
@@ -53,6 +53,10 @@ int RTHPDummy::sendPacket(RTHPPacketShort p) {
 }
 
 int RTHPDummy::sendPacket(RTHPPacketInfo p) {
+  return RTHP_SUCCESS;
+}
+
+int RTHPDummy::sendPacket(RTHPPacketParameter p) {
   return RTHP_SUCCESS;
 }
 

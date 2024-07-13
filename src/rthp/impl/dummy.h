@@ -37,6 +37,7 @@ class RTHPDummy: public RTHPImpl {
     int sendPacket(RTHPPacketLegacy p);
     int sendPacket(RTHPPacketShort p);
     int sendPacket(RTHPPacketInfo p);
+    int sendPacket(RTHPPacketParameter p);
     int sendRaw(char* data, size_t len);
     int receive(char* buf, uint8_t len);
     uint8_t receive();

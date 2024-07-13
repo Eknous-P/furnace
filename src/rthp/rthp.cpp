@@ -152,29 +152,33 @@ int RTHP::send(int chip, uint16_t addr, uint16_t value) {
     // first two packet types are single-chip only!
     case RTHP_PACKET_LEGACY:
       if (chip == dumpedChip) {
-        i->sendPacket(RTHPPacketLegacy(addr,value));
+        return i->sendPacket(RTHPPacketLegacy(addr,value));
       }
       break;
     case RTHP_PACKET_SHORT:
       if (chip == dumpedChip) {
-        i->sendPacket(RTHPPacketShort(addr,value));
+        return i->sendPacket(RTHPPacketShort(addr,value));
       }
       break;
     default: break;
   }
-  return RTHP_SUCCESS;
+   return RTHP_SUCCESS;
 }
 
 int RTHP::sendRaw(char* data, size_t len) {
   if (!i) return RTHP_ERROR;
   if (!canDump) return RTHP_CANNOTDUMP;
-  i->sendRaw(data,len);
-  return RTHP_SUCCESS;
+  return i->sendRaw(data,len);
 }
 
 int RTHP::sendInfo(DivSong* s) {
   if (!i) return RTHP_ERROR;
   if ((i->getInfo().flags&RTHPIMPLFLAGS_USEINFOPACKET)==0) return RTHP_CANNOTDUMP;
-  i->sendPacket(RTHPPacketInfo(s->name,s->author));
-  return RTHP_SUCCESS;
+  return i->sendPacket(RTHPPacketInfo(s->name,s->author));
+}
+
+int RTHP::sendParam(uint8_t param, uint8_t value) {
+  if (!i) return RTHP_ERROR;
+  if ((i->getInfo().customParamCount)<=param) return RTHP_ERROR;
+  return i->sendPacket(RTHPPacketParameter(param,value));
 }

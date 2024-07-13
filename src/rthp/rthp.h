@@ -39,10 +39,14 @@ enum RTHPImplementations {
 };
 
 enum RTHPPacketTypes {
-  RTHP_PACKET_LEGACY,
+  RTHP_PACKET_LEGACY=0,
   RTHP_PACKET_SHORT,
   RTHP_PACKET_LONG, // WIP
-  RTHP_PACKET_INFO
+
+  RTHP_PACKET_MAX,
+  // special packets
+  RTHP_PACKET_INFO=32,
+  RTHP_PACKET_PARAMETER
 };
 
 /* old RTHP packet format
@@ -99,6 +103,23 @@ struct RTHPPacketInfo {
   }
 };
 
+/*
+ *
+ */
+struct RTHPPacketParameter {
+  uint8_t key1;
+  uint8_t key2;
+  uint8_t param;
+  uint8_t value;
+  RTHPPacketParameter(uint8_t p,uint8_t v):
+  key1(0xff),key2(0xf5)
+  {
+    param=p;
+    value=v;
+  }
+};
+
+
 enum RTHPInplFeatureFlags {
   // data can be both sent and received
   RTHPIMPLFLAGS_BIDIRECTIONAL = 1,
@@ -135,12 +156,22 @@ struct RTHPImplInfo {
   int flags;
   short osCompat;
   std::vector<DivSystem> chipWhitelist;
-  RTHPImplInfo(const char* n, const char* d, int f, std::vector<DivSystem> l, short o) {
+  const char* customParamNames[256];
+  uint8_t customParamCount;
+  RTHPImplInfo(const char* n, const char* d, int f, std::vector<DivSystem> l, short o, std::initializer_list<const char*> p, uint8_t pn) {
     name = n;
     description = d;
     flags = f;
     chipWhitelist = l;
     osCompat = o;
+    memset(customParamNames,0,256*sizeof(const char*));
+    uint16_t idx=0;
+    for (const char* i:p) {
+      customParamNames[idx]=i;
+      idx++;
+      if (idx >= pn) break;
+    }
+    customParamCount=pn;
   };
 };
 
@@ -226,6 +257,7 @@ class RTHPImpl {
     virtual int sendPacket(RTHPPacketLegacy p);
     virtual int sendPacket(RTHPPacketShort p);
     virtual int sendPacket(RTHPPacketInfo p);
+    virtual int sendPacket(RTHPPacketParameter p);
     virtual int sendRaw(char* data, size_t len);
     virtual int receive(char* buf, uint8_t len);
     virtual uint8_t receive();
@@ -259,6 +291,7 @@ class RTHP {
     int send(int chip, uint16_t addr, uint16_t value);
     int sendRaw(char* data, size_t len);
     int sendInfo(DivSong* s);
+    int sendParam(uint8_t param, uint8_t value);
     int dumpSamples();
     RTHP();
     ~RTHP();
