@@ -62,3 +62,4 @@ extern const FurnaceGUIColors fxColorsSort[10];
 extern const char* fxColorsNames[10];
 extern const char* rthpImplementationNames[];
 extern const char* rthpImplFlagNames[];
+extern const char* rthpPacketNames[];

@@ -112,6 +112,7 @@ void FurnaceGUI::drawRthpControl() {
         rthp->init(currentRTHPDevice,rthpRate,rthpTimeout);
         rthp->scanWhitelist(&(e->song),dumpedChip);
         rthp->sendInfo(&(e->song));
+        rthp->setPacketType(rthpPacket);
       }
     }
     ImGui::EndDisabled();
@@ -144,7 +145,19 @@ void FurnaceGUI::drawRthpControl() {
           }
         }
       }
-      rthp->setPacketType(RTHP_PACKET_SHORT);
+      // rthp->setPacketType(RTHP_PACKET_SHORT);
+      if (ImGui::BeginCombo("Packet",rthpPacketNames[rthpPacket])) {
+        for (int i=0; i<RTHP_PACKET_MAX;i++) {
+          if (ImGui::Selectable(rthpPacketNames[i],rthpPacket==i)) {
+            rthpPacket=i;
+            rthp->setPacketType(rthpPacket);
+          }
+        }
+        ImGui::EndCombo();
+      }
+      if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("make sure your device supports the selected packet!");
+      }
     }
     if (ImGui::Button("reset")) {
       rthp->reset();

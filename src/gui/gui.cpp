@@ -8233,7 +8233,8 @@ FurnaceGUI::FurnaceGUI():
   rthpRate(0),
   rthpTimeout(0),
   currentRTHPDevice(0),
-  dumpedChip(0) {
+  dumpedChip(0),
+  rthpPacket(1) {
   // value keys
   valueKeys[SDLK_0]=0;
   valueKeys[SDLK_1]=1;

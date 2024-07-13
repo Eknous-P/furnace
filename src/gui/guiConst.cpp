@@ -138,6 +138,12 @@ const char* rthpImplFlagNames[]={
   "Can send legacy packet (RTHPPacketLegacy)"
 };
 
+const char* rthpPacketNames[]={
+  "Legacy",
+  "Short",
+  "Long"
+};
+
 // name, icon, letter icon
 const char* insTypes[DIV_INS_MAX+1][3]={
   {"SN76489/Sega PSG",ICON_FA_BAR_CHART,ICON_FUR_INS_STD},
