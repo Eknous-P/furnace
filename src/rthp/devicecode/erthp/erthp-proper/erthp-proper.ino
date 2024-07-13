@@ -11,15 +11,18 @@
 #ifdef USE_DISPLAY
 #include <OneBitDisplay.h>
 
-// the pin for the display mode button (pullup)
-#define BTN_PIN 6
 // the display type (see OneBitDisplay.h, line 76)
 #define DISP_TYPE OLED_128x32
 
 OBDISP disp;
 bool dispInit;
+String info[2];
 
-int displayMode=0;
+uint8_t displayMode=0;
+
+void volumeBar(uint8_t x, uint8_t v) {
+  obdRectangle(&disp,1+x,16-v,6+x,16,0,1);
+}
 
 #endif
 
@@ -30,10 +33,10 @@ int displayMode=0;
 #define YM_IC 8
 #define YM_AO 9
 // SN74HC595N pins
-#define SN_SER 2
-#define SN_OE 3
-#define SN_RCLK 4
-#define SN_SRCLK 5
+#define SN_SER 3
+#define SN_OE 4
+#define SN_RCLK 5
+#define SN_SRCLK 6
 
 // serial available data
 int avail=0;
@@ -41,7 +44,7 @@ int avail=0;
 String buffer;
 int bufIdx;
 // YM2413 registers
-uint8_t regPool[0x3f];
+uint8_t regPool[0x40];
 
 #define PW(p,v) digitalWrite(p,v);
 
@@ -80,9 +83,12 @@ void writeYM(uint8_t a,uint8_t d) {
 
 int err;
 
-uint8_t addr, data;
+uint8_t key2;
+uint8_t addr, data, param;
+bool running;
 
 void setup() {
+  running=false;
   Serial.begin(SERIAL_BAUD);
   Serial.setTimeout(10);
 #ifdef USE_DISPLAY
@@ -97,7 +103,6 @@ void setup() {
   } else {
     Serial.println("failed to initialize display!");
   }
-  pinMode(BTN_PIN,INPUT_PULLUP);
 #endif
   pinMode(YM_CS,OUTPUT);
   pinMode(YM_IC,OUTPUT);
@@ -110,17 +115,22 @@ void setup() {
 
   resetYM();
   bufIdx=0;
-  memset(regPool,0,0x3f);
+  memset(regPool,0,0x40);
+  param=0;
+  key2=0;
 
 }
 
 void loop() {
   if (Serial.available()>0) {
+    running=true;
     avail=Serial.available();
     buffer = Serial.readString();
     if ((uint8_t)buffer[0] == 0xff) {
-      Serial.println("packet detected");
-      switch ((uint8_t)buffer[1]) {
+      Serial.print("packet detected: ");
+      key2=(uint8_t)buffer[1];
+      Serial.println(key2);
+      switch (key2) {
         case 0xf0: // RTHPPacketShort
           Serial.print("short packet: ");
           for (int i=2;i<buffer.length();i+=4) {
@@ -130,30 +140,80 @@ void loop() {
             Serial.print(":");
             Serial.println(data);
             writeYM(addr,data);
+            regPool[addr&0x3f] = data;
           }
           break;
+
         case 0xf7: // RTHPPacketInfo
           Serial.print("info packet: ");
-          if (displayMode != 0) break;
-          obdFill(&disp,0,1);
+#ifdef USE_DISPLAY
           String a;
           uint8_t y=0;
+          uint8_t iter=0;
           for (int i=2; i<buffer.length();i++) {
             if ((uint8_t)buffer[i] == 0xff) {
-              obdWriteString(&disp,0,0,y,(char*)a.c_str(),FONT_6x8,1,1);
+              info[iter]=a;
               Serial.print(a);
               y+=8;
               a="";
+              iter++;
             } else {
               a+=buffer[i];
             }
           }
+          if (displayMode == 0) refreshDisplay();
+#endif
           Serial.println();
+          break;
+
+        case 245: // RTHPPacketParameter
+          Serial.print("param packet: ");
+          param = (uint8_t)buffer[2];
+          Serial.println(param);
+          switch (param) {
+#ifdef USE_DISPLAY
+            case 0: //display mode
+              Serial.print("display mode: ");
+              displayMode = (uint8_t)buffer[3];
+              Serial.print(displayMode);
+              refreshDisplay();
+              break;
+#endif
+            default: break;
+          }
+          Serial.println();
+          break;
+
+        default:
+          Serial.println((uint8_t)buffer[1]);
+          break;
       }
-    } else {
+    }
+    else {
       Serial.println(buffer);
     }
 
   }
-
 }
+#ifdef USE_DISPLAY
+void refreshDisplay() {
+  if (running) {
+    Serial.println(displayMode);
+    obdFill(&disp,0,1);
+    switch (displayMode) {
+      case 0:
+        obdWriteString(&disp,0,0,0,(char*)info[0].c_str(),FONT_6x8,1,1);
+        obdWriteString(&disp,0,0,8,(char*)info[1].c_str(),FONT_6x8,1,1);
+      case 1:
+        uint8_t vol;
+        for (uint8_t i=0; i<9;i++) {
+          vol=regPool[0x30+i]&0xf;
+          volumeBar(i*8,vol);
+        }
+        break;
+      default: break;
+    }
+  }
+}
+#endif
+
