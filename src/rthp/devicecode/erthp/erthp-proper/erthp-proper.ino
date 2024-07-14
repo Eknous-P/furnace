@@ -130,75 +130,63 @@ void loop() {
       Serial.print("packet detected: ");
       key2=(uint8_t)buffer[1];
       Serial.println(key2);
-      switch (key2) {
-        case 0xf0: // RTHPPacketShort
-          Serial.print("short packet: ");
-          for (int i=2;i<buffer.length();i+=4) {
-            addr = buffer[i];
-            data = buffer[i+1];
-            Serial.print(addr);
-            Serial.print(":");
-            Serial.println(data);
-            writeYM(addr,data);
-            regPool[addr&0x3f] = data;
-          }
-          break;
-
-        case 0xf7: // RTHPPacketInfo
-          Serial.print("info packet: ");
+      if (key2 == 0xf0) {
+        Serial.print("short packet: ");
+        for (int i=2;i<buffer.length();i+=4) {
+          addr = buffer[i];
+          data = buffer[i+1];
+          Serial.print(addr);
+          Serial.print(":");
+          Serial.println(data);
+          writeYM(addr,data);
+          regPool[addr&0x3f] = data;
+        }
+      } else if (key2 == 0xf7) {
+        Serial.print("info packet: ");
 #ifdef USE_DISPLAY
-          String a;
-          uint8_t y=0;
-          uint8_t iter=0;
-          for (int i=2; i<buffer.length();i++) {
-            if ((uint8_t)buffer[i] == 0xff) {
-              info[iter]=a;
-              Serial.print(a);
-              y+=8;
-              a="";
-              iter++;
-            } else {
-              a+=buffer[i];
-            }
+        String a;
+        uint8_t y=0;
+        uint8_t iter=0;
+        for (int i=2; i<buffer.length();i++) {
+          if ((uint8_t)buffer[i] == 0xff) {
+            info[iter]=a;
+            Serial.print(a);
+            y+=8;
+            a="";
+            iter++;
+          } else {
+            a+=buffer[i];
           }
-          if (displayMode == 0) refreshDisplay();
+        }
+        if (displayMode == 0) refreshDisplay();
 #endif
-          Serial.println();
-          break;
-
-        case 245: // RTHPPacketParameter
-          Serial.print("param packet: ");
-          param = (uint8_t)buffer[2];
-          Serial.println(param);
-          switch (param) {
+        Serial.println();
+      } else if (key2 == 245) {
+        Serial.print("param packet: ");
+        param = (uint8_t)buffer[2];
+        Serial.println(param);
+        switch (param) {
 #ifdef USE_DISPLAY
-            case 0: //display mode
-              Serial.print("display mode: ");
-              displayMode = (uint8_t)buffer[3];
-              Serial.print(displayMode);
-              refreshDisplay();
-              break;
+          case 0x7f: //display mode
+            Serial.print("display mode: ");
+            displayMode = (uint8_t)buffer[3];
+            Serial.print(displayMode);
+            refreshDisplay();
+            break;
 #endif
-            default: break;
-          }
-          Serial.println();
-          break;
-
-        default:
-          Serial.println((uint8_t)buffer[1]);
-          break;
+          default: break;
+        }
+        Serial.println();
+      } else {
+        Serial.print(buffer);
       }
     }
-    else {
-      Serial.println(buffer);
-    }
-
   }
 }
 #ifdef USE_DISPLAY
 void refreshDisplay() {
   if (running) {
-    Serial.println(displayMode);
+    // Serial.println(displayMode);
     obdFill(&disp,0,1);
     switch (displayMode) {
       case 0:

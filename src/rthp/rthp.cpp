@@ -173,12 +173,17 @@ int RTHP::sendRaw(char* data, size_t len) {
 
 int RTHP::sendInfo(DivSong* s) {
   if (!i) return RTHP_ERROR;
-  if ((i->getInfo().flags&RTHPIMPLFLAGS_USEINFOPACKET)==0) return RTHP_CANNOTDUMP;
+  if ((i->getInfo().flags&RTHPIMPLFLAGS_USEINFOPACKET)==0) return RTHP_ERROR;
   return i->sendPacket(RTHPPacketInfo(s->name,s->author));
 }
 
 int RTHP::sendParam(uint8_t param, uint8_t value) {
   if (!i) return RTHP_ERROR;
   if ((i->getInfo().customParamCount)<=param) return RTHP_ERROR;
-  return i->sendPacket(RTHPPacketParameter(param,value));
+  return i->sendPacket(RTHPPacketParameter(param+0x7f,value));
+  // why +0x7f? well...
+  // 0x00 IS A STRING TERMINATOR, SO I REDUCED HTE NUMBER OF PARAMETERS TO 128
+  // AND THE PARAMETERS WILL BE IN RANGE 0x7F-0xFF
+
+  // MAKE SURE TO OFFSET YOUR PARAMETES IN YOUR DEVICES BY 128!!!!!!!!!!!!!
 }

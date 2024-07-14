@@ -164,7 +164,7 @@ void FurnaceGUI::drawRthpControl() {
           if (ImGui::InputInt(rthp->getImplInfo().customParamNames[i],&value,1,16)) {
             if (value<0) value=0;
             if (value>255) value=255;
-            customParamValues[i]=value&0xff;
+            customParamValues[i]=value;
             if (rthp->sendParam((uint8_t)i,(uint8_t)customParamValues[i])!=RTHP_SUCCESS) logE("RTHP: parameter send failed!");
           }
         }
