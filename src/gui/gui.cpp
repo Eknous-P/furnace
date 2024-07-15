@@ -4290,6 +4290,19 @@ bool FurnaceGUI::loop() {
               ImGui::EndMenu();
             }
           }
+          bool hasTiunaCompat=false;
+          for (int i=0; i<e->song.systemLen; i++) {
+            if (e->song.system[i]==DIV_SYSTEM_TIA) {
+              hasTiunaCompat=true;
+              break;
+            }
+          }
+          if (hasTiunaCompat) {
+            if (ImGui::BeginMenu(_("export TIunA..."))) {
+              drawExportTiuna();
+              ImGui::EndMenu();
+            }
+          }
           int numAmiga=0;
           for (int i=0; i<e->song.systemLen; i++) {
             if (e->song.system[i]==DIV_SYSTEM_AMIGA) numAmiga++;
@@ -4328,6 +4341,19 @@ bool FurnaceGUI::loop() {
           if (numZSMCompat>0) {
             if (ImGui::MenuItem(_("export ZSM..."))) {
               curExportType=GUI_EXPORT_ZSM;
+              displayExport=true;
+            }
+          }
+          bool hasTiunaCompat=false;
+          for (int i=0; i<e->song.systemLen; i++) {
+            if (e->song.system[i]==DIV_SYSTEM_TIA) {
+              hasTiunaCompat=true;
+              break;
+            }
+          }
+          if (hasTiunaCompat) {
+            if (ImGui::MenuItem(_("export TIunA..."))) {
+              curExportType=GUI_EXPORT_TIUNA;
               displayExport=true;
             }
           }
