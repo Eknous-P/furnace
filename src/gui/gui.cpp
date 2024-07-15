@@ -2262,6 +2262,7 @@ int FurnaceGUI::save(String path, int dmfVersion) {
 
 int FurnaceGUI::load(String path) {
   bool wasPlaying=e->isPlaying();
+  e->stop();
   if (!path.empty()) {
     logI("loading module...");
     FILE* f=ps_fopen(path.c_str(),"rb");

@@ -146,6 +146,7 @@ void FurnaceGUI::drawRthpControl() {
         }
       }
       // rthp->setPacketType(RTHP_PACKET_SHORT);
+      ImGui::BeginDisabled(e->isPlaying());
       if (ImGui::BeginCombo("Packet",rthpPacketNames[rthpPacket])) {
         for (int i=0; i<RTHP_PACKET_MAX;i++) {
           if (ImGui::Selectable(rthpPacketNames[i],rthpPacket==i)) {
@@ -169,6 +170,7 @@ void FurnaceGUI::drawRthpControl() {
           }
         }
       }
+      ImGui::EndDisabled();
     }
     if (ImGui::Button("reset")) {
       rthp->reset();

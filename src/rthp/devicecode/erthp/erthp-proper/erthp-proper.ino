@@ -13,6 +13,7 @@
 
 // the display type (see OneBitDisplay.h, line 76)
 #define DISP_TYPE OLED_128x32
+uint8_t ucBackBuffer[512];
 
 OBDISP disp;
 bool dispInit;
@@ -20,8 +21,9 @@ String info[2];
 
 uint8_t displayMode=0;
 
-void volumeBar(uint8_t x, uint8_t v) {
-  obdRectangle(&disp,1+x,16-v,6+x,16,0,1);
+void volumeBar(uint8_t x, uint8_t v, OBDISP* d) {
+  obdRectangle(d,1+x,16-v,6+x,16,1,1);
+  obdDumpBuffer(d,NULL);
 }
 
 #endif
@@ -100,6 +102,7 @@ void setup() {
     obdWriteString(&disp,0,0,8,(char*)"waiting...",FONT_6x8,1,1);
     Serial.println("initialized, waiting...");
     dispInit = true;
+   obdSetBackBuffer(&disp, ucBackBuffer);
   } else {
     Serial.println("failed to initialize display!");
   }
@@ -141,6 +144,9 @@ void loop() {
           writeYM(addr,data);
           regPool[addr&0x3f] = data;
         }
+#ifdef USE_DISPLAY
+        if (displayMode == 1) refreshDisplay();
+#endif
       } else if (key2 == 0xf7) {
         Serial.print("info packet: ");
 #ifdef USE_DISPLAY
@@ -158,6 +164,8 @@ void loop() {
             a+=buffer[i];
           }
         }
+        // assume new song has been loaded
+        memset(regPool,0,0x40);
         if (displayMode == 0) refreshDisplay();
 #endif
         Serial.println();
@@ -192,11 +200,13 @@ void refreshDisplay() {
       case 0:
         obdWriteString(&disp,0,0,0,(char*)info[0].c_str(),FONT_6x8,1,1);
         obdWriteString(&disp,0,0,8,(char*)info[1].c_str(),FONT_6x8,1,1);
+        break;
       case 1:
         uint8_t vol;
         for (uint8_t i=0; i<9;i++) {
           vol=regPool[0x30+i]&0xf;
-          volumeBar(i*8,vol);
+          vol=0xf-vol;
+          volumeBar(i*8,vol,&disp);
         }
         break;
       default: break;
