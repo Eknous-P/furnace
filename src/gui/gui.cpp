@@ -1959,6 +1959,15 @@ void FurnaceGUI::openFileDialog(FurnaceGUIFileDialogs type) {
         dpiScale
       );
       break;
+    case GUI_FILE_EXPORT_M64:
+      if (!dirExists(workingDirROMExport)) workingDirROMExport=getHomeDir();
+      hasOpened=fileDialog->openSave(
+        "Export .m64",
+        {".m64 sequence files", "*.m64"},
+        workingDirROMExport,
+        dpiScale
+      );
+      break;
     case GUI_FILE_EXPORT_TEXT:
       if (!dirExists(workingDirROMExport)) workingDirROMExport=getHomeDir();
       hasOpened=fileDialog->openSave(
@@ -4318,6 +4327,20 @@ bool FurnaceGUI::loop() {
               ImGui::EndMenu();
             }
           }
+          int numPCMChans=0;
+          for (int i=0; i<e->song.systemLen; i++) {
+            for (int j=0; j<e->getSystemDef(e->song.system[i])->channels; j++) {
+              if (e->getSystemDef(e->song.system[i])->chanTypes[j] == DIV_CH_PCM) {
+                numPCMChans++;
+              }
+            }
+          }
+          if (numPCMChans>0 && e->song.systemLen == 1) { // limit to a single pcm chip
+            if (ImGui::BeginTabItem("M64")) {
+              drawExportM64(true);
+              ImGui::EndTabItem();
+            }
+          }
           int numAmiga=0;
           for (int i=0; i<e->song.systemLen; i++) {
             if (e->song.system[i]==DIV_SYSTEM_AMIGA) numAmiga++;
@@ -4966,6 +4989,7 @@ bool FurnaceGUI::loop() {
           break;
         case GUI_FILE_EXPORT_ROM:
         case GUI_FILE_EXPORT_TIUNA:
+        case GUI_FILE_EXPORT_M64:
         case GUI_FILE_EXPORT_TEXT:
         case GUI_FILE_EXPORT_CMDSTREAM:
           workingDirROMExport=fileDialog->getPath()+DIR_SEPARATOR_STR;
@@ -5540,6 +5564,10 @@ bool FurnaceGUI::loop() {
               } else {
                 showError(fmt::sprintf("Could not write TIunA! (%s)",e->getLastError()));
               }
+              break;
+            }
+            case GUI_FILE_EXPORT_M64: {
+              // TODO
               break;
             }
             case GUI_FILE_EXPORT_ROM:

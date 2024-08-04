@@ -311,6 +311,23 @@ void FurnaceGUI::drawExportTiuna(bool onWindow) {
   }
 }
 
+void FurnaceGUI::drawExportM64(bool onWindow) {
+  exitDisabledTimer=1;
+  ImGui::Text(_("export .m64 sequence. for use with SM64 decomp"));
+
+  ImGui::Text("--export params here--");
+
+  if (onWindow) {
+    ImGui::Separator();
+    if (ImGui::Button(_("Cancel"),ImVec2(200.0f*dpiScale,0))) ImGui::CloseCurrentPopup();
+    ImGui::SameLine();
+  }
+  if (ImGui::Button(_("Export"),ImVec2(200.0f*dpiScale,0))) {
+    openFileDialog(GUI_FILE_EXPORT_M64);
+    ImGui::CloseCurrentPopup();
+  }
+}
+
 void FurnaceGUI::drawExportAmigaVal(bool onWindow) {
   exitDisabledTimer=1;
 
@@ -447,6 +464,20 @@ void FurnaceGUI::drawExport() {
           ImGui::EndTabItem();
         }
       }
+      int numPCMChans=0;
+      for (int i=0; i<e->song.systemLen; i++) {
+        for (int j=0; j<e->getSystemDef(e->song.system[i])->channels; j++) {
+          if (e->getSystemDef(e->song.system[i])->chanTypes[j] == DIV_CH_PCM) {
+            numPCMChans++;
+          }
+        }
+      }
+      if (numPCMChans>0 && e->song.systemLen == 1) { // limit to a single pcm chip
+        if (ImGui::BeginTabItem("M64")) {
+          drawExportM64(true);
+          ImGui::EndTabItem();
+        }
+      }
       int numAmiga=0;
       for (int i=0; i<e->song.systemLen; i++) {
         if (e->song.system[i]==DIV_SYSTEM_AMIGA) numAmiga++;
@@ -483,6 +514,9 @@ void FurnaceGUI::drawExport() {
       break;
     case GUI_EXPORT_TIUNA:
       drawExportTiuna(true);
+      break;
+    case GUI_EXPORT_M64:
+      drawExportM64(true);
       break;
     case GUI_EXPORT_AMIGA_VAL:
       drawExportAmigaVal(true);
