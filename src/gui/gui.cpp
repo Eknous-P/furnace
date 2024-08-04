@@ -4395,6 +4395,20 @@ bool FurnaceGUI::loop() {
               displayExport=true;
             }
           }
+          int numPCMChans=0;
+          for (int i=0; i<e->song.systemLen; i++) {
+            for (int j=0; j<e->getSystemDef(e->song.system[i])->channels; j++) {
+              if (e->getSystemDef(e->song.system[i])->chanTypes[j] == DIV_CH_PCM) {
+                numPCMChans++;
+              }
+            }
+          }
+          if (numPCMChans>0 && e->song.systemLen == 1) { // limit to a single pcm chip
+            if (ImGui::MenuItem(_("export M64"))) {
+              curExportType=GUI_EXPORT_M64;
+              displayExport=true;
+            }
+          }
           int numAmiga=0;
           for (int i=0; i<e->song.systemLen; i++) {
             if (e->song.system[i]==DIV_SYSTEM_AMIGA) numAmiga++;
@@ -5088,6 +5102,9 @@ bool FurnaceGUI::loop() {
           if (curFileDialog==GUI_FILE_EXPORT_ZSM) {
             checkExtension(".zsm");
           }
+          if (curFileDialog==GUI_FILE_EXPORT_M64) {
+            checkExtension(".m64");
+          }
           if (curFileDialog==GUI_FILE_EXPORT_TEXT) {
             checkExtension(".txt");
           }
@@ -5567,7 +5584,24 @@ bool FurnaceGUI::loop() {
               break;
             }
             case GUI_FILE_EXPORT_M64: {
-              // TODO
+              SafeWriter* w=e->saveM64();
+              if (w!=NULL) {
+                FILE* f=ps_fopen(copyOfName.c_str(),"wb");
+                if (f!=NULL) {
+                  fwrite(w->getFinalBuf(),1,w->size(),f);
+                  fclose(f);
+                  pushRecentSys(copyOfName.c_str());
+                } else {
+                  showError(_("could not open file!"));
+                }
+                w->finish();
+                delete w;
+                if (!e->getWarnings().empty()) {
+                  showWarning(e->getWarnings(),GUI_WARN_GENERIC);
+                }
+              } else {
+                showError(fmt::sprintf(_("could not write M64! (%s)"),e->getLastError()));
+              }
               break;
             }
             case GUI_FILE_EXPORT_ROM:
