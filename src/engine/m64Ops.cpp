@@ -47,7 +47,10 @@ SafeWriter* DivEngine::saveM64(unsigned char volumeScale) {
   w->writeS_BE(chanMask); // init channels
 
   w->write("\xdb",1);
-  w->writeC(volumeScale);
+  w->writeC(volumeScale); // set vol scale
+
+  w->write("\xdd",1);
+  w->writeC((unsigned char)(curSubSong->hz*2.5)); // set song tempo
 
   w->write("\xff",1); // end sequence
   
