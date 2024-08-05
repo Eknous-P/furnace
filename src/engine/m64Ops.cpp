@@ -21,7 +21,7 @@
 #include "../fileutils.h"
 #include "../ta-log.h"
 
-SafeWriter* DivEngine::saveM64() {
+SafeWriter* DivEngine::saveM64(unsigned char volumeScale) {
   stop();
   repeatPattern=false;
   shallStop=false;
@@ -36,7 +36,20 @@ SafeWriter* DivEngine::saveM64() {
 
   SafeWriter* w=new SafeWriter;
   w->init();
-  w->write("\xff",1);
+
+  // note to self: .m64 is BIG ENDIAN
+
+  w->write("\xd3\x20",2); // mute behavior -> lower volume
+  w->write("\xd5\x3f",2); // mute mode multiplier -> 3F
+
+  unsigned short chanMask = (1<<getSystemDef(song.system[0])->channels)-1;
+  w->write("\xd7",1);
+  w->writeS_BE(chanMask); // init channels
+
+  w->write("\xdb",1);
+  w->writeC(volumeScale);
+
+  w->write("\xff",1); // end sequence
   
   remainingLoops=-1;
   playing=false;

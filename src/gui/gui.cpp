@@ -5584,7 +5584,7 @@ bool FurnaceGUI::loop() {
               break;
             }
             case GUI_FILE_EXPORT_M64: {
-              SafeWriter* w=e->saveM64();
+              SafeWriter* w=e->saveM64((unsigned char)(m64VolumeScale&0xff));
               if (w!=NULL) {
                 FILE* f=ps_fopen(copyOfName.c_str(),"wb");
                 if (f!=NULL) {
@@ -7943,6 +7943,7 @@ FurnaceGUI::FurnaceGUI():
   asmBaseLabel(""),
   tiunaFirstBankSize(3072),
   tiunaOtherBankSize(4096-48),
+  m64VolumeScale(255),
   macroPointSize(16),
   waveEditStyle(0),
   displayInsTypeListMakeInsSample(-1),

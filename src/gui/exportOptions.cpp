@@ -316,6 +316,7 @@ void FurnaceGUI::drawExportM64(bool onWindow) {
   ImGui::Text(_("export .m64 sequence. for use with SM64 decomp"));
 
   ImGui::Text("--export params here--");
+  ImGui::SliderInt("Volume Scale",&m64VolumeScale,0,255,"%d");
 
   if (onWindow) {
     ImGui::Separator();
