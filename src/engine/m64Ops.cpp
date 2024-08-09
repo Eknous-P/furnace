@@ -21,6 +21,23 @@
 #include "../fileutils.h"
 #include "../ta-log.h"
 
+struct PatternRowCondensed {
+  unsigned char note;
+  unsigned char instrument;
+  unsigned char volume;
+
+  unsigned char nonEmpty;
+  void getPatRow(short* p) {
+    nonEmpty=0;
+    note=(p[0]%12)+12*p[1];
+    instrument=p[2];
+    volume=p[3];
+    nonEmpty|=((p[0]==-1)?1:0<<0)&1;
+    nonEmpty|=((p[2]==-1)?1:0<<1)&1;
+    nonEmpty|=((p[3]==-1)?1:0<<2)&1;
+  }
+};
+
 int getUniquePatternCount(DivEngine* e, int chan) {
   int count=0;
   int chanOrdCount=e->curSubSong->ordersLen;
@@ -102,7 +119,10 @@ SafeWriter* DivEngine::saveM64(unsigned char volumeScale) {
 
     // channel data stuff here
 
-    w->writeC(0xc4); // enable "large notes"
+    // w->writeC(0xc4); // enable "large notes"
+    w->writeC(0xc3); // disable "large notes"
+    w->writeC(0xdf);
+    w->writeC(0x7f); // set chan volume
 
 
     // write temporary layer data pointers
@@ -119,8 +139,31 @@ SafeWriter* DivEngine::saveM64(unsigned char volumeScale) {
       /* layer/track data ~ patterns */
       layerData[j]=w->tell();
 
-      w->writeC(0xc0); 
-      w->writeC(0x1); // temporary 1 tick delay
+      // w->writeC(0xc0); 
+      // w->writeC(0x1); // temporary 1 tick delay
+
+      DivPattern* currPat=curSubSong->pat[i].getPattern((curOrders->ord[i][j]),false);
+      PatternRowCondensed r;
+
+      for (int k=0;k<curSubSong->patLen;k++) {
+        r.getPatRow(currPat->data[k]);
+        if (r.nonEmpty|2) {
+          w->writeC(0xc6);
+          w->writeC(r.instrument); // set ins
+        }
+
+        if (r.nonEmpty|4) {
+          w->writeC(0xc1);
+          w->writeC(r.volume>>1); // set volume
+        }
+
+        if (r.nonEmpty|1) {
+          w->writeC(0x27); //note
+          w->writeC(0x80);
+          w->writeC(0xc0); // play percentage... whatever that is
+        }
+
+      }
 
       w->writeC(0xff);
     }
