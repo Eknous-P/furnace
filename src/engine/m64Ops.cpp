@@ -21,6 +21,29 @@
 #include "../fileutils.h"
 #include "../ta-log.h"
 
+int getUniquePatternCount(DivEngine* e, int chan) {
+  int count=0;
+  int chanOrdCount=e->curSubSong->ordersLen;
+  std::vector<unsigned char> ords;
+  for (int i=0; i<chanOrdCount; i++) {
+    bool have=false;
+    //find if already found
+    for (unsigned char j:ords) {
+      if (e->curOrders->ord[chan][i] == j) {
+        have=true;
+        break;
+      }
+    }
+    if (!have) {
+      ords.push_back(i);
+      count++;
+    }
+      
+  }
+  ords.clear();
+  return count;
+}
+
 SafeWriter* DivEngine::saveM64(unsigned char volumeScale) {
   stop();
   repeatPattern=false;
@@ -66,13 +89,58 @@ SafeWriter* DivEngine::saveM64(unsigned char volumeScale) {
     w->writeS_BE(0); // pad with 0s
   }
 
-  /* channel data ~ orders*/
+  w->writeC(0xff); // end sequence
+
+  /* channel data ~ orders */
 
   for (unsigned char i=0; i<channels; i++) {
-    chanData[i] = w->tell()+1;
+    chanData[i]=w->tell();
+    
+    unsigned char layerCount=getUniquePatternCount(this,i);
+    unsigned short* layerData=new unsigned short[layerCount];
+    unsigned short* layerDataBegin=new unsigned short[layerCount];
+
+    // channel data stuff here
+
+    w->writeC(0xc4); // enable "large notes"
+
+
+    // write temporary layer data pointers
+
+    for (unsigned char j=0; j<layerCount; j++) {
+      layerDataBegin[j]=w->tell();
+      w->writeC(0x90+j);
+      w->writeS_BE(0);
+    }
+
+    w->writeC(0xff);
+
+    for (unsigned char j=0; j<layerCount; j++) {
+      /* layer/track data ~ patterns */
+      layerData[j]=w->tell();
+
+      w->writeC(0xc0); 
+      w->writeC(0x1); // temporary 1 tick delay
+
+      w->writeC(0xff);
+    }
+
+
+
+    /* rewrite layer data pointers */
+
+    for (unsigned char j=0; j<channels; j++) {
+      w->seek(layerDataBegin[j],SEEK_SET);
+      w->writeC(0x90+j);
+      w->writeS_BE(layerData[j]);
+    }
+
+    delete[] layerData;
+    delete[] layerDataBegin;
+    layerData=NULL;
   }
 
-  /* layer/track data ~ patterns*/
+  
 
 
   /* rewrite channel data pointers */
@@ -83,8 +151,6 @@ SafeWriter* DivEngine::saveM64(unsigned char volumeScale) {
     w->writeC(0x90+i);
     w->writeS_BE(chanData[i]);
   }
-
-  w->writeC(0xff); // end sequence
 
   delete[] chanData;
   chanData=NULL;
