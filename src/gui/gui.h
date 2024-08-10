@@ -2753,8 +2753,6 @@ class FurnaceGUI {
 
   void sameLineMaybe(float width=-1.0f);
 
-  float calcBPM(const DivGroovePattern& speeds, float hz, int vN, int vD);
-
   void patternRow(int i, bool isPlaying, float lineHeight, int chans, int ord, const DivPattern** patCache, bool inhibitSel);
 
   void drawMacroEdit(FurnaceGUIMacroDesc& i, int totalFit, float availableWidth, int index);

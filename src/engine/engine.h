@@ -959,6 +959,9 @@ class DivEngine {
     short getVirtualTempoN();
     short getVirtualTempoD();
 
+    // get BPM
+    float calcBPM();
+
     // tell engine about virtual tempo changes
     void virtualTempoChanged();
 

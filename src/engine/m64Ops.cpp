@@ -98,7 +98,7 @@ SafeWriter* DivEngine::saveM64(unsigned char volumeScale) {
   w->writeC(volumeScale); // set vol scale
 
   w->writeC(0xdd);
-  w->writeC((unsigned char)(curSubSong->hz*2.5)); // set song tempo
+  w->writeC((unsigned char)calcBPM()); // set song tempo
   chanDataBegin = w->tell();
   // write temporary channel data pointers
   for (unsigned char i=0; i<channels; i++) {
