@@ -315,8 +315,15 @@ void FurnaceGUI::drawExportM64(bool onWindow) {
   exitDisabledTimer=1;
   ImGui::Text(_("export .m64 sequence. for use with SM64 decomp"));
 
-  ImGui::Text("--export params here--");
+  ImGui::Text("Mute Behavior:");
+  ImGui::Indent();
+  bool muteBhv[3]={(m64MuteBhv&0x20)!=0,(m64MuteBhv&0x40)!=0,(m64MuteBhv&0x80)!=0};
+  if (ImGui::Checkbox("Lower volume",&muteBhv[0])) m64MuteBhv^=0x20;
+  if (ImGui::Checkbox("Do something to layers (?)",&muteBhv[1])) m64MuteBhv^=0x40;
+  if (ImGui::Checkbox("Pause sequence",&muteBhv[2])) m64MuteBhv^=0x80;
+  ImGui::Unindent();
   ImGui::SliderInt("Volume Scale",&m64VolumeScale,0,255,"%d");
+  ImGui::SliderInt("Volume Scale (muted)",&m64MuteVolMult,0,127,"%d");
 
   if (onWindow) {
     ImGui::Separator();

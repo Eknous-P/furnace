@@ -1638,6 +1638,8 @@ class FurnaceGUI {
   String asmBaseLabel;
   int tiunaFirstBankSize;
   int tiunaOtherBankSize;
+  int m64MuteBhv;
+  int m64MuteVolMult;
   int m64VolumeScale;
   int macroPointSize;
   int waveEditStyle;

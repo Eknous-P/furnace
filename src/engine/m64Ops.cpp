@@ -61,7 +61,7 @@ int getUniquePatternCount(DivEngine* e, int chan) {
   return count;
 }
 
-SafeWriter* DivEngine::saveM64(unsigned char volumeScale) {
+SafeWriter* DivEngine::saveM64(unsigned char muteBhv, unsigned char volumeScale, unsigned char muteVolScale) {
   stop();
   repeatPattern=false;
   shallStop=false;
@@ -86,9 +86,10 @@ SafeWriter* DivEngine::saveM64(unsigned char volumeScale) {
 
   /* .m64 "header"? (sequence data ~ global setup) */
 
-  // maybe make these a param?
-  w->write("\xd3\x20",2); // mute behavior -> lower volume
-  w->write("\xd5\x3f",2); // mute mode multiplier -> 3F
+  w->writeC(0xd3); // mute behavior
+  w->writeC(muteBhv);
+  w->writeC(0xd5); // mute volume scale
+  w->writeC(muteVolScale);
 
   unsigned short chanMask = (1<<channels)-1;
   w->writeC(0xd7);

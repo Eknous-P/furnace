@@ -711,7 +711,7 @@ class DivEngine {
     // dump to TIunA.
     SafeWriter* saveTiuna(const bool* sysToExport, const char* baseLabel, int firstBankSize, int otherBankSize);
     // dump (?) .m64 sequence
-    SafeWriter* saveM64(unsigned char volumeScale);
+    SafeWriter* saveM64(unsigned char muteBhv, unsigned char volumeScale, unsigned char muteVolScale);
     // dump command stream.
     SafeWriter* saveCommand();
     // export to text
