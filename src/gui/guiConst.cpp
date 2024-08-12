@@ -1401,7 +1401,7 @@ const int chipsInaccessible[] = {
   DIV_SYSTEM_YM2610_CSM,
   DIV_SYSTEM_YM2610B_CSM,
   DIV_SYSTEM_YM2203_CSM,
-  DIV_SYSTEM_YM2608_CSM,s
+  DIV_SYSTEM_YM2608_CSM,
   0 // don't remove this last one!
 };
 
