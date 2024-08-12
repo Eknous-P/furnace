@@ -354,7 +354,7 @@ int DivEngine::minVGMVersion(DivSystem which) {
 }
 
 #define IS_YM2610 (sysOfChan[ch]==DIV_SYSTEM_YM2610 || sysOfChan[ch]==DIV_SYSTEM_YM2610_EXT || sysOfChan[ch]==DIV_SYSTEM_YM2610_FULL || sysOfChan[ch]==DIV_SYSTEM_YM2610_FULL_EXT || sysOfChan[ch]==DIV_SYSTEM_YM2610B || sysOfChan[ch]==DIV_SYSTEM_YM2610B_EXT)
-#define IS_OPM_LIKE (sysOfChan[ch]==DIV_SYSTEM_YM2151 || sysOfChan[ch]==DIV_SYSTEM_OPZ)
+#define IS_OPM_LIKE (sysOfChan[ch]==DIV_SYSTEM_YM2151 || sysOfChan[ch]==DIV_SYSTEM_OPZ || sysOfChan[ch]==DIV_SYSTEM_SS16)
 
 #define OP_EFFECT_MULTI(x,c,op,mask) \
   case x: \
@@ -1287,6 +1287,20 @@ void DivEngine::registerSystems() {
     },
     fmOPZPostEffectHandlerMap
   );
+
+  sysDefs[DIV_SYSTEM_SS16] = new DivSysDef(
+      _("Garem SS16"), NULL, 0x98, 0, 8, true, false, 0, false, 0, 0, 0,
+      _("OPZ-like chip, except also has OPL3 and a few exclusive waveforms.\nAlso provides 14 FM and 10 PCM channels and 4MiB of sample RAM for them."),
+      { _("FM 1"), _("FM 2"), _("FM 3"), _("FM 4"), _("FM 5"), _("FM 6"), _("FM 7"), _("FM 8"), _("FM 9"), _("FM 10"), _("FM 11"), _("FM 12"), _("FM 13"), _("FM 14") },
+      { "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12", "F13", "F14" },
+      { DIV_CH_FM, DIV_CH_FM, DIV_CH_FM, DIV_CH_FM, DIV_CH_FM, DIV_CH_FM, DIV_CH_FM, DIV_CH_FM },
+      { DIV_INS_SS16, DIV_INS_SS16, DIV_INS_SS16, DIV_INS_SS16, DIV_INS_SS16, DIV_INS_SS16, DIV_INS_SS16, DIV_INS_SS16 ,DIV_INS_SS16, DIV_INS_SS16, DIV_INS_SS16, DIV_INS_SS16, DIV_INS_SS16, DIV_INS_SS16, },
+      {},
+    {
+      {0x2f, {DIV_CMD_FM_HARD_RESET, _("2Fxx: Toggle hard envelope reset on new notes")}},
+    },
+    fmOPZPostEffectHandlerMap
+    );
 
   sysDefs[DIV_SYSTEM_POKEMINI]=new DivSysDef(
     _("Pokémon Mini"), NULL, 0x99, 0, 1, false, true, 0, false, 0, 0, 0,
