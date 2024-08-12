@@ -878,6 +878,12 @@ void FurnaceGUI::drawWaveform(unsigned char type, bool opz, const ImVec2& size) 
                 waveform[i] = ImLerp(rect.Min, rect.Max, ImVec2(x, 0.5 - y * 0.4));
             }
             break;
+        case 8:
+            for (size_t i = 0; i <= waveformLen; i++) {
+                float x = (float)i / (float)waveformLen;
+                float y = fabs(sin(x * 2.0 * M_PI));
+                waveform[i] = ImLerp(rect.Min, rect.Max, ImVec2(x, 0.5 - y * 0.4));
+            }
         }
     } else {
       switch (type) {
