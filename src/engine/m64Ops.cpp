@@ -124,6 +124,9 @@ SafeWriter* DivEngine::saveM64(unsigned char muteBhv, unsigned char volumeScale,
     // w->writeC(0xc3); // disable "large notes"
     w->writeC(0xdf);
     w->writeC(0x7f); // set chan volume
+  
+    w->writeC(0xc1);
+    w->writeC(0x00); // ins
 
 
     // write temporary layer data pointers
@@ -165,8 +168,6 @@ SafeWriter* DivEngine::saveM64(unsigned char muteBhv, unsigned char volumeScale,
       //   }
 
       // }
-      w->writeC(0xc6);
-      w->writeC(0x00); // ins
       w->writeC(0xc1);
       w->writeC(0x7f); // vol
       w->writeC(0x27); // note
