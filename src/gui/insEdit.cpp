@@ -206,6 +206,25 @@ const char* opzWaveforms[8]={
   _N("Squished AbsTriangle")
 };
 
+const char* ss16Waveforms[16] = {
+  _N("Sine"),
+  _N("Triangle"),
+  _N("Cut Sine"),
+  _N("Cut Triangle"),
+  _N("Squished Sine"),
+  _N("Squished Triangle"),
+  _N("Squished AbsSine"),
+  _N("Squished AbsTriangle"),
+  _N("Absolute Sine"),
+  _N("Quarter Sine"),
+  _N("Quarter AbsSine"),
+  _N("Quarter Triangle"),
+  _N("Quarter AbsTriangle"),
+  _N("Derived Square"),
+  _N("Absolure Derived Square"),
+  _N("Test Wave")
+};
+
 const char* oplDrumNames[4]={
   _N("Snare"),
   _N("Tom"),
@@ -800,66 +819,94 @@ void FurnaceGUI::drawWaveform(unsigned char type, bool opz, const ImVec2& size) 
   if (ImGui::ItemAdd(rect,ImGui::GetID("wsDisplay"))) {
     ImGui::RenderFrame(rect.Min,rect.Max,ImGui::GetColorU32(ImGuiCol_FrameBg),true,style.FrameRounding);
     if (opz) {
-      switch (type) {
+        switch (type) {
         case 0:
-          for (size_t i=0; i<=waveformLen; i++) {
-            float x=(float)i/(float)waveformLen;
-            float y=sin(x*2.0*M_PI);
-            waveform[i]=ImLerp(rect.Min,rect.Max,ImVec2(x,0.5-y*0.4));
-          }
-          break;
+            for (size_t i = 0; i <= waveformLen; i++) {
+                float x = (float)i / (float)waveformLen;
+                float y = sin(x * 2.0 * M_PI);
+                waveform[i] = ImLerp(rect.Min, rect.Max, ImVec2(x, 0.5 - y * 0.4));
+            }
+            break;
         case 1:
-          for (size_t i=0; i<=waveformLen; i++) {
-            float x=(float)i/(float)waveformLen;
-            float y=pow(sin(x*2.0*M_PI),2.0);
-            if (x>=0.5) y=-y;
-            waveform[i]=ImLerp(rect.Min,rect.Max,ImVec2(x,0.5-y*0.4));
-          }
-          break;
+            for (size_t i = 0; i <= waveformLen; i++) {
+                float x = (float)i / (float)waveformLen;
+                float y = pow(sin(x * 2.0 * M_PI), 2.0);
+                if (x >= 0.5) y = -y;
+                waveform[i] = ImLerp(rect.Min, rect.Max, ImVec2(x, 0.5 - y * 0.4));
+            }
+            break;
         case 2:
-          for (size_t i=0; i<=waveformLen; i++) {
-            float x=(float)i/(float)waveformLen;
-            float y=MAX(0.0,sin(x*2.0*M_PI));
-            waveform[i]=ImLerp(rect.Min,rect.Max,ImVec2(x,0.5-y*0.4));
-          }
-          break;
+            for (size_t i = 0; i <= waveformLen; i++) {
+                float x = (float)i / (float)waveformLen;
+                float y = MAX(0.0, sin(x * 2.0 * M_PI));
+                waveform[i] = ImLerp(rect.Min, rect.Max, ImVec2(x, 0.5 - y * 0.4));
+            }
+            break;
         case 3:
-          for (size_t i=0; i<=waveformLen; i++) {
-            float x=(float)i/(float)waveformLen;
-            float y=pow(MAX(0.0,sin(x*2.0*M_PI)),2.0);
-            waveform[i]=ImLerp(rect.Min,rect.Max,ImVec2(x,0.5-y*0.4));
-          }
-          break;
+            for (size_t i = 0; i <= waveformLen; i++) {
+                float x = (float)i / (float)waveformLen;
+                float y = pow(MAX(0.0, sin(x * 2.0 * M_PI)), 2.0);
+                waveform[i] = ImLerp(rect.Min, rect.Max, ImVec2(x, 0.5 - y * 0.4));
+            }
+            break;
         case 4:
-          for (size_t i=0; i<=waveformLen; i++) {
-            float x=(float)i/(float)waveformLen;
-            float y=(x>=0.5)?0.0:sin(x*4.0*M_PI);
-            waveform[i]=ImLerp(rect.Min,rect.Max,ImVec2(x,0.5-y*0.4));
-          }
-          break;
+            for (size_t i = 0; i <= waveformLen; i++) {
+                float x = (float)i / (float)waveformLen;
+                float y = (x >= 0.5) ? 0.0 : sin(x * 4.0 * M_PI);
+                waveform[i] = ImLerp(rect.Min, rect.Max, ImVec2(x, 0.5 - y * 0.4));
+            }
+            break;
         case 5:
-          for (size_t i=0; i<=waveformLen; i++) {
-            float x=(float)i/(float)waveformLen;
-            float y=(x>=0.5)?0.0:pow(sin(x*4.0*M_PI),2.0);
-            if (x>=0.25) y=-y;
-            waveform[i]=ImLerp(rect.Min,rect.Max,ImVec2(x,0.5-y*0.4));
-          }
-          break;
+            for (size_t i = 0; i <= waveformLen; i++) {
+                float x = (float)i / (float)waveformLen;
+                float y = (x >= 0.5) ? 0.0 : pow(sin(x * 4.0 * M_PI), 2.0);
+                if (x >= 0.25) y = -y;
+                waveform[i] = ImLerp(rect.Min, rect.Max, ImVec2(x, 0.5 - y * 0.4));
+            }
+            break;
         case 6:
-          for (size_t i=0; i<=waveformLen; i++) {
-            float x=(float)i/(float)waveformLen;
-            float y=(x>=0.5)?0.0:fabs(sin(x*4.0*M_PI));
-            waveform[i]=ImLerp(rect.Min,rect.Max,ImVec2(x,0.5-y*0.4));
-          }
-          break;
+            for (size_t i = 0; i <= waveformLen; i++) {
+                float x = (float)i / (float)waveformLen;
+                float y = (x >= 0.5) ? 0.0 : fabs(sin(x * 4.0 * M_PI));
+                waveform[i] = ImLerp(rect.Min, rect.Max, ImVec2(x, 0.5 - y * 0.4));
+            }
+            break;
         case 7:
-          for (size_t i=0; i<=waveformLen; i++) {
-            float x=(float)i/(float)waveformLen;
-            float y=(x>=0.5)?0.0:pow(sin(x*4.0*M_PI),2.0);
-            waveform[i]=ImLerp(rect.Min,rect.Max,ImVec2(x,0.5-y*0.4));
-          }
-          break;
-      }
+            for (size_t i = 0; i <= waveformLen; i++) {
+                float x = (float)i / (float)waveformLen;
+                float y = (x >= 0.5) ? 0.0 : pow(sin(x * 4.0 * M_PI), 2.0);
+                waveform[i] = ImLerp(rect.Min, rect.Max, ImVec2(x, 0.5 - y * 0.4));
+            }
+            break;
+        case 8:
+            for (size_t i = 0; i <= waveformLen; i++) {
+                float x = (float)i / (float)waveformLen;
+                float y = fabs(sin(x * 2.0 * M_PI));
+                waveform[i] = ImLerp(rect.Min, rect.Max, ImVec2(x, 0.5 - y * 0.4));
+            }
+            break;
+        case 9:
+            for (size_t i = 0; i <= waveformLen; i++) {
+                float x = (float)i / (float)waveformLen;
+                float y = (tan(x * 2.0 * M_PI) >= 0.0) ? sin(x * 2.0 * M_PI) : 0.0;
+                waveform[i] = ImLerp(rect.Min, rect.Max, ImVec2(x, 0.5 - y * 0.4));
+            }
+            break;
+        case 10:
+            for (size_t i = 0; i <= waveformLen; i++) {
+                float x = (float)i / (float)waveformLen;
+                float y = fabs((tan(x * 2.0 * M_PI) >= 0.0) ? sin(x * 2.0 * M_PI) : 0.0);
+                waveform[i] = ImLerp(rect.Min, rect.Max, ImVec2(x, 0.5 - y * 0.4));
+            }
+            break;
+        case 11:
+            for (size_t i = 0; i <= waveformLen; i++) {
+                float x = (float)i / (float)waveformLen;
+                float y = fabs(pow(sin(x * 2.0 * M_PI), 2.0) ? sin(x * 2.0 * M_PI) : 0.0);
+                if (x >= 0.5) y = -y;
+                waveform[i] = ImLerp(rect.Min, rect.Max, ImVec2(x, 0.5 - y * 0.4));
+            }
+        }
     } else {
       switch (type) {
         case 0:

@@ -184,6 +184,7 @@ const char* insTypes[DIV_INS_MAX+1][3]={
   {"GBA MinMod",ICON_FA_VOLUME_UP,ICON_FUR_INS_GBA_MINMOD},
   {"Bifurcator",ICON_FA_LINE_CHART,ICON_FUR_INS_BIFURCATOR},
   {"SID2",ICON_FA_KEYBOARD_O,ICON_FUR_INS_SID2},
+  {"FM (SS-16)",ICON_FA_AREA_CHART,ICON_FA_QUESTION},
   {NULL,ICON_FA_QUESTION,ICON_FA_QUESTION}
 };
 
@@ -1263,6 +1264,7 @@ const int availableSystems[]={
   DIV_SYSTEM_5E01,
   DIV_SYSTEM_BIFURCATOR,
   DIV_SYSTEM_SID2,
+  DIV_SYSTEM_SS16,
   0 // don't remove this last one!
 };
 
@@ -1298,6 +1300,7 @@ const int chipsFM[]={
   DIV_SYSTEM_OPL3_DRUMS,
   DIV_SYSTEM_OPZ,
   DIV_SYSTEM_ESFM,
+  DIV_SYSTEM_SS16,
   0 // don't remove this last one!
 };
 
@@ -1386,6 +1389,22 @@ const int chipsSample[]={
   0 // don't remove this last one!
 };
 
+const int chipsInaccessible[] = {
+  DIV_SYSTEM_GENESIS,
+  DIV_SYSTEM_GENESIS_EXT,
+  DIV_SYSTEM_NES_VRC7,
+  DIV_SYSTEM_NES_FDS,
+  DIV_SYSTEM_ARCADE,
+  DIV_SYSTEM_MULTIPCM,
+  DIV_SYSTEM_OPL4,
+  DIV_SYSTEM_OPL4_DRUMS,
+  DIV_SYSTEM_YM2610_CSM,
+  DIV_SYSTEM_YM2610B_CSM,
+  DIV_SYSTEM_YM2203_CSM,
+  DIV_SYSTEM_YM2608_CSM,
+  0 // don't remove this last one!
+};
+
 const int* chipCategories[]={
   availableSystems,
   chipsFM,
@@ -1393,6 +1412,7 @@ const int* chipCategories[]={
   chipsWave,
   chipsSpecial,
   chipsSample,
+  chipsInaccessible,
   NULL
 };
 
@@ -1403,5 +1423,6 @@ const char* chipCategoryNames[]={
   _N("Wavetable"),
   _N("Special"),
   _N("Sample"),
+  _N("Inaccessible via normal means"),
   NULL
 };

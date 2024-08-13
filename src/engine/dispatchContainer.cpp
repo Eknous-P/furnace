@@ -90,6 +90,7 @@
 #include "platform/nds.h"
 #include "platform/bifurcator.h"
 #include "platform/sid2.h"
+#include "platform/ss16.h"
 #include "platform/dummy.h"
 #include "../ta-log.h"
 #include "song.h"
@@ -530,7 +531,10 @@ void DivDispatchContainer::init(DivSystem sys, DivEngine* eng, int chanCount, do
       }
       break;
     case DIV_SYSTEM_OPZ:
-      dispatch=new DivPlatformTX81Z;
+      dispatch = new DivPlatformTX81Z;
+      break;
+    case DIV_SYSTEM_SS16:
+      dispatch = new DivPlatformSS16;
       break;
     case DIV_SYSTEM_SAA1099: {
       dispatch=new DivPlatformSAA1099;
