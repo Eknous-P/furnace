@@ -1289,12 +1289,12 @@ void DivEngine::registerSystems() {
   );
 
   sysDefs[DIV_SYSTEM_SS16] = new DivSysDef(
-      _("Garem SS16"), NULL, 0xf2, 0, 24, true, false, 0, false, 0, 0, 0,
+      _("Garem SS16"), NULL, 0xf2, 0, 14, true, false, 0, false, 0, 0, 0,
       _("OPZ-like chip, except also has OPL3 and a few exclusive waveforms.\nAlso provides 14 FM and 10 PCM channels and 4MiB of sample RAM for them."),
-      { _("FM 1"), _("FM 2"), _("FM 3"), _("FM 4"), _("FM 5"), _("FM 6"), _("FM 7"), _("FM 8"), _("FM 9"), _("FM 10"), _("FM 11"), _("FM 12"), _("FM 13"), _("FM 14"), _("PCM 1"), _("PCM 2"), _("PCM 3"), _("PCM 4"), _("PCM 5"), _("PCM 6"), _("PCM 7"), _("PCM 8"), _("PCM 9"), _("PCM 10") },
+      { _("FM 1"), _("FM 2"), _("FM 3"), _("FM 4"), _("FM 5"), _("FM 6"), _("FM 7"), _("FM 8"), _("FM 9"), _("FM 10"), _("FM 11"), _("FM 12"), _("FM 13"), _("FM 14") },//, _("PCM 1"), _("PCM 2"), _("PCM 3"), _("PCM 4"), _("PCM 5"), _("PCM 6"), _("PCM 7"), _("PCM 8"), _("PCM 9"), _("PCM 10") },
       { "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12", "F13", "F14"},
-      { DIV_CH_FM, DIV_CH_FM, DIV_CH_FM, DIV_CH_FM, DIV_CH_FM, DIV_CH_FM, DIV_CH_FM, DIV_CH_FM, DIV_CH_FM, DIV_CH_FM, DIV_CH_FM, DIV_CH_FM, DIV_CH_FM, DIV_CH_FM, DIV_CH_PCM, DIV_CH_PCM, DIV_CH_PCM, DIV_CH_PCM, DIV_CH_PCM, DIV_CH_PCM, DIV_CH_PCM, DIV_CH_PCM, DIV_CH_PCM, DIV_CH_PCM, },
-      { DIV_INS_SS16, DIV_INS_SS16, DIV_INS_SS16, DIV_INS_SS16, DIV_INS_SS16, DIV_INS_SS16, DIV_INS_SS16, DIV_INS_SS16 ,DIV_INS_SS16, DIV_INS_SS16, DIV_INS_SS16, DIV_INS_SS16, DIV_INS_SS16, DIV_INS_SS16, DIV_INS_AMIGA, DIV_INS_AMIGA, DIV_INS_AMIGA, DIV_INS_AMIGA, DIV_INS_AMIGA, DIV_INS_AMIGA, DIV_INS_AMIGA, DIV_INS_AMIGA, DIV_INS_AMIGA, DIV_INS_AMIGA },
+      { DIV_CH_FM, DIV_CH_FM, DIV_CH_FM, DIV_CH_FM, DIV_CH_FM, DIV_CH_FM, DIV_CH_FM, DIV_CH_FM, DIV_CH_FM, DIV_CH_FM, DIV_CH_FM, DIV_CH_FM, DIV_CH_FM, DIV_CH_FM },//, DIV_CH_PCM, DIV_CH_PCM, DIV_CH_PCM, DIV_CH_PCM, DIV_CH_PCM, DIV_CH_PCM, DIV_CH_PCM, DIV_CH_PCM, DIV_CH_PCM, DIV_CH_PCM, },
+      { DIV_INS_SS16, DIV_INS_SS16, DIV_INS_SS16, DIV_INS_SS16, DIV_INS_SS16, DIV_INS_SS16, DIV_INS_SS16, DIV_INS_SS16, DIV_INS_SS16, DIV_INS_SS16, DIV_INS_SS16, DIV_INS_SS16, DIV_INS_SS16, DIV_INS_SS16 },//, DIV_INS_AMIGA, DIV_INS_AMIGA, DIV_INS_AMIGA, DIV_INS_AMIGA, DIV_INS_AMIGA, DIV_INS_AMIGA, DIV_INS_AMIGA, DIV_INS_AMIGA, DIV_INS_AMIGA, DIV_INS_AMIGA },
       {},
     {
       {0x2f, {DIV_CMD_FM_HARD_RESET, _("2Fxx: Toggle hard envelope reset on new notes")}},
