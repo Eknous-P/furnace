@@ -976,6 +976,7 @@ void DivInstrument::putInsData2(SafeWriter* w, bool fui, const DivSong* song, bo
         if (ws.enabled) featureWS=true;
         break;
       case DIV_INS_OPZ:
+      case DIV_INS_SS16:
         featureFM=true;
         break;
       case DIV_INS_POKEY:
