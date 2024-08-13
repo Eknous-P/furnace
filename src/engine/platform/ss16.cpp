@@ -379,7 +379,7 @@ void DivPlatformSS16::tick(bool sysTick) {
   }
 }
 
-void DivPlatformTX81Z::muteChannel(int ch, bool mute) {
+void DivPlatformSS16::muteChannel(int ch, bool mute) {
   isMuted[ch]=mute;
   for (int i=0; i<4; i++) {
     unsigned short baseAddr=chanOffs[ch]|opOffs[i];
@@ -396,7 +396,7 @@ void DivPlatformTX81Z::muteChannel(int ch, bool mute) {
   }
 }
 
-void DivPlatformTX81Z::commitState(int ch, DivInstrument* ins) {
+void DivPlatformSS16::commitState(int ch, DivInstrument* ins) {
   if (chan[ch].insChanged) {
     chan[ch].state=ins->fm;
   }
@@ -439,7 +439,7 @@ void DivPlatformTX81Z::commitState(int ch, DivInstrument* ins) {
   }
 }
 
-int DivPlatformTX81Z::dispatch(DivCommand c) {
+int DivPlatformSS16::dispatch(DivCommand c) {
   switch (c.cmd) {
     case DIV_CMD_NOTE_ON: {
       DivInstrument* ins=parent->getIns(chan[c.chan].ins,DIV_INS_OPZ);
@@ -899,7 +899,7 @@ int DivPlatformTX81Z::dispatch(DivCommand c) {
   return 1;
 }
 
-void DivPlatformTX81Z::forceIns() {
+void DivPlatformSS16::forceIns() {
   for (int i=0; i<8; i++) {
     for (int j=0; j<4; j++) {
       unsigned short baseAddr=chanOffs[i]|opOffs[j];
@@ -943,7 +943,7 @@ void DivPlatformTX81Z::forceIns() {
   immWrite(0x1b,lfoShape|(lfoShape2<<2));
 }
 
-void DivPlatformTX81Z::notifyInsChange(int ins) {
+void DivPlatformSS16::notifyInsChange(int ins) {
   for (int i=0; i<8; i++) {
     if (chan[i].ins==ins) {
       chan[i].insChanged=true;
@@ -951,45 +951,45 @@ void DivPlatformTX81Z::notifyInsChange(int ins) {
   }
 }
 
-void DivPlatformTX81Z::notifyInsDeletion(void* ins) {
+void DivPlatformSS16::notifyInsDeletion(void* ins) {
   for (int i=0; i<8; i++) {
     chan[i].std.notifyInsDeletion((DivInstrument*)ins);
   }
 }
 
-void* DivPlatformTX81Z::getChanState(int ch) {
+void* DivPlatformSS16::getChanState(int ch) {
   return &chan[ch];
 }
 
-DivMacroInt* DivPlatformTX81Z::getChanMacroInt(int ch) {
+DivMacroInt* DivPlatformSS16::getChanMacroInt(int ch) {
   return &chan[ch].std;
 }
 
-unsigned short DivPlatformTX81Z::getPan(int ch) {
+unsigned short DivPlatformSS16::getPan(int ch) {
   return (chan[ch].chVolL<<8)|(chan[ch].chVolR);
 }
 
-DivDispatchOscBuffer* DivPlatformTX81Z::getOscBuffer(int ch) {
+DivDispatchOscBuffer* DivPlatformSS16::getOscBuffer(int ch) {
   return oscBuf[ch];
 }
 
-unsigned char* DivPlatformTX81Z::getRegisterPool() {
+unsigned char* DivPlatformSS16::getRegisterPool() {
   return regPool;
 }
 
-int DivPlatformTX81Z::getRegisterPoolSize() {
+int DivPlatformSS16::getRegisterPoolSize() {
   return 330;
 }
 
-void DivPlatformTX81Z::poke(unsigned int addr, unsigned short val) {
+void DivPlatformSS16::poke(unsigned int addr, unsigned short val) {
   immWrite(addr,val);
 }
 
-void DivPlatformTX81Z::poke(std::vector<DivRegWrite>& wlist) {
+void DivPlatformSS16::poke(std::vector<DivRegWrite>& wlist) {
   for (DivRegWrite& i: wlist) immWrite(i.addr,i.val);
 }
 
-void DivPlatformTX81Z::reset() {
+void DivPlatformSS16::reset() {
   writes.clear();
   memset(regPool,0,330);
   fm_ymfm->reset();
@@ -997,7 +997,7 @@ void DivPlatformTX81Z::reset() {
     addWrite(0xffffffff,0);
   }
   for (int i=0; i<8; i++) {
-    chan[i]=DivPlatformTX81Z::Channel();
+    chan[i]=DivPlatformSS16::Channel();
     chan[i].std.setEngine(parent);
     chan[i].vol=0x7f;
     chan[i].outVol=0x7f;
@@ -1032,7 +1032,7 @@ void DivPlatformTX81Z::reset() {
   extMode=false;
 }
 
-void DivPlatformTX81Z::setFlags(const DivConfig& flags) {
+void DivPlatformSS16::setFlags(const DivConfig& flags) {
   int clockSel=flags.getInt("clockSel",0);
   if (clockSel==2) {
     chipClock=4000000.0;
@@ -1053,11 +1053,11 @@ void DivPlatformTX81Z::setFlags(const DivConfig& flags) {
   }
 }
 
-int DivPlatformTX81Z::getOutputCount() {
+int DivPlatformSS16::getOutputCount() {
   return 2;
 }
 
-int DivPlatformTX81Z::init(DivEngine* p, int channels, int sugRate, const DivConfig& flags) {
+int DivPlatformSS16::init(DivEngine* p, int channels, int sugRate, const DivConfig& flags) {
   parent=p;
   dumpWrites=false;
   skipRegisterWrites=false;
@@ -1072,12 +1072,12 @@ int DivPlatformTX81Z::init(DivEngine* p, int channels, int sugRate, const DivCon
   return 8;
 }
 
-void DivPlatformTX81Z::quit() {
+void DivPlatformSS16::quit() {
   for (int i=0; i<8; i++) {
     delete oscBuf[i];
   }
   delete fm_ymfm;
 }
 
-DivPlatformTX81Z::~DivPlatformTX81Z() {
+DivPlatformSS16::~DivPlatformSS16() {
 }
