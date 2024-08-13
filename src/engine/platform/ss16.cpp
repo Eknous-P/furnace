@@ -1066,7 +1066,7 @@ int DivPlatformSS16::init(DivEngine* p, int channels, int sugRate, const DivConf
     oscBuf[i]=new DivDispatchOscBuffer;
   }
   setFlags(flags);
-  fm_ymfm=new ymfm::ym2414(iface);
+  fm_ymfm=new ymfm::ss16(iface);
   reset();
 
   return 8;
