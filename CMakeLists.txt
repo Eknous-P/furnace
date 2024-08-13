@@ -785,6 +785,7 @@ src/engine/platform/nds.cpp
 src/engine/platform/bifurcator.cpp
 src/engine/platform/sid2.cpp
 src/engine/platform/pcmdac.cpp
+src/engine/platform/ss16.cpp
 src/engine/platform/dummy.cpp
 
 src/engine/export/abstract.cpp

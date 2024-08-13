@@ -60,7 +60,7 @@ const char** DivPlatformSS16::getRegisterSheet() {
 void DivPlatformSS16::acquire(short** buf, size_t len) {
   thread_local int os[2];
 
-  ymfm::ss16::fm_engine* fme=fm_ymfm->debug_engine();
+  ymfm_mod::ss16::fm_engine* fme=fm_ymfm->debug_engine();
 
   for (size_t h=0; h<len; h++) {
     os[0]=0; os[1]=0;
@@ -77,7 +77,7 @@ void DivPlatformSS16::acquire(short** buf, size_t len) {
     
     fm_ymfm->generate(&out_ymfm);
 
-    for (int i=0; i<8; i++) {
+    for (int i=0; i<14; i++) {
       oscBuf[i]->data[oscBuf[i]->needle++]=CLAMP(fme->debug_channel(i)->debug_output(0)+fme->debug_channel(i)->debug_output(1),-32768,32767);
     }
 
@@ -103,7 +103,7 @@ inline int hScale(int note) {
 }
 
 void DivPlatformSS16::tick(bool sysTick) {
-  for (int i=0; i<8; i++) {
+  for (int i=0; i<14; i++) {
     chan[i].std.next();
 
     if (chan[i].std.vol.had) {
@@ -320,7 +320,7 @@ void DivPlatformSS16::tick(bool sysTick) {
   int hardResetElapsed=0;
   bool mustHardReset=false;
 
-  for (int i=0; i<8; i++) {
+  for (int i=0; i<14; i++) {
     if (chan[i].keyOn || chan[i].keyOff) {
       immWrite(chanOffs[i]+ADDR_LR_FB_ALG,(chan[i].state.alg&7)|(chan[i].state.fb<<3)|0x00|(chan[i].chVolR<<7));
       if (chan[i].hardReset && chan[i].keyOn) {
@@ -335,7 +335,7 @@ void DivPlatformSS16::tick(bool sysTick) {
     }
   }
 
-  for (int i=0; i<8; i++) {
+  for (int i=0; i<14; i++) {
     if (chan[i].freqChanged) {
       chan[i].freq=chan[i].baseFreq+chan[i].pitch-128+chan[i].pitch2;
       if (!parent->song.oldArpStrategy) {
@@ -363,7 +363,7 @@ void DivPlatformSS16::tick(bool sysTick) {
     for (unsigned int i=hardResetElapsed; i<hardResetCycles; i++) {
       immWrite(0x1f,i&0xff);
     }
-    for (int i=0; i<8; i++) {
+    for (int i=0; i<14; i++) {
       if (chan[i].keyOn && chan[i].hardReset) {
         // restore SL/RR
         for (int j=0; j<4; j++) {
@@ -442,7 +442,7 @@ void DivPlatformSS16::commitState(int ch, DivInstrument* ins) {
 int DivPlatformSS16::dispatch(DivCommand c) {
   switch (c.cmd) {
     case DIV_CMD_NOTE_ON: {
-      DivInstrument* ins=parent->getIns(chan[c.chan].ins,DIV_INS_OPZ);
+      DivInstrument* ins=parent->getIns(chan[c.chan].ins,DIV_INS_SS16);
 
       chan[c.chan].macroInit(ins);
       if (!chan[c.chan].std.vol.will) {
@@ -944,7 +944,7 @@ void DivPlatformSS16::forceIns() {
 }
 
 void DivPlatformSS16::notifyInsChange(int ins) {
-  for (int i=0; i<8; i++) {
+  for (int i=0; i<14; i++) {
     if (chan[i].ins==ins) {
       chan[i].insChanged=true;
     }
@@ -952,7 +952,7 @@ void DivPlatformSS16::notifyInsChange(int ins) {
 }
 
 void DivPlatformSS16::notifyInsDeletion(void* ins) {
-  for (int i=0; i<8; i++) {
+  for (int i=0; i<14; i++) {
     chan[i].std.notifyInsDeletion((DivInstrument*)ins);
   }
 }
@@ -1048,7 +1048,7 @@ void DivPlatformSS16::setFlags(const DivConfig& flags) {
   brokenPitch=flags.getBool("brokenPitch",false);
 
   rate=chipClock/64;
-  for (int i=0; i<8; i++) {
+  for (int i=0; i<14; i++) {
     oscBuf[i]->rate=rate;
   }
 }
@@ -1061,19 +1061,19 @@ int DivPlatformSS16::init(DivEngine* p, int channels, int sugRate, const DivConf
   parent=p;
   dumpWrites=false;
   skipRegisterWrites=false;
-  for (int i=0; i<8; i++) {
+  for (int i=0; i<14; i++) {
     isMuted[i]=false;
     oscBuf[i]=new DivDispatchOscBuffer;
   }
   setFlags(flags);
-  fm_ymfm=new ymfm::ss16(iface);
+  fm_ymfm=new ymfm_mod::ss16(iface);
   reset();
 
   return 8;
 }
 
 void DivPlatformSS16::quit() {
-  for (int i=0; i<8; i++) {
+  for (int i=0; i<14; i++) {
     delete oscBuf[i];
   }
   delete fm_ymfm;
