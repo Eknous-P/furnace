@@ -348,7 +348,7 @@ void FurnaceGUI::drawExportTiuna(bool onWindow) {
 
 void FurnaceGUI::drawExportM64(bool onWindow) {
   exitDisabledTimer=1;
-  ImGui::Text(_("export .m64 sequence. for use with SM64 decomp"));
+  ImGui::Text(_(".m64 binary sequence. for use with SM64 decomp"));
 
   ImGui::Text("Mute Behavior:");
   ImGui::Indent();

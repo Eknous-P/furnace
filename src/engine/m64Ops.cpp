@@ -120,8 +120,8 @@ SafeWriter* DivEngine::saveM64(unsigned char muteBhv, unsigned char volumeScale,
 
     // channel data stuff here
 
-    // w->writeC(0xc4); // enable "large notes"
-    w->writeC(0xc3); // disable "large notes"
+    w->writeC(0xc4); // enable "large notes"
+    // w->writeC(0xc3); // disable "large notes"
     w->writeC(0xdf);
     w->writeC(0x7f); // set chan volume
 
@@ -143,28 +143,36 @@ SafeWriter* DivEngine::saveM64(unsigned char muteBhv, unsigned char volumeScale,
       // w->writeC(0xc0); 
       // w->writeC(0x1); // temporary 1 tick delay
 
-      DivPattern* currPat=curSubSong->pat[i].getPattern((curOrders->ord[i][j]),false);
-      PatternRowCondensed r;
+      // DivPattern* currPat=curSubSong->pat[i].getPattern((curOrders->ord[i][j]),false);
+      // PatternRowCondensed r;
 
-      for (int k=0;k<curSubSong->patLen;k++) {
-        r.getPatRow(currPat->data[k]);
-        if (r.nonEmpty|2) {
-          w->writeC(0xc6);
-          w->writeC(r.instrument); // set ins
-        }
+      // for (int k=0;k<curSubSong->patLen;k++) {
+      //   r.getPatRow(currPat->data[k]);
+      //   if (r.nonEmpty|2) {
+      //     w->writeC(0xc6);
+      //     w->writeC(r.instrument); // set ins
+      //   }
 
-        if (r.nonEmpty|4) {
-          w->writeC(0xc1);
-          w->writeC(r.volume>>1); // set volume
-        }
+      //   if (r.nonEmpty|4) {
+      //     w->writeC(0xc1);
+      //     w->writeC(r.volume>>1); // set volume
+      //   }
 
-        if (r.nonEmpty|1) {
-          w->writeC(0x27); //note
-          w->writeC(0x80);
-          w->writeC(0xc0); // play percentage... whatever that is
-        }
+      //   if (r.nonEmpty|1) {
+      //     w->writeC(0x27); //note
+      //     w->writeC(0x80);
+      //     w->writeC(0xc0); // play percentage... whatever that is
+      //   }
 
-      }
+      // }
+      w->writeC(0xc6);
+      w->writeC(0x00); // ins
+      w->writeC(0xc1);
+      w->writeC(0x7f); // vol
+      w->writeC(0x27); // note
+      w->writeS_BE(0xc0 | (1<<15)); // play percentage
+      w->writeC(0xff); // vel
+      w->writeC(0x3f); // dur
 
       w->writeC(0xff);
     }
