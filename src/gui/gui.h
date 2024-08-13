@@ -652,6 +652,7 @@ enum FurnaceGUIExportTypes {
 
   GUI_EXPORT_AUDIO=0,
   GUI_EXPORT_VGM,
+  GUI_EXPORT_ROM,
   GUI_EXPORT_ZSM,
   GUI_EXPORT_TIUNA,
   GUI_EXPORT_M64,
@@ -2684,6 +2685,9 @@ class FurnaceGUI {
   int dmfExportVersion;
   FurnaceGUIExportTypes curExportType;
 
+  // ROM export specific
+  DivROMExportOptions romTarget;
+
   // user presets window
   std::vector<int> selectedUserPreset;
 
@@ -2691,6 +2695,7 @@ class FurnaceGUI {
 
   void drawExportAudio(bool onWindow=false);
   void drawExportVGM(bool onWindow=false);
+  void drawExportROM(bool onWindow=false);
   void drawExportZSM(bool onWindow=false);
   void drawExportTiuna(bool onWindow=false);
   void drawExportM64(bool onWindow=false);

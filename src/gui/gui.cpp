@@ -4289,6 +4289,10 @@ bool FurnaceGUI::loop() {
             drawExportVGM();
             ImGui::EndMenu();
           }
+          if (ImGui::BeginMenu(_("export ROM..."))) {
+            drawExportROM();
+            ImGui::EndMenu();
+          }
           int numZSMCompat=0;
           for (int i=0; i<e->song.systemLen; i++) {
             if ((e->song.system[i]==DIV_SYSTEM_VERA) || (e->song.system[i]==DIV_SYSTEM_YM2151)) numZSMCompat++;
@@ -4355,6 +4359,10 @@ bool FurnaceGUI::loop() {
           }
           if (ImGui::MenuItem(_("export VGM..."))) {
             curExportType=GUI_EXPORT_VGM;
+            displayExport=true;
+          }
+          if (ImGui::MenuItem(_("export ROM..."))) {
+            curExportType=GUI_EXPORT_ROM;
             displayExport=true;
           }
           int numZSMCompat=0;
@@ -8391,7 +8399,8 @@ FurnaceGUI::FurnaceGUI():
   curTutorial(-1),
   curTutorialStep(0),
   dmfExportVersion(0),
-  curExportType(GUI_EXPORT_NONE) {
+  curExportType(GUI_EXPORT_NONE),
+  romTarget(DIV_ROM_ABSTRACT) {
   // value keys
   valueKeys[SDLK_0]=0;
   valueKeys[SDLK_1]=1;

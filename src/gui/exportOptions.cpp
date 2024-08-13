@@ -239,6 +239,41 @@ void FurnaceGUI::drawExportVGM(bool onWindow) {
   }
 }
 
+void FurnaceGUI::drawExportROM(bool onWindow) {
+  exitDisabledTimer=1;
+
+  const DivROMExportDef* def=e->getROMExportDef(romTarget);
+
+  ImGui::Text("select target:");
+  if (ImGui::BeginCombo("##ROMTarget",def==NULL?"<select one>":def->name)) {
+    for (int i=0; i<DIV_ROM_MAX; i++) {
+      const DivROMExportDef* newDef=e->getROMExportDef((DivROMExportOptions)i);
+      if (newDef!=NULL) {
+        if (ImGui::Selectable(newDef->name)) {
+          romTarget=(DivROMExportOptions)i;
+        }
+      }
+    }
+    ImGui::EndCombo();
+  }
+
+  if (def!=NULL) {
+    ImGui::Text("by %s",def->author);
+
+    ImGui::TextWrapped("%s",def->description);
+  }
+
+  if (onWindow) {
+    ImGui::Separator();
+    if (ImGui::Button(_("Cancel"),ImVec2(200.0f*dpiScale,0))) ImGui::CloseCurrentPopup();
+    ImGui::SameLine();
+  }
+  if (ImGui::Button(_("Export"),ImVec2(200.0f*dpiScale,0))) {
+    openFileDialog(GUI_FILE_EXPORT_ROM);
+    ImGui::CloseCurrentPopup();
+  }
+}
+
 void FurnaceGUI::drawExportZSM(bool onWindow) {
   exitDisabledTimer=1;
 
@@ -459,6 +494,10 @@ void FurnaceGUI::drawExport() {
         drawExportVGM(true);
         ImGui::EndTabItem();
       }
+      if (ImGui::BeginTabItem(_("ROM"))) {
+        drawExportROM(true);
+        ImGui::EndTabItem();
+      }
       int numZSMCompat=0;
       for (int i=0; i<e->song.systemLen; i++) {
         if ((e->song.system[i]==DIV_SYSTEM_VERA) || (e->song.system[i]==DIV_SYSTEM_YM2151)) numZSMCompat++;
@@ -526,6 +565,9 @@ void FurnaceGUI::drawExport() {
       break;
     case GUI_EXPORT_VGM:
       drawExportVGM(true);
+      break;
+    case GUI_EXPORT_ROM:
+      drawExportROM(true);
       break;
     case GUI_EXPORT_ZSM:
       drawExportZSM(true);
