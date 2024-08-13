@@ -90,6 +90,7 @@
 #include "platform/nds.h"
 #include "platform/bifurcator.h"
 #include "platform/sid2.h"
+#include "platform/ss16.h"
 #include "platform/dummy.h"
 #include "../ta-log.h"
 #include "song.h"

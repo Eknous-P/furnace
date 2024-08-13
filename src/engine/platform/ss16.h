@@ -24,13 +24,13 @@
 #include "../../fixedQueue.h"
 #include "sound/garem/ss16.h"
 
-class DivTXInterface: public ymfm_mod::ymfm_interface {
+class DivSSInterface: public ymfm_mod::ymfm_interface {
 
 };
 
 class DivPlatformSS16: public DivPlatformOPM {
   protected:
-    const unsigned short chanOffs[8]={
+    const unsigned short chanOffs[14]={
       0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D
     };
 
@@ -47,9 +47,9 @@ class DivPlatformSS16: public DivPlatformOPM {
     int pcmL, pcmR, pcmCycles;
     unsigned char amDepth, pmDepth, amDepth2, pmDepth2;
 
-    ymfm::ss16* fm_ymfm;
-    ymfm::ss16::output_data out_ymfm;
-    DivTXInterface iface;
+    ymfm_mod::ss16* fm_ymfm;
+    ymfm_mod::ss16::output_data out_ymfm;
+    DivSSInterface iface;
 
     bool extMode;
 
