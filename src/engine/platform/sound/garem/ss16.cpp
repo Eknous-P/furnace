@@ -93,7 +93,7 @@ ss16_registers::ss16_registers() :
 		m_waveform[12][index] = bitfield(index, 8) ? zeroval : (m_waveform[1][index] & 0x7fff);                               // Quarter AbsTri
 		m_waveform[13][index] = (bitfield(index, 9) ? (index ^ 0x13ff) : index) << 3;                                         // Derived Square
 		m_waveform[14][index] = (bitfield(index, 9) ? (index ^ 0x13ff) : index) << 3 & 0x7fff;                                // Abs Derived Square
-		m_waveform[15][index] = m_waveform[0][(index + 0x7fff) & 0x7fff];                                                     // Squaresine???
+		m_waveform[15][index] = m_waveform[0][(index) & 0x7fff];                                                              // Squaresine???
 	}
 
 	// create the LFO waveforms; AM in the low 8 bits, PM in the upper 8

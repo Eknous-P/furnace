@@ -533,9 +533,9 @@ void DivDispatchContainer::init(DivSystem sys, DivEngine* eng, int chanCount, do
     case DIV_SYSTEM_OPZ:
       dispatch = new DivPlatformTX81Z;
       break;
-    //case DIV_SYSTEM_SS16:
-      //dispatch = new DivPlatformSS16;
-      //break;
+    case DIV_SYSTEM_SS16:
+      dispatch = new DivPlatformSS16;
+      break;
     case DIV_SYSTEM_SAA1099: {
       dispatch=new DivPlatformSAA1099;
       if (isRender) {
