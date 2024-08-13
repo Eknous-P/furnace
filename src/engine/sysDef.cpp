@@ -1292,8 +1292,8 @@ void DivEngine::registerSystems() {
       _("Garem SS16"), NULL, 0xf2, 0, 14, true, false, 0, false, 0, 0, 0,
       _("OPZ-like chip, except also has OPL3 and a few exclusive waveforms.\nAlso provides 14 FM and 10 PCM channels and 4MiB of sample RAM for them."),
       { _("FM 1"), _("FM 2"), _("FM 3"), _("FM 4"), _("FM 5"), _("FM 6"), _("FM 7"), _("FM 8"), _("FM 9"), _("FM 10"), _("FM 11"), _("FM 12"), _("FM 13"), _("FM 14") },
-      { "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12", "F13", "F14" },
-      { DIV_CH_FM, DIV_CH_FM, DIV_CH_FM, DIV_CH_FM, DIV_CH_FM, DIV_CH_FM, DIV_CH_FM, DIV_CH_FM },
+      { "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12", "F13", "F14"},
+      { DIV_CH_FM, DIV_CH_FM, DIV_CH_FM, DIV_CH_FM, DIV_CH_FM, DIV_CH_FM, DIV_CH_FM, DIV_CH_FM, DIV_CH_FM, DIV_CH_FM, DIV_CH_FM, DIV_CH_FM, DIV_CH_FM, DIV_CH_FM },
       { DIV_INS_SS16, DIV_INS_SS16, DIV_INS_SS16, DIV_INS_SS16, DIV_INS_SS16, DIV_INS_SS16, DIV_INS_SS16, DIV_INS_SS16 ,DIV_INS_SS16, DIV_INS_SS16, DIV_INS_SS16, DIV_INS_SS16, DIV_INS_SS16, DIV_INS_SS16, },
       {},
     {
