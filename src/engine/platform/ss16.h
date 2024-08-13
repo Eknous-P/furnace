@@ -31,7 +31,7 @@ class DivTXInterface: public ymfm_mod::ymfm_interface {
 class DivPlatformSS16: public DivPlatformOPM {
   protected:
     const unsigned short chanOffs[8]={
-      0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07
+      0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D
     };
 
     struct Channel: public FMChannel {
@@ -41,8 +41,8 @@ class DivPlatformSS16: public DivPlatformOPM {
         chVolL(1),
         chVolR(1) {}
     };
-    Channel chan[8];
-    DivDispatchOscBuffer* oscBuf[8];
+    Channel chan[14];
+    DivDispatchOscBuffer* oscBuf[14];
     int baseFreqOff;
     int pcmL, pcmR, pcmCycles;
     unsigned char amDepth, pmDepth, amDepth2, pmDepth2;
@@ -53,7 +53,7 @@ class DivPlatformSS16: public DivPlatformOPM {
 
     bool extMode;
 
-    bool isMuted[8];
+    bool isMuted[14];
   
     int octave(int freq);
     int toFreq(int freq);
