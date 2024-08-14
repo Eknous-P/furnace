@@ -5517,7 +5517,7 @@ bool FurnaceGUI::loop() {
               }
               break;
             }
-            case GUI_FILE_EXPORT_ROM:
+            case GUI_FILE_EXPORT_ROM: {
               romExportPath=copyOfName;
               pendingExport=e->buildROM(romTarget);
               if (pendingExport==NULL) {
