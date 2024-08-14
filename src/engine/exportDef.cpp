@@ -57,15 +57,4 @@ void DivEngine::registerROMExports() {
     },
     true, DIV_REQPOL_ANY
   );
-
-  romExportDefs[DIV_ROM_M64]=new DivROMExportDef(
-    ".m64 Binary Sequence","",
-    "uhhhhhhhhhhh",
-    {
-      DIV_SYSTEM_ES5506,
-      DIV_SYSTEM_PCM_DAC,
-      DIV_SYSTEM_AMIGA
-    },
-    false, DIV_REQPOL_LAX
-  );
 }

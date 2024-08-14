@@ -31,7 +31,6 @@ enum DivROMExportOptions {
   DIV_ROM_AMIGA_VALIDATION,
   DIV_ROM_ZSM,
   DIV_ROM_TIUNA,
-  DIV_ROM_M64,
 
   DIV_ROM_MAX
 };
