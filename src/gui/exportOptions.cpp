@@ -360,6 +360,31 @@ void FurnaceGUI::drawExportZSM(bool onWindow) {
   }
 }
 
+void FurnaceGUI::drawExportM64(bool onWindow) {
+  exitDisabledTimer=1;
+  ImGui::Text(_(".m64 binary sequence. for use with SM64 decomp"));
+
+  ImGui::Text("Mute Behavior:");
+  ImGui::Indent();
+  bool muteBhv[3]={(m64MuteBhv&0x20)!=0,(m64MuteBhv&0x40)!=0,(m64MuteBhv&0x80)!=0};
+  if (ImGui::Checkbox("Lower volume",&muteBhv[0])) m64MuteBhv^=0x20;
+  if (ImGui::Checkbox("Do something to layers (?)",&muteBhv[1])) m64MuteBhv^=0x40;
+  if (ImGui::Checkbox("Pause sequence",&muteBhv[2])) m64MuteBhv^=0x80;
+  ImGui::Unindent();
+  ImGui::SliderInt("Volume Scale",&m64VolumeScale,0,255,"%d");
+  ImGui::SliderInt("Volume Scale (muted)",&m64MuteVolMult,0,127,"%d");
+
+  if (onWindow) {
+    ImGui::Separator();
+    if (ImGui::Button(_("Cancel"),ImVec2(200.0f*dpiScale,0))) ImGui::CloseCurrentPopup();
+    ImGui::SameLine();
+  }
+  if (ImGui::Button(_("Export"),ImVec2(200.0f*dpiScale,0))) {
+    openFileDialog(GUI_FILE_EXPORT_M64);
+    ImGui::CloseCurrentPopup();
+  }
+}
+
 void FurnaceGUI::drawExportText(bool onWindow) {
   exitDisabledTimer=1;
 
@@ -450,6 +475,20 @@ void FurnaceGUI::drawExport() {
           ImGui::EndTabItem();
         }
       }
+      int numPCMChans=0;
+      for (int i=0; i<e->song.systemLen; i++) {
+        for (int j=0; j<e->getSystemDef(e->song.system[i])->channels; j++) {
+          if (e->getSystemDef(e->song.system[i])->chanTypes[j] == DIV_CH_PCM) {
+            numPCMChans++;
+          }
+        }
+      }
+      if (numPCMChans>0 && e->song.systemLen == 1) { // limit to a single pcm chip
+        if (ImGui::BeginTabItem("M64")) {
+          drawExportM64(true);
+          ImGui::EndTabItem();
+        }
+      }
       if (ImGui::BeginTabItem(_("Text"))) {
         drawExportText(true);
         ImGui::EndTabItem();
@@ -476,6 +515,9 @@ void FurnaceGUI::drawExport() {
       break;
     case GUI_EXPORT_ZSM:
       drawExportZSM(true);
+      break;
+    case GUI_EXPORT_M64:
+      drawExportM64(true);
       break;
     case GUI_EXPORT_TEXT:
       drawExportText(true);

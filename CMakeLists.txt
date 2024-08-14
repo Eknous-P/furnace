@@ -711,6 +711,7 @@ src/engine/wavOps.cpp
 src/engine/vgmOps.cpp
 src/engine/zsmOps.cpp
 src/engine/zsm.cpp
+src/engine/m64Ops.cpp
 
 src/engine/platform/abstract.cpp
 src/engine/platform/genesis.cpp

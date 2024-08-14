@@ -200,7 +200,7 @@ void FurnaceGUI::drawSpeed(bool asChild) {
         e->curSubSong->timeBase=realTB-1;
       }
       ImGui::SameLine();
-      ImGui::Text("%.2f BPM",calcBPM(e->curSubSong->speeds,e->curSubSong->hz,e->curSubSong->virtualTempoN,e->curSubSong->virtualTempoD));
+      ImGui::Text("%.2f BPM",e->calcBPM());
 
       ImGui::TableNextRow();
       ImGui::TableNextColumn();

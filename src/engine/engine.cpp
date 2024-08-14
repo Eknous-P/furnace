@@ -2379,6 +2379,22 @@ short DivEngine::getVirtualTempoD() {
   return virtualTempoD;
 }
 
+float DivEngine::calcBPM() {
+  float hl=curSubSong->hilightA;
+  if (hl<=0.0f) hl=4.0f;
+  float timeBase=curSubSong->timeBase+1;
+  float speedSum=0;
+  for (int i=0; i<MIN(16,speeds.len); i++) {
+    speedSum+=speeds.val[i];
+  }
+  speedSum/=MAX(1,speeds.len);
+  if (timeBase<1.0f) timeBase=1.0f;
+  if (speedSum<1.0f) speedSum=1.0f;
+  int vD=virtualTempoD;
+  if (vD<1) vD=1;
+  return (60.0f*divider/(timeBase*hl*speedSum))*(float)virtualTempoN/(float)vD;
+}
+
 void DivEngine::virtualTempoChanged() {
   BUSY_BEGIN;
   virtualTempoN=curSubSong->virtualTempoN;
