@@ -54,20 +54,25 @@ struct DivROMExportProgress {
 
 class DivROMExport {
   protected:
-    std::vector<String> exportLog;
+    DivConfig conf;
     std::vector<DivROMExportOutput> output;
-    std::mutex logLock;
     void logAppend(String what);
   public:
+    std::vector<String> exportLog;
+    std::mutex logLock;
+
+    void setConf(DivConfig& c);
     virtual bool go(DivEngine* eng);
     virtual void abort();
     virtual void wait();
     std::vector<DivROMExportOutput>& getResult();
     virtual bool hasFailed();
     virtual bool isRunning();
-    virtual DivROMExportProgress getProgress();
+    virtual DivROMExportProgress getProgress(int index=0);
     virtual ~DivROMExport() {}
 };
+
+#define logAppendf(...) logAppend(fmt::sprintf(__VA_ARGS__))
 
 enum DivROMExportReqPolicy {
   // exactly these chips.
@@ -82,14 +87,18 @@ struct DivROMExportDef {
   const char* name;
   const char* author;
   const char* description;
+  const char* fileType;
+  const char* fileExt;
   std::vector<DivSystem> requisites;
   bool multiOutput;
   DivROMExportReqPolicy requisitePolicy;
 
-  DivROMExportDef(const char* n, const char* a, const char* d, std::initializer_list<DivSystem> req, bool multiOut, DivROMExportReqPolicy reqPolicy):
+  DivROMExportDef(const char* n, const char* a, const char* d, const char* ft, const char* fe, std::initializer_list<DivSystem> req, bool multiOut, DivROMExportReqPolicy reqPolicy):
     name(n),
     author(a),
     description(d),
+    fileType(ft),
+    fileExt(fe),
     multiOutput(multiOut),
     requisitePolicy(reqPolicy) {
     requisites=req;

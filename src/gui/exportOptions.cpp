@@ -244,13 +244,22 @@ void FurnaceGUI::drawExportROM(bool onWindow) {
 
   const DivROMExportDef* def=e->getROMExportDef(romTarget);
 
-  ImGui::Text("select target:");
+  ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
   if (ImGui::BeginCombo("##ROMTarget",def==NULL?"<select one>":def->name)) {
     for (int i=0; i<DIV_ROM_MAX; i++) {
       const DivROMExportDef* newDef=e->getROMExportDef((DivROMExportOptions)i);
       if (newDef!=NULL) {
         if (ImGui::Selectable(newDef->name)) {
           romTarget=(DivROMExportOptions)i;
+          romMultiFile=newDef->multiOutput;
+          romConfig=DivConfig();
+          if (newDef->fileExt==NULL) {
+            romFilterName="";
+            romFilterExt="";
+          } else {
+            romFilterName=newDef->fileType;
+            romFilterExt=newDef->fileExt;
+          }
         }
       }
     }
@@ -262,6 +271,61 @@ void FurnaceGUI::drawExportROM(bool onWindow) {
 
     ImGui::TextWrapped("%s",def->description);
   }
+
+  ImGui::Separator();
+
+  bool altered=false;
+
+  switch (romTarget) {
+    case DIV_ROM_TIUNA: {
+      String asmBaseLabel=romConfig.getString("baseLabel","song");
+      int firstBankSize=romConfig.getInt("firstBankSize",3072);
+      int otherBankSize=romConfig.getInt("otherBankSize",4096-48);
+      int sysToExport=romConfig.getInt("sysToExport",-1);
+
+      // TODO; validate label
+      if (ImGui::InputText(_("base song label name"),&asmBaseLabel)) {
+        altered=true;
+      }
+      if (ImGui::InputInt(_("max size in first bank"),&firstBankSize,1,100)) {
+        if (firstBankSize<0) firstBankSize=0;
+        if (firstBankSize>4096) firstBankSize=4096;
+        altered=true;
+      }
+      if (ImGui::InputInt(_("max size in other banks"),&otherBankSize,1,100)) {
+        if (otherBankSize<16) otherBankSize=16;
+        if (otherBankSize>4096) otherBankSize=4096;
+        altered=true;
+      }
+      
+      ImGui::Text(_("chip to export:"));
+      for (int i=0; i<e->song.systemLen; i++) {
+        DivSystem sys=e->song.system[i];
+        bool isTIA=(sys==DIV_SYSTEM_TIA);
+        ImGui::BeginDisabled(!isTIA);
+        if (ImGui::RadioButton(fmt::sprintf("%d. %s##_SYSV%d",i+1,getSystemName(e->song.system[i]),i).c_str(),sysToExport==i)) {
+          sysToExport=i;
+          altered=true;
+        }
+        ImGui::EndDisabled();
+      }
+      if (altered) {
+        romConfig.set("baseLabel",asmBaseLabel);
+        romConfig.set("firstBankSize",firstBankSize);
+        romConfig.set("otherBankSize",otherBankSize);
+        romConfig.set("sysToExport",sysToExport);
+      }
+      break;
+    }
+    case DIV_ROM_ABSTRACT:
+      ImGui::TextWrapped("%s",_("select a target from the menu at the top of this dialog."));
+      break;
+    default:
+      ImGui::TextWrapped("%s",_("this export method doesn't offer any options."));
+      break;
+  }
+  /*
+  */
 
   if (onWindow) {
     ImGui::Separator();
@@ -296,56 +360,6 @@ void FurnaceGUI::drawExportZSM(bool onWindow) {
   }
 }
 
-void FurnaceGUI::drawExportTiuna(bool onWindow) {
-  exitDisabledTimer=1;
-
-  ImGui::Text(_("for use with TIunA driver. outputs asm source."));
-  ImGui::InputText(_("base song label name"),&asmBaseLabel); // TODO: validate label
-  if (ImGui::InputInt(_("max size in first bank"),&tiunaFirstBankSize,1,100)) {
-    if (tiunaFirstBankSize<0) tiunaFirstBankSize=0;
-    if (tiunaFirstBankSize>4096) tiunaFirstBankSize=4096;
-  }
-  if (ImGui::InputInt(_("max size in other banks"),&tiunaOtherBankSize,1,100)) {
-    if (tiunaOtherBankSize<16) tiunaOtherBankSize=16;
-    if (tiunaOtherBankSize>4096) tiunaOtherBankSize=4096;
-  }
-  
-  ImGui::Text(_("chips to export:"));
-  int selected=0;
-  for (int i=0; i<e->song.systemLen; i++) {
-    DivSystem sys=e->song.system[i];
-    bool isTIA=sys==DIV_SYSTEM_TIA;
-    ImGui::BeginDisabled((!isTIA) || (selected>=1));
-    ImGui::Checkbox(fmt::sprintf("%d. %s##_SYSV%d",i+1,getSystemName(e->song.system[i]),i).c_str(),&willExport[i]);
-    ImGui::EndDisabled();
-    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
-      if (!isTIA) {
-        ImGui::SetTooltip(_("this chip is not supported by the file format!"));
-      } else if (selected>=1) {
-        ImGui::SetTooltip(_("only one Atari TIA is supported!"));
-      }
-    }
-    if (isTIA && willExport[i]) selected++;
-  }
-  if (selected>0) {
-    if (onWindow) {
-      ImGui::Separator();
-      if (ImGui::Button(_("Cancel"),ImVec2(200.0f*dpiScale,0))) ImGui::CloseCurrentPopup();
-      ImGui::SameLine();
-    }
-    if (ImGui::Button(_("Export"),ImVec2(200.0f*dpiScale,0))) {
-      openFileDialog(GUI_FILE_EXPORT_TIUNA);
-      ImGui::CloseCurrentPopup();
-    }
-  } else {
-    ImGui::Text(_("nothing to export"));
-    if (onWindow) {
-      ImGui::Separator();
-      if (ImGui::Button(_("Cancel"),ImVec2(400.0f*dpiScale,0))) ImGui::CloseCurrentPopup();
-    }
-  }
-}
-
 void FurnaceGUI::drawExportM64(bool onWindow) {
   exitDisabledTimer=1;
   ImGui::Text(_(".m64 binary sequence. for use with SM64 decomp"));
@@ -367,53 +381,6 @@ void FurnaceGUI::drawExportM64(bool onWindow) {
   }
   if (ImGui::Button(_("Export"),ImVec2(200.0f*dpiScale,0))) {
     openFileDialog(GUI_FILE_EXPORT_M64);
-    ImGui::CloseCurrentPopup();
-  }
-}
-
-void FurnaceGUI::drawExportAmigaVal(bool onWindow) {
-  exitDisabledTimer=1;
-
-  ImGui::Text(_(
-    "this is NOT ROM export! only use for making sure the\n"
-    "Furnace Amiga emulator is working properly by\n"
-    "comparing it with real Amiga output."
-  ));
-  ImGui::AlignTextToFramePadding();
-  ImGui::Text(_("Directory"));
-  ImGui::SameLine();
-  ImGui::InputText("##AVDPath",&workingDirROMExport);
-  if (onWindow) {
-    ImGui::Separator();
-    if (ImGui::Button(_("Cancel"),ImVec2(200.0f*dpiScale,0))) ImGui::CloseCurrentPopup();
-    ImGui::SameLine();
-  }
-  if (ImGui::Button(_("Bake Data"),ImVec2(200.0f*dpiScale,0))) {
-    DivROMExport* ex=e->buildROM(DIV_ROM_AMIGA_VALIDATION);
-    if (ex->go(e)) {
-      ex->wait();
-      if (ex->hasFailed()) {
-        showError("error!");
-      } else {
-        if (workingDirROMExport.size()>0) {
-          if (workingDirROMExport[workingDirROMExport.size()-1]!=DIR_SEPARATOR) workingDirROMExport+=DIR_SEPARATOR_STR;
-        }
-        for (DivROMExportOutput& i: ex->getResult()) {
-          String path=workingDirROMExport+i.name;
-          FILE* outFile=ps_fopen(path.c_str(),"wb");
-          if (outFile!=NULL) {
-            fwrite(i.data->getFinalBuf(),1,i.data->size(),outFile);
-            fclose(outFile);
-          }
-          i.data->finish();
-          delete i.data;
-        }
-        showError(fmt::sprintf(_("Done! Baked %d files."),(int)ex->getResult().size()));
-      }
-    } else {
-      showError("error!");
-    }
-    delete ex;
     ImGui::CloseCurrentPopup();
   }
 }
@@ -508,19 +475,6 @@ void FurnaceGUI::drawExport() {
           ImGui::EndTabItem();
         }
       }
-      bool hasTiunaCompat=false;
-      for (int i=0; i<e->song.systemLen; i++) {
-        if (e->song.system[i]==DIV_SYSTEM_TIA) {
-          hasTiunaCompat=true;
-          break;
-        }
-      }
-      if (hasTiunaCompat) {
-        if (ImGui::BeginTabItem("TIunA")) {
-          drawExportTiuna(true);
-          ImGui::EndTabItem();
-        }
-      }
       int numPCMChans=0;
       for (int i=0; i<e->song.systemLen; i++) {
         for (int j=0; j<e->getSystemDef(e->song.system[i])->channels; j++) {
@@ -532,16 +486,6 @@ void FurnaceGUI::drawExport() {
       if (numPCMChans>0 && e->song.systemLen == 1) { // limit to a single pcm chip
         if (ImGui::BeginTabItem("M64")) {
           drawExportM64(true);
-          ImGui::EndTabItem();
-        }
-      }
-      int numAmiga=0;
-      for (int i=0; i<e->song.systemLen; i++) {
-        if (e->song.system[i]==DIV_SYSTEM_AMIGA) numAmiga++;
-      }
-      if (numAmiga && settings.iCannotWait) {
-        if (ImGui::BeginTabItem(_("Amiga Validation"))) {
-          drawExportAmigaVal(true);
           ImGui::EndTabItem();
         }
       }
@@ -572,14 +516,8 @@ void FurnaceGUI::drawExport() {
     case GUI_EXPORT_ZSM:
       drawExportZSM(true);
       break;
-    case GUI_EXPORT_TIUNA:
-      drawExportTiuna(true);
-      break;
     case GUI_EXPORT_M64:
       drawExportM64(true);
-      break;
-    case GUI_EXPORT_AMIGA_VAL:
-      drawExportAmigaVal(true);
       break;
     case GUI_EXPORT_TEXT:
       drawExportText(true);
