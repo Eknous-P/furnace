@@ -818,6 +818,7 @@ enum FurnaceGUIActions {
   GUI_ACTION_PAT_LATCH,
   GUI_ACTION_PAT_SCROLL_MODE,
   GUI_ACTION_PAT_CLEAR_LATCH,
+  GUI_ACTION_PAT_ABSORB_INSTRUMENT,
   GUI_ACTION_PAT_MAX,
 
   GUI_ACTION_INS_LIST_MIN,
@@ -1593,7 +1594,7 @@ class FurnaceGUI {
   int sampleTexW, sampleTexH;
   bool updateSampleTex;
 
-  String workingDir, fileName, clipboard, warnString, errorString, lastError, curFileName, nextFile, sysSearchQuery, newSongQuery, paletteQuery;
+  String workingDir, fileName, clipboard, warnString, errorString, lastError, curFileName, nextFile, sysSearchQuery, newSongQuery, paletteQuery, sampleBankSearchQuery;
   String workingDirSong, workingDirIns, workingDirWave, workingDirSample, workingDirAudioExport;
   String workingDirVGMExport, workingDirZSMExport, workingDirROMExport;
   String workingDirFont, workingDirColors, workingDirKeybinds;
@@ -1605,6 +1606,7 @@ class FurnaceGUI {
   String folderString;
 
   std::vector<DivSystem> sysSearchResults;
+  std::vector<std::pair<DivSample*,bool>> sampleBankSearchResults;
   std::vector<FurnaceGUISysDef> newSongSearchResults;
   std::vector<int> paletteSearchResults;
   FixedQueue<String,32> recentFile;
@@ -1620,6 +1622,7 @@ class FurnaceGUI {
   bool displayNew, displayExport, displayPalette, fullScreen, preserveChanPos, sysDupCloneChannels, sysDupEnd, noteInputPoly, notifyWaveChange;
   bool wantScrollListIns, wantScrollListWave, wantScrollListSample;
   bool displayPendingIns, pendingInsSingle, displayPendingRawSample, snesFilterHex, modTableHex, displayEditString;
+  bool displayPendingSamples, replacePendingSample;
   bool displayExportingROM;
   bool changeCoarse;
   bool mobileEdit;
@@ -1962,6 +1965,7 @@ class FurnaceGUI {
     unsigned int maxUndoSteps;
     float vibrationStrength;
     int vibrationLength;
+    int s3mOPL3;
     String mainFontPath;
     String headFontPath;
     String patFontPath;
@@ -2218,6 +2222,7 @@ class FurnaceGUI {
       maxUndoSteps(100),
       vibrationStrength(0.5f),
       vibrationLength(20),
+      s3mOPL3(1),
       mainFontPath(""),
       headFontPath(""),
       patFontPath(""),
@@ -2374,6 +2379,7 @@ class FurnaceGUI {
   std::vector<DivCommand> cmdStream;
   std::vector<Particle> particles;
   std::vector<std::pair<DivInstrument*,bool>> pendingIns;
+  std::vector<std::pair<DivSample*,bool>> pendingSamples;
 
   std::vector<FurnaceGUISysCategory> sysCategories;
 
@@ -2688,6 +2694,8 @@ class FurnaceGUI {
   String romFilterName, romFilterExt;
   String romExportPath;
   DivROMExport* pendingExport;
+  bool romExportAvail[DIV_ROM_MAX];
+  bool romExportExists;
 
   // user presets window
   std::vector<int> selectedUserPreset;
@@ -2738,6 +2746,7 @@ class FurnaceGUI {
   bool portSet(String label, unsigned int portSetID, int ins, int outs, int activeIns, int activeOuts, int& clickedPort, std::map<unsigned int,ImVec2>& portPos);
 
   void updateWindowTitle();
+  void updateROMExportAvail();
   void autoDetectSystem();
   void autoDetectSystemIter(std::vector<FurnaceGUISysDef>& category, bool& isMatch, std::map<DivSystem,int>& defCountMap, std::map<DivSystem,DivConfig>& defConfMap, std::map<DivSystem,int>& sysCountMap, std::map<DivSystem,DivConfig>& sysConfMap);
   void prepareLayout();

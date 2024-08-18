@@ -752,6 +752,88 @@ void FurnaceGUI::autoDetectSystem() {
   }
 }
 
+void FurnaceGUI::updateROMExportAvail() {
+  unsigned char sysReqCount[DIV_SYSTEM_MAX];
+  unsigned char defReqCount[DIV_SYSTEM_MAX];
+
+  memset(sysReqCount,0,DIV_SYSTEM_MAX);
+  for (int i=0; i<e->song.systemLen; i++) {
+    sysReqCount[e->song.system[i]]++;
+  }
+
+  memset(romExportAvail,0,sizeof(bool)*DIV_ROM_MAX);
+  romExportExists=false;
+
+  for (int i=0; i<DIV_ROM_MAX; i++) {
+    const DivROMExportDef* newDef=e->getROMExportDef((DivROMExportOptions)i);
+    if (newDef!=NULL) {
+      // check for viability
+      bool viable=true;
+
+      memset(defReqCount,0,DIV_SYSTEM_MAX);
+      for (DivSystem j: newDef->requisites) {
+        defReqCount[j]++;
+      }
+
+      switch (newDef->requisitePolicy) {
+        case DIV_REQPOL_EXACT:
+          for (int j=0; j<DIV_SYSTEM_MAX; j++) {
+            if (defReqCount[j]!=sysReqCount[j]) {
+              viable=false;
+              break;
+            }
+          }
+          break;
+        case DIV_REQPOL_ANY:
+          for (int j=0; j<DIV_SYSTEM_MAX; j++) {
+            if (defReqCount[j]>sysReqCount[j]) {
+              viable=false;
+              break;
+            }
+          }
+          break;
+        case DIV_REQPOL_LAX:
+          viable=false;
+          for (DivSystem j: newDef->requisites) {
+            if (defReqCount[j]<=sysReqCount[j]) {
+              viable=true;
+              break;
+            }
+          }
+          break;
+      }
+      
+      if (viable) {
+        romExportAvail[i]=true;
+        romExportExists=true;
+      }
+    }
+  }
+
+  if (!romExportAvail[romTarget]) {
+    // find a new one
+    romTarget=DIV_ROM_ABSTRACT;
+    for (int i=0; i<DIV_ROM_MAX; i++) {
+      const DivROMExportDef* newDef=e->getROMExportDef((DivROMExportOptions)i);
+      if (newDef!=NULL) {
+        if (romExportAvail[i]) {
+          romTarget=(DivROMExportOptions)i;
+          romMultiFile=newDef->multiOutput;
+          romConfig=DivConfig();
+          if (newDef->fileExt==NULL) {
+            romFilterName="";
+            romFilterExt="";
+          } else {
+            romFilterName=newDef->fileType;
+            romFilterExt=newDef->fileExt;
+          }
+          break;
+        }
+      }
+    }
+  }
+}
+
 ImVec4 FurnaceGUI::channelColor(int ch) {
   switch (settings.channelColors) {
     case 0:
@@ -2353,6 +2435,7 @@ int FurnaceGUI::load(String path) {
   undoHist.clear();
   redoHist.clear();
   updateWindowTitle();
+  updateROMExportAvail();
   updateScroll(0);
   if (!e->getWarnings().empty()) {
     showWarning(e->getWarnings(),GUI_WARN_GENERIC);
@@ -3739,8 +3822,9 @@ bool FurnaceGUI::loop() {
             }
             int sampleCountBefore=e->song.sampleLen;
             std::vector<DivInstrument*> instruments=e->instrumentFromFile(ev.drop.file,true,settings.readInsNames);
+            std::vector<DivSample*> samples = e->sampleFromFile(ev.drop.file);
             DivWavetable* droppedWave=NULL;
-            DivSample* droppedSample=NULL;
+            //DivSample* droppedSample=NULL;
             if (!instruments.empty()) {
               if (e->song.sampleLen!=sampleCountBefore) {
                 e->renderSamplesP();
@@ -3765,10 +3849,24 @@ bool FurnaceGUI::loop() {
               }
               nextWindow=GUI_WINDOW_WAVE_LIST;
               MARK_MODIFIED;
-            } else if ((droppedSample=e->sampleFromFile(ev.drop.file))!=NULL) {
+            } 
+            else if (!samples.empty()) 
+            {
+              if (e->song.sampleLen!=sampleCountBefore) {
+                //e->renderSamplesP();
+              }
+              if (!e->getWarnings().empty())
+              {
+                showWarning(e->getWarnings(),GUI_WARN_GENERIC);
+              }
               int sampleCount=-1;
-              sampleCount=e->addSamplePtr(droppedSample);
-              if (sampleCount>=0 && settings.selectAssetOnLoad) {
+              for (DivSample* s: samples)
+              {
+                sampleCount=e->addSamplePtr(s);
+              }
+              //sampleCount=e->addSamplePtr(droppedSample);
+              if (sampleCount>=0 && settings.selectAssetOnLoad) 
+              {
                 curSample=sampleCount;
                 updateSampleTex=true;
               }
@@ -4295,9 +4393,11 @@ bool FurnaceGUI::loop() {
             drawExportVGM();
             ImGui::EndMenu();
           }
-          if (ImGui::BeginMenu(_("export ROM..."))) {
-            drawExportROM();
-            ImGui::EndMenu();
+          if (romExportExists) {
+            if (ImGui::BeginMenu(_("export ROM..."))) {
+              drawExportROM();
+              ImGui::EndMenu();
+            }
           }
           int numZSMCompat=0;
           for (int i=0; i<e->song.systemLen; i++) {
@@ -4344,9 +4444,11 @@ bool FurnaceGUI::loop() {
             curExportType=GUI_EXPORT_VGM;
             displayExport=true;
           }
-          if (ImGui::MenuItem(_("export ROM..."))) {
-            curExportType=GUI_EXPORT_ROM;
-            displayExport=true;
+          if (romExportExists) {
+            if (ImGui::MenuItem(_("export ROM..."))) {
+              curExportType=GUI_EXPORT_ROM;
+              displayExport=true;
+            }
           }
           int numZSMCompat=0;
           for (int i=0; i<e->song.systemLen; i++) {
@@ -4409,6 +4511,7 @@ bool FurnaceGUI::loop() {
                 autoDetectSystem();
               }
               updateWindowTitle();
+              updateROMExportAvail();
             }
             ImGui::EndMenu();
           }
@@ -4435,6 +4538,7 @@ bool FurnaceGUI::loop() {
                       autoDetectSystem();
                     }
                     updateWindowTitle();
+                    updateROMExportAvail();
                   } else {
                     showError(fmt::sprintf(_("cannot change chip! (%s)"),e->getLastError()));
                   }
@@ -4459,6 +4563,7 @@ bool FurnaceGUI::loop() {
                   autoDetectSystem();
                   updateWindowTitle();
                 }
+                updateROMExportAvail();
               }
             }
             ImGui::EndMenu();
@@ -5255,24 +5360,43 @@ bool FurnaceGUI::loop() {
               String errs=_("there were some errors while loading samples:\n");
               bool warn=false;
               for (String i: fileDialog->getFileName()) {
-                DivSample* s=e->sampleFromFile(i.c_str());
-                if (s==NULL) {
+                std::vector<DivSample*> samples=e->sampleFromFile(i.c_str());
+                if (samples.empty()) {
                   if (fileDialog->getFileName().size()>1) {
                     warn=true;
                     errs+=fmt::sprintf("- %s: %s\n",i,e->getLastError());
                   } else {;
                     showError(e->getLastError());
                   }
-                } else {
-                  if (e->addSamplePtr(s)==-1) {
-                    if (fileDialog->getFileName().size()>1) {
-                      warn=true;
-                      errs+=fmt::sprintf("- %s: %s\n",i,e->getLastError());
-                    } else {
-                      showError(e->getLastError());
+                } 
+                else 
+                {
+                  if((int)samples.size() == 1)
+                  {
+                    if (e->addSamplePtr(samples[0]) == -1)
+                    {
+                      if (fileDialog->getFileName().size()>1)
+                      {
+                        warn=true;
+                        errs+=fmt::sprintf("- %s: %s\n",i,e->getLastError());
+                      } 
+                      else 
+                      {
+                        showError(e->getLastError());
+                      }
+                    } 
+                    else 
+                    {
+                      MARK_MODIFIED;
                     }
-                  } else {
-                    MARK_MODIFIED;
+                  }
+                  else
+                  {
+                    for (DivSample* s: samples) { //ask which samples to load!
+                      pendingSamples.push_back(std::make_pair(s,false));
+                    }
+                    displayPendingSamples=true;
+                    replacePendingSample = false;
                   }
                 }
               }
@@ -5281,24 +5405,44 @@ bool FurnaceGUI::loop() {
               }
               break;
             }
-            case GUI_FILE_SAMPLE_OPEN_REPLACE: {
-              DivSample* s=e->sampleFromFile(copyOfName.c_str());
-              if (s==NULL) {
+             case GUI_FILE_SAMPLE_OPEN_REPLACE: 
+            {
+              std::vector<DivSample*> samples=e->sampleFromFile(copyOfName.c_str());
+              if (samples.empty()) 
+              {
                 showError(e->getLastError());
-              } else {
-                if (curSample>=0 && curSample<(int)e->song.sample.size()) {
-                  e->lockEngine([this,s]() {
-                    // if it crashes here please tell me...
-                    DivSample* oldSample=e->song.sample[curSample];
-                    e->song.sample[curSample]=s;
-                    delete oldSample;
-                    e->renderSamples();
-                    MARK_MODIFIED;
-                  });
-                  updateSampleTex=true;
-                } else {
-                  showError(_("...but you haven't selected a sample!"));
-                  delete s;
+              } 
+              else 
+              {
+                if((int)samples.size() == 1)
+                {
+                  if (curSample>=0 && curSample<(int)e->song.sample.size()) 
+                  {
+                    DivSample* s = samples[0];
+                    e->lockEngine([this, s]()
+                    {
+                      // if it crashes here please tell me...
+                      DivSample* oldSample=e->song.sample[curSample];
+                      e->song.sample[curSample]= s;
+                      delete oldSample;
+                      e->renderSamples();
+                      MARK_MODIFIED;
+                    });
+                    updateSampleTex=true;
+                  } 
+                  else 
+                  {
+                    showError(_("...but you haven't selected a sample!"));
+                    delete samples[0];
+                  }
+                }
+                else
+                {
+                  for (DivSample* s: samples) { //ask which samples to load!
+                    pendingSamples.push_back(std::make_pair(s,false));
+                  }
+                  displayPendingSamples=true;
+                  replacePendingSample = true;
                 }
               }
               break;
@@ -5699,6 +5843,11 @@ bool FurnaceGUI::loop() {
       ImGui::OpenPopup(_("Select Instrument"));
     }
 
+    if (displayPendingSamples) {
+      displayPendingSamples=false;
+      ImGui::OpenPopup(_("Select Sample"));
+    }
+
     if (displayPendingRawSample) {
       displayPendingRawSample=false;
       ImGui::OpenPopup(_("Import Raw Sample"));
@@ -5743,6 +5892,7 @@ bool FurnaceGUI::loop() {
         selEnd=SelectionPoint();
         cursor=SelectionPoint();
         updateWindowTitle();
+        updateROMExportAvail();
       } else {
         ImGui::OpenPopup(_("New Song"));
       }
@@ -6293,6 +6443,7 @@ bool FurnaceGUI::loop() {
               updateWindowTitle();
               MARK_MODIFIED;
             }
+            updateROMExportAvail();
             ImGui::CloseCurrentPopup();
           }
           ImGui::SameLine();
@@ -6522,6 +6673,191 @@ bool FurnaceGUI::loop() {
         }
         pendingIns.clear();
       }
+      ImGui::EndPopup();
+    }
+
+    // TODO: fix style
+    centerNextWindow(_("Select Sample"),canvasW,canvasH);
+    if (ImGui::BeginPopupModal(_("Select Sample"),NULL,ImGuiWindowFlags_AlwaysAutoResize)) {
+      bool quitPlease=false;
+
+      ImGui::AlignTextToFramePadding();
+      ImGui::Text(_("this is a sample bank! select which ones to load:"));
+      ImGui::SameLine();
+      if (ImGui::Button(_("All"))) {
+        for (std::pair<DivSample*,bool>& i: pendingSamples) {
+          i.second=true;
+        }
+      }
+      ImGui::SameLine();
+      if (ImGui::Button(_("None"))) {
+        for (std::pair<DivSample*,bool>& i: pendingSamples) {
+          i.second=false;
+        }
+      }
+      bool reissueSearch=false;
+
+      bool anySelected=false;
+      float sizeY=ImGui::GetFrameHeightWithSpacing()*pendingSamples.size();
+      if (sizeY>(canvasH-180.0*dpiScale)) 
+      {
+        sizeY=canvasH-180.0*dpiScale;
+        if (sizeY<60.0*dpiScale) sizeY=60.0*dpiScale;
+      }
+      if (ImGui::BeginTable("PendingSamplesList",1,ImGuiTableFlags_ScrollY,ImVec2(0.0f,sizeY))) 
+      {
+        if (sampleBankSearchQuery.empty())
+        {
+          for (size_t i=0; i<pendingSamples.size(); i++) 
+          {
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            String id=fmt::sprintf("%d: %s",(int)i,pendingSamples[i].first->name);
+            if (pendingInsSingle) 
+            {
+              if (ImGui::Selectable(id.c_str())) 
+              {
+                pendingSamples[i].second=true;
+                quitPlease=true;
+              }
+            } 
+            else 
+            {
+              // TODO:fixstyle from hereonwards
+              ImGuiIO& io = ImGui::GetIO();
+              if(ImGui::Checkbox(id.c_str(),&pendingSamples[i].second) && io.KeyShift)
+              {
+                for(int jj = (int)i - 1; jj >= 0; jj--)
+                {
+                  if(pendingSamples[jj].second) //pressed shift and there's selected item above
+                  {
+                    for(int k = jj; k < (int)i; k++)
+                    {
+                      pendingSamples[k].second = true;
+                    }
+
+                    break;
+                  }
+                }
+              }
+            }
+            if (pendingSamples[i].second) anySelected=true;
+          }
+        }
+        else //display search results
+        {
+          if(reissueSearch)
+          {
+            String lowerCase=sampleBankSearchQuery;
+
+            for (char& ii: lowerCase) 
+            {
+              if (ii>='A' && ii<='Z') ii+='a'-'A';
+            }
+
+            sampleBankSearchResults.clear();
+            for (int j=0; j < (int)pendingSamples.size(); j++) 
+            {
+              String lowerCase1 = pendingSamples[j].first->name;
+
+              for (char& ii: lowerCase1) 
+              {
+                if (ii>='A' && ii<='Z') ii+='a'-'A';
+              }
+
+              if (lowerCase1.find(lowerCase)!=String::npos) 
+              {
+                sampleBankSearchResults.push_back(std::make_pair(pendingSamples[j].first, pendingSamples[j].second));
+              }
+            }
+          }
+
+          for (size_t i=0; i<sampleBankSearchResults.size(); i++)
+          {
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            String id=fmt::sprintf("%d: %s",(int)i,sampleBankSearchResults[i].first->name);
+
+            ImGuiIO& io = ImGui::GetIO();
+            if(ImGui::Checkbox(id.c_str(),&sampleBankSearchResults[i].second) && io.KeyShift)
+            {
+              for(int jj = (int)i - 1; jj >= 0; jj--)
+              {
+                if(sampleBankSearchResults[jj].second) //pressed shift and there's selected item above
+                {
+                  for(int k = jj; k < (int)i; k++)
+                  {
+                    sampleBankSearchResults[k].second = true;
+                  }
+
+                  break;
+                }
+              }
+            }
+            if (sampleBankSearchResults[i].second) anySelected=true;
+          }
+
+          for (size_t i=0; i<pendingSamples.size(); i++)
+          {
+            if(sampleBankSearchResults.size() > 0)
+            {
+              for (size_t j=0; j<sampleBankSearchResults.size(); j++)
+              {
+                if(sampleBankSearchResults[j].first == pendingSamples[i].first && sampleBankSearchResults[j].second && pendingSamples[i].first != NULL)
+                {
+                  pendingSamples[i].second = true;
+                  if (pendingSamples[i].second) anySelected=true;
+                  break;
+                }
+              }
+            }
+          }
+        }
+        ImGui::EndTable();
+      }
+
+      ImGui::BeginDisabled(!anySelected);
+      if (ImGui::Button(_("OK"))) {
+        quitPlease=true;
+      }
+      ImGui::EndDisabled();
+      ImGui::SameLine();
+
+      if (ImGui::Button(_("Cancel")) || ImGui::IsKeyPressed(ImGuiKey_Escape)) {
+        for (std::pair<DivSample*,bool>& i: pendingSamples) {
+          i.second=false;
+        }
+        quitPlease=true;
+      }
+      if (quitPlease) 
+      {
+        ImGui::CloseCurrentPopup();
+        int counter = 0;
+        for (std::pair<DivSample*,bool>& i: pendingSamples) 
+        {
+          if (!i.second)
+          {
+            delete i.first;
+          }
+          else
+          {
+            if(counter == 0 && replacePendingSample)
+            {
+              *e->song.sample[curSample]=*i.first;
+              replacePendingSample = false;
+            }
+            else
+            {
+              e->addSamplePtr(i.first);
+            }
+          }
+          counter++;
+        }
+
+        curSample = (int)e->song.sample.size() - 1;
+        pendingSamples.clear();
+      }
+
       ImGui::EndPopup();
     }
 
@@ -7311,6 +7647,7 @@ bool FurnaceGUI::init() {
   }
 
   updateWindowTitle();
+  updateROMExportAvail();
 
   logV("max texture size: %dx%d",rend->getMaxTextureWidth(),rend->getMaxTextureHeight());
 
@@ -7536,7 +7873,15 @@ bool FurnaceGUI::init() {
 #endif
 
   compatFormats+="*.dmc ";
-  compatFormats+="*.brr";
+  compatFormats+="*.brr ";
+
+  compatFormats+="*.ppc ";
+  compatFormats+="*.pps ";
+  compatFormats+="*.pvi ";
+  compatFormats+="*.pdx ";
+  compatFormats+="*.pzi ";
+  compatFormats+="*.p86 ";
+  compatFormats+="*.p";
   audioLoadFormats[1]=compatFormats;
 
   audioLoadFormats.push_back(_("NES DPCM data"));
@@ -7544,6 +7889,27 @@ bool FurnaceGUI::init() {
 
   audioLoadFormats.push_back(_("SNES Bit Rate Reduction"));
   audioLoadFormats.push_back("*.brr");
+
+  audioLoadFormats.push_back(_("PMD YM2608 ADPCM-B sample bank"));
+  audioLoadFormats.push_back("*.ppc");
+
+  audioLoadFormats.push_back(_("PDR 4-bit AY-3-8910 sample bank"));
+  audioLoadFormats.push_back("*.pps");
+
+  audioLoadFormats.push_back(_("FMP YM2608 ADPCM-B sample bank"));
+  audioLoadFormats.push_back("*.pvi");
+
+  audioLoadFormats.push_back(_("MDX OKI ADPCM sample bank"));
+  audioLoadFormats.push_back("*.pdx");
+
+  audioLoadFormats.push_back(_("FMP 8-bit PCM sample bank"));
+  audioLoadFormats.push_back("*.pzi");
+
+  audioLoadFormats.push_back(_("PMD 8-bit PCM sample bank"));
+  audioLoadFormats.push_back("*.p86");
+
+  audioLoadFormats.push_back(_("PMD OKI ADPCM sample bank"));
+  audioLoadFormats.push_back("*.p");
 
   audioLoadFormats.push_back(_("all files"));
   audioLoadFormats.push_back("*");
@@ -7967,6 +8333,8 @@ FurnaceGUI::FurnaceGUI():
   snesFilterHex(false),
   modTableHex(false),
   displayEditString(false),
+  displayPendingSamples(false),
+  replacePendingSample(false),
   displayExportingROM(false),
   changeCoarse(false),
   mobileEdit(false),
@@ -8448,7 +8816,8 @@ FurnaceGUI::FurnaceGUI():
   romTarget(DIV_ROM_ABSTRACT),
   romMultiFile(false),
   romExportSave(false),
-  pendingExport(NULL) {
+  pendingExport(NULL),
+  romExportExists(false) {
   // value keys
   valueKeys[SDLK_0]=0;
   valueKeys[SDLK_1]=1;
@@ -8566,6 +8935,8 @@ FurnaceGUI::FurnaceGUI():
   memset(emptyLabel2,0,32);
   // effect sorting
   memset(effectsShow,1,sizeof(bool)*10);
+
+  memset(romExportAvail,0,sizeof(bool)*DIV_ROM_MAX);
 
   strncpy(noteOffLabel,"OFF",32);
   strncpy(noteRelLabel,"===",32);
