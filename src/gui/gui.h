@@ -1635,7 +1635,7 @@ class FurnaceGUI {
   int drawHalt;
   int zsmExportTickRate;
   int m64MuteBhv;
-  int m64MuteVolMult;
+  int m64MuteVolScale;
   int m64VolumeScale;
   int macroPointSize;
   int waveEditStyle;

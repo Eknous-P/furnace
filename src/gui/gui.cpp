@@ -5534,7 +5534,7 @@ bool FurnaceGUI::loop() {
               break;
             }
             case GUI_FILE_EXPORT_M64: {
-              SafeWriter* w=e->saveM64((unsigned char)m64MuteBhv,(unsigned char)m64VolumeScale,(unsigned char)m64MuteVolMult);
+              SafeWriter* w=e->saveM64((unsigned char)m64MuteBhv,(unsigned char)m64VolumeScale,(unsigned char)m64MuteVolScale);
               if (w!=NULL) {
                 FILE* f=ps_fopen(copyOfName.c_str(),"wb");
                 if (f!=NULL) {
@@ -7982,7 +7982,7 @@ FurnaceGUI::FurnaceGUI():
   drawHalt(10),
   zsmExportTickRate(60),
   m64MuteBhv(0x20|0x40|0x80),
-  m64MuteVolMult(0x3f),
+  m64MuteVolScale(0x3f),
   m64VolumeScale(0x7f),
   macroPointSize(16),
   waveEditStyle(0),

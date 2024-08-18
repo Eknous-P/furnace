@@ -17,26 +17,11 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+/* # note: .m64 is BIG ENDIAN */
+
 #include "engine.h"
 #include "../fileutils.h"
 #include "../ta-log.h"
-
-struct PatternRowCondensed {
-  unsigned char note;
-  unsigned char instrument;
-  unsigned char volume;
-
-  unsigned char nonEmpty;
-  void getPatRow(short* p) {
-    nonEmpty=0;
-    note=(p[0]%12)+12*p[1];
-    instrument=p[2];
-    volume=p[3];
-    nonEmpty|=((p[0]==-1)?1:0<<0)&1;
-    nonEmpty|=((p[2]==-1)?1:0<<1)&1;
-    nonEmpty|=((p[3]==-1)?1:0<<2)&1;
-  }
-};
 
 int getUniquePatternCount(DivEngine* e, int chan) {
   int count=0;
@@ -82,8 +67,6 @@ SafeWriter* DivEngine::saveM64(unsigned char muteBhv, unsigned char volumeScale,
   memset(chanData,0,2*channels);
   unsigned short chanDataBegin; // pointer to channel data pointers
 
-  /* # note to self: .m64 is BIG ENDIAN */
-
   /* .m64 "header"? (sequence data ~ global setup) */
 
   w->writeC(0xd3); // mute behavior
@@ -98,14 +81,21 @@ SafeWriter* DivEngine::saveM64(unsigned char muteBhv, unsigned char volumeScale,
   w->writeC(0xdb);
   w->writeC(volumeScale); // set vol scale
 
-  w->writeC(0xdd);
-  w->writeC((unsigned char)calcBPM()); // set song tempo
   chanDataBegin = w->tell();
   // write temporary channel data pointers
   for (unsigned char i=0; i<channels; i++) {
     w->writeC(0x90+i);
     w->writeS_BE(0); // pad with 0s
   }
+
+  w->writeC(0xdd);
+  w->writeC((unsigned char)calcBPM()); // set song tempo
+
+  w->writeC(0xfd); // delay
+  w->writeS_BE(0x7fff | (1<<15));
+
+  w->writeC(0xd6); // deinit channels
+  w->writeS_BE(chanMask);
 
   w->writeC(0xff); // end sequence
 
@@ -136,6 +126,14 @@ SafeWriter* DivEngine::saveM64(unsigned char muteBhv, unsigned char volumeScale,
       w->writeC(0x90+j);
       w->writeS_BE(0);
     }
+
+    w->writeC(0xdd);
+    w->writeC(0x3f); // panning
+
+    w->writeC(0xdf);
+    w->writeC(0x7f); // volume 2
+
+    w->writeC(0x6f); //priority
 
     w->writeC(0xff);
 
@@ -168,12 +166,15 @@ SafeWriter* DivEngine::saveM64(unsigned char muteBhv, unsigned char volumeScale,
       //   }
 
       // }
-      w->writeC(0xc1);
-      w->writeC(0x7f); // vol
-      w->writeC(0x27); // note
-      w->writeS_BE(0xc0 | (1<<15)); // play percentage
-      w->writeC(0xff); // vel
-      w->writeC(0x3f); // dur
+      w->writeC(0xc2);
+      w->writeC(0x00); // transpose
+
+      w->writeC(0x40+0x27); // note
+      w->writeC(0x00); // play percentage
+      w->writeC(0x7f); // vel
+
+      w->writeC(0xc0); //delay
+      w->writeC(0x7f);
 
       w->writeC(0xff);
     }
