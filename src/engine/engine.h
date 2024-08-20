@@ -724,6 +724,8 @@ class DivEngine {
     SafeWriter* saveVGM(bool* sysToExport=NULL, bool loop=true, int version=0x171, bool patternHints=false, bool directStream=false, int trailingTicks=-1);
     // dump to TIunA.
     SafeWriter* saveTiuna(const bool* sysToExport, const char* baseLabel, int firstBankSize, int otherBankSize);
+    // dump (?) .m64 sequence
+    SafeWriter* saveM64(unsigned char muteBhv, unsigned char volumeScale, unsigned char muteVolScale);
     // dump command stream.
     SafeWriter* saveCommand();
     // export to text
@@ -972,6 +974,9 @@ class DivEngine {
     // get virtual tempo
     short getVirtualTempoN();
     short getVirtualTempoD();
+
+    // get BPM
+    float calcBPM();
 
     // tell engine about virtual tempo changes
     void virtualTempoChanged();

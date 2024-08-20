@@ -1190,21 +1190,6 @@ void FurnaceGUI::prepareLayout() {
   fclose(check);
 }
 
-float FurnaceGUI::calcBPM(const DivGroovePattern& speeds, float hz, int vN, int vD) {
-  float hl=e->curSubSong->hilightA;
-  if (hl<=0.0f) hl=4.0f;
-  float timeBase=e->curSubSong->timeBase+1;
-  float speedSum=0;
-  for (int i=0; i<MIN(16,speeds.len); i++) {
-    speedSum+=speeds.val[i];
-  }
-  speedSum/=MAX(1,speeds.len);
-  if (timeBase<1.0f) timeBase=1.0f;
-  if (speedSum<1.0f) speedSum=1.0f;
-  if (vD<1) vD=1;
-  return (60.0f*hz/(timeBase*hl*speedSum))*(float)vN/(float)vD;
-}
-
 void FurnaceGUI::play(int row) {
   if (e->getStreamPlayer()) {
     e->killStream();
@@ -2020,6 +2005,15 @@ void FurnaceGUI::openFileDialog(FurnaceGUIFileDialogs type) {
         workingDirVGMExport,
         dpiScale,
         (settings.autoFillSave)?shortName:""
+      );
+      break;
+    case GUI_FILE_EXPORT_M64:
+      if (!dirExists(workingDirROMExport)) workingDirROMExport=getHomeDir();
+      hasOpened=fileDialog->openSave(
+        "Export .m64",
+        {".m64 sequence files", "*.m64"},
+        workingDirROMExport,
+        dpiScale
       );
       break;
     case GUI_FILE_EXPORT_TEXT:
@@ -4395,6 +4389,20 @@ bool FurnaceGUI::loop() {
               ImGui::EndMenu();
             }
           }
+          int numPCMChans=0;
+          for (int i=0; i<e->song.systemLen; i++) {
+            for (int j=0; j<e->getSystemDef(e->song.system[i])->channels; j++) {
+              if (e->getSystemDef(e->song.system[i])->chanTypes[j] == DIV_CH_PCM) {
+                numPCMChans++;
+              }
+            }
+          }
+          if (numPCMChans>0 && e->song.systemLen == 1) { // limit to a single pcm chip
+            if (ImGui::BeginTabItem("M64")) {
+              drawExportM64(true);
+              ImGui::EndTabItem();
+            }
+          }
           if (ImGui::BeginMenu(_("export text..."))) {
             drawExportText();
             ImGui::EndMenu();
@@ -4419,6 +4427,20 @@ bool FurnaceGUI::loop() {
           if (romExportExists) {
             if (ImGui::MenuItem(_("export ROM..."))) {
               curExportType=GUI_EXPORT_ROM;
+              displayExport=true;
+            }
+          }
+          int numPCMChans=0;
+          for (int i=0; i<e->song.systemLen; i++) {
+            for (int j=0; j<e->getSystemDef(e->song.system[i])->channels; j++) {
+              if (e->getSystemDef(e->song.system[i])->chanTypes[j] == DIV_CH_PCM) {
+                numPCMChans++;
+              }
+            }
+          }
+          if (numPCMChans>0 && e->song.systemLen == 1) { // limit to a single pcm chip
+            if (ImGui::MenuItem(_("export M64"))) {
+              curExportType=GUI_EXPORT_M64;
               displayExport=true;
             }
           }
@@ -4665,7 +4687,7 @@ bool FurnaceGUI::loop() {
           info=_("| Groove");
         }
 
-        info+=fmt::sprintf(_(" @ %gHz (%g BPM) "),e->getCurHz(),calcBPM(e->getSpeeds(),e->getCurHz(),e->getVirtualTempoN(),e->getVirtualTempoD()));
+        info+=fmt::sprintf(_(" @ %gHz (%g BPM) "),e->getCurHz(),e->calcBPM());
 
         if (settings.orderRowsBase) {
           info+=fmt::sprintf(_("| Order %.2X/%.2X "),playOrder,e->curSubSong->ordersLen-1);
@@ -5005,6 +5027,7 @@ bool FurnaceGUI::loop() {
           workingDirVGMExport=fileDialog->getPath()+DIR_SEPARATOR_STR;
           break;
         case GUI_FILE_EXPORT_ROM:
+        case GUI_FILE_EXPORT_M64:
         case GUI_FILE_EXPORT_TEXT:
         case GUI_FILE_EXPORT_CMDSTREAM:
           workingDirROMExport=fileDialog->getPath()+DIR_SEPARATOR_STR;
@@ -5102,6 +5125,9 @@ bool FurnaceGUI::loop() {
           }
           if (curFileDialog==GUI_FILE_EXPORT_ROM) {
             checkExtension(romFilterExt.c_str());
+          }
+          if (curFileDialog==GUI_FILE_EXPORT_M64) {
+            checkExtension(".m64");
           }
           if (curFileDialog==GUI_FILE_EXPORT_TEXT) {
             checkExtension(".txt");
@@ -5578,7 +5604,7 @@ bool FurnaceGUI::loop() {
               }
               break;
             }
-            case GUI_FILE_EXPORT_ROM:
+            case GUI_FILE_EXPORT_ROM: {
               romExportPath=copyOfName;
               pendingExport=e->buildROM(romTarget);
               if (pendingExport==NULL) {
@@ -5593,6 +5619,28 @@ bool FurnaceGUI::loop() {
                 }
               }
               break;
+            }
+            case GUI_FILE_EXPORT_M64: {
+              SafeWriter* w=e->saveM64((unsigned char)m64MuteBhv,(unsigned char)m64VolumeScale,(unsigned char)m64MuteVolScale);
+              if (w!=NULL) {
+                FILE* f=ps_fopen(copyOfName.c_str(),"wb");
+                if (f!=NULL) {
+                  fwrite(w->getFinalBuf(),1,w->size(),f);
+                  fclose(f);
+                  pushRecentSys(copyOfName.c_str());
+                } else {
+                  showError(_("could not open file!"));
+                }
+                w->finish();
+                delete w;
+                if (!e->getWarnings().empty()) {
+                  showWarning(e->getWarnings(),GUI_WARN_GENERIC);
+                }
+              } else {
+                showError(fmt::sprintf(_("could not write M64! (%s)"),e->getLastError()));
+              }
+              break;
+            }
             case GUI_FILE_EXPORT_TEXT: {
               SafeWriter* w=e->saveText(false);
               if (w!=NULL) {
@@ -8239,6 +8287,9 @@ FurnaceGUI::FurnaceGUI():
   vgmExportVersion(0x171),
   vgmExportTrailingTicks(-1),
   drawHalt(10),
+  m64MuteBhv(0x20|0x40|0x80),
+  m64MuteVolScale(0x3f),
+  m64VolumeScale(0x7f),
   macroPointSize(16),
   waveEditStyle(0),
   displayInsTypeListMakeInsSample(-1),

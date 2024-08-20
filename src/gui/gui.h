@@ -601,6 +601,7 @@ enum FurnaceGUIFileDialogs {
   GUI_FILE_EXPORT_AUDIO_PER_SYS,
   GUI_FILE_EXPORT_AUDIO_PER_CHANNEL,
   GUI_FILE_EXPORT_VGM,
+  GUI_FILE_EXPORT_M64,
   GUI_FILE_EXPORT_CMDSTREAM,
   GUI_FILE_EXPORT_TEXT,
   GUI_FILE_EXPORT_ROM,
@@ -653,6 +654,7 @@ enum FurnaceGUIExportTypes {
   GUI_EXPORT_AUDIO=0,
   GUI_EXPORT_VGM,
   GUI_EXPORT_ROM,
+  GUI_EXPORT_M64,
   GUI_EXPORT_CMD_STREAM,
   GUI_EXPORT_TEXT,
   GUI_EXPORT_DMF
@@ -1635,6 +1637,9 @@ class FurnaceGUI {
   int vgmExportTrailingTicks;
   int cvHiScore;
   int drawHalt;
+  int m64MuteBhv;
+  int m64MuteVolScale;
+  int m64VolumeScale;
   int macroPointSize;
   int waveEditStyle;
   int displayInsTypeListMakeInsSample;
@@ -2700,6 +2705,7 @@ class FurnaceGUI {
   void drawExportAudio(bool onWindow=false);
   void drawExportVGM(bool onWindow=false);
   void drawExportROM(bool onWindow=false);
+  void drawExportM64(bool onWindow=false);
   void drawExportText(bool onWindow=false);
   void drawExportCommand(bool onWindow=false);
   void drawExportDMF(bool onWindow=false);
@@ -2760,8 +2766,6 @@ class FurnaceGUI {
   void popWarningColor();
 
   void sameLineMaybe(float width=-1.0f);
-
-  float calcBPM(const DivGroovePattern& speeds, float hz, int vN, int vD);
 
   void patternRow(int i, bool isPlaying, float lineHeight, int chans, int ord, const DivPattern** patCache, bool inhibitSel);
 
