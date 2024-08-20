@@ -46,6 +46,17 @@ int getUniquePatternCount(DivEngine* e, int chan) {
   return count;
 }
 
+// 'var' is a special variable(?) which is either one or two bytes long
+// if the last bit of the first byte is set, then its 2 bytes (unsigned short)
+// otherwise, its 1 byte (unsigned char)
+void writeVar(SafeWriter* w, unsigned short v) {
+  if (v > 0x7f) {
+    w->writeS_BE(v | (1<<15));
+  } else {
+    w->writeC(v);
+  }
+}
+
 SafeWriter* DivEngine::saveM64(unsigned char muteBhv, unsigned char volumeScale, unsigned char muteVolScale) {
   stop();
   repeatPattern=false;
@@ -92,7 +103,7 @@ SafeWriter* DivEngine::saveM64(unsigned char muteBhv, unsigned char volumeScale,
   w->writeC((unsigned char)calcBPM()); // set song tempo
 
   w->writeC(0xfd); // delay
-  w->writeS_BE(0x7fff | (1<<15));
+  writeVar(w,0x7fff);
 
   w->writeC(0xd6); // deinit channels
   w->writeS_BE(chanMask);
@@ -170,7 +181,7 @@ SafeWriter* DivEngine::saveM64(unsigned char muteBhv, unsigned char volumeScale,
       w->writeC(0x00); // transpose
 
       w->writeC(0x40+0x27); // note
-      w->writeC(0x00); // play percentage
+      writeVar(w,0x7fff); // play percentage
       w->writeC(0x7f); // vel
 
       w->writeC(0xc0); //delay
