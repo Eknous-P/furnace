@@ -23,6 +23,102 @@
 #include "../fileutils.h"
 #include "../ta-log.h"
 
+enum m64Commands {
+  CMD_END=0xff,
+  // sequence
+  CMD_SEQ_TESTCHDISABLED=0x00,
+  CMD_SEQ_SUBVARIATION=0x50,
+  CMD_SEQ_SETVARIATION=0x70,
+  CMD_SEQ_GETVARIATION=0x80,
+  CMD_SEQ_STARTCHANNEL=0x90,
+  CMD_SEQ_SUBTRACT=0xc8,
+  CMD_SEQ_BITAND=0xc9,
+  CMD_SEQ_SETVAL=0xcc,
+  CMD_SEQ_SETNOTEALLOCATIONPOLICY=0xd0,
+  CMD_SEQ_SETSHORTNOTEDURATIONTABLE=0xd1,
+  CMD_SEQ_SETSHORTNOTEVELOCITYTABLE=0xd2,
+  CMD_SEQ_SETMUTEBHV=0xd3,
+  CMD_SEQ_MUTE=0xd4,
+  CMD_SEQ_SETMUTESCALE=0xd5,
+  CMD_SEQ_DISABLECHANNELS=0xd6,
+  CMD_SEQ_INITCHANNELS=0xd7,
+  CMD_SEQ_CHANGEVOL=0xda,
+  CMD_SEQ_SETVOL=0xdb,
+  CMD_SEQ_ADDTEMPO=0xdc,
+  CMD_SEQ_SETTEMPO=0xdd,
+  CMD_SEQ_TRANSPOSEREL=0xde,
+  CMD_SEQ_TRANSPOSE=0xdf,
+  CMD_SEQ_UNRESERVENOTES=0xf1,
+  CMD_SEQ_RESERVENOTES=0xf2,
+  CMD_SEQ_BGEZ=0xf5,
+  CMD_SEQ_LOOPEND=0xf7,
+  CMD_SEQ_LOOP=0xf8,
+  CMD_SEQ_BLTZ=0xf9,
+  CMD_SEQ_BEQZ=0xfa,
+  CMD_SEQ_JUMP=0xfb,
+  CMD_SEQ_CALL=0xfc,
+  CMD_SEQ_DELAY=0xfd,
+  CMD_SEQ_DELAY1=0xfe,
+  // channel
+  CMD_CHANNEL_TESTLAYERFINISHED=0x00,
+  CMD_CHANNEL_STARTCHANNEL=0x10,
+  CMD_CHANNEL_DISABLECHANNEL=0x20,
+  CMD_CHANNEL_IOWRITEVAL2=0x30,
+  CMD_CHANNEL_IOREADVAL2=0x40,
+  CMD_CHANNEL_IOREADVALSUB=0x50,
+  CMD_CHANNEL_SETNOTEPRIORITY=0x60,
+  CMD_CHANNEL_IOWRITEVAL=0x70,
+  CMD_CHANNEL_IOREADLAV=0x80,
+  CMD_CHANNEL_SETLAYER=0x90,
+  CMD_CHANNEL_FREELAYER=0xa0,
+  CMD_CHANNEL_DYNSETLAYER=0xb0,
+  CMD_CHANNEL_SETINSTR=0xc1,
+  CMD_CHANNEL_SETDYNTABLE=0xc2,
+  CMD_CHANNEL_LARGENOTESOFF=0xc3,
+  CMD_CHANNEL_LARGENOTESON=0xc4,
+  CMD_CHANNEL_DYNSETDYNTABLE=0xc5,
+  CMD_CHANNEL_SETBANK=0xc6,
+  CMD_CHANNEL_WRITESEQ=0xc7,
+  CMD_CHANNEL_SUBTRACT=0xc8,
+  CMD_CHANNEL_BITAND=0xc9,
+  CMD_CHANNEL_SETMUTEBHV=0xca,
+  CMD_CHANNEL_READSEQ=0xcb,
+  CMD_CHANNEL_SETVAL=0xcc,
+  CMD_CHANNEL_STEREOHEADSETEFFECTS=0xd0,
+  CMD_CHANNEL_SETNOTEALLOCATIONPOLICY=0xd1,
+  CMD_CHANNEL_SETSUSTAIN=0xd2,
+  CMD_CHANNEL_PITCHBEND=0xd3,
+  CMD_CHANNEL_SETUPDATESPERFRAME=0xd6,
+  CMD_CHANNEL_SETVIBRATORATE=0xd7,
+  CMD_CHANNEL_SETVIBRATOEXTENT=0xd8,
+  CMD_CHANNEL_SETDECAYRELEASE=0xd9,
+  CMD_CHANNEL_SETENVELOPE=0xda,
+  CMD_CHANNEL_TRANSPOSE=0xdb,
+  CMD_CHANNEL_SETPANCHANWEIGHT=0xdc,
+  CMD_CHANNEL_SETPAN=0xdd,
+  CMD_CHANNEL_DREQSCALE=0xde,
+  CMD_CHANNEL_SETVOL=0xdf,
+  CMD_CHANNEL_SETVOLSCALE=0xe0,
+  CMD_CHANNEL_SETVIBRATORATELINEAR=0xe1,
+  CMD_CHANNEL_SETVIBRATOEXTENTLINEAR=0xe2,
+  CMD_CHANNEL_SETVIBRATODELAY=0xe3,
+  CMD_CHANNEL_DYNCALL=0xe4,
+  CMD_CHANNEL_UNRESERVENOTES=0xf1,
+  CMD_CHANNEL_RESERVENOTES=0xf2,
+  CMD_CHANNEL_HANG=0xf3,
+  CMD_CHANNEL_BGEZ=0xf5,
+  CMD_CHANNEL_BREAK=0xf6,
+  CMD_CHANNEL_LOOPEND=0xf7,
+  CMD_CHANNEL_LOOP=0xf8,
+  CMD_CHANNEL_BLTZ=0xf9,
+  CMD_CHANNEL_BEQZ=0xfa,
+  CMD_CHANNEL_JUMP=0xfb,
+  CMD_CHANNEL_CALL=0xfc,
+  CMD_CHANNEL_DELAY=0xfd,
+  CMD_CHANNEL_DELAY1=0xfe
+  // layer
+};
+
 int getUniquePatternCount(DivEngine* e, int chan) {
   int count=0;
   int chanOrdCount=e->curSubSong->ordersLen;
@@ -80,35 +176,35 @@ SafeWriter* DivEngine::saveM64(unsigned char muteBhv, unsigned char volumeScale,
 
   /* .m64 "header"? (sequence data ~ global setup) */
 
-  w->writeC(0xd3); // mute behavior
+  w->writeC(CMD_SEQ_SETMUTEBHV); // mute behavior
   w->writeC(muteBhv);
-  w->writeC(0xd5); // mute volume scale
+  w->writeC(CMD_SEQ_SETMUTESCALE); // mute volume scale
   w->writeC(muteVolScale);
 
   unsigned short chanMask = (1<<channels)-1;
-  w->writeC(0xd7);
+  w->writeC(CMD_SEQ_INITCHANNELS);
   w->writeS_BE(chanMask); // init channels
 
-  w->writeC(0xdb);
+  w->writeC(CMD_SEQ_SETVOL);
   w->writeC(volumeScale); // set vol scale
 
   chanDataBegin = w->tell();
   // write temporary channel data pointers
   for (unsigned char i=0; i<channels; i++) {
-    w->writeC(0x90+i);
+    w->writeC(CMD_SEQ_STARTCHANNEL+i);
     w->writeS_BE(0); // pad with 0s
   }
 
-  w->writeC(0xdd);
+  w->writeC(CMD_SEQ_SETTEMPO);
   w->writeC((unsigned char)calcBPM()); // set song tempo
 
-  w->writeC(0xfd); // delay
+  w->writeC(CMD_SEQ_DELAY); // delay
   writeVar(w,0x7fff);
 
-  w->writeC(0xd6); // deinit channels
+  w->writeC(CMD_SEQ_DISABLECHANNELS); // deinit channels
   w->writeS_BE(chanMask);
 
-  w->writeC(0xff); // end sequence
+  w->writeC(CMD_END); // end sequence
 
   /* channel data ~ orders */
 
@@ -121,12 +217,12 @@ SafeWriter* DivEngine::saveM64(unsigned char muteBhv, unsigned char volumeScale,
 
     // channel data stuff here
 
-    w->writeC(0xc4); // enable "large notes"
-    // w->writeC(0xc3); // disable "large notes"
-    w->writeC(0xdf);
+    w->writeC(CMD_CHANNEL_LARGENOTESON); // enable "large notes"
+    // w->writeC(CMD_CHANNEL_LARGENOTESOFF); // disable "large notes"
+    w->writeC(CMD_CHANNEL_SETVOL);
     w->writeC(0x7f); // set chan volume
   
-    w->writeC(0xc1);
+    w->writeC(CMD_CHANNEL_SETINSTR);
     w->writeC(0x00); // ins
 
 
@@ -134,19 +230,19 @@ SafeWriter* DivEngine::saveM64(unsigned char muteBhv, unsigned char volumeScale,
 
     for (unsigned char j=0; j<layerCount; j++) {
       layerDataBegin[j]=w->tell();
-      w->writeC(0x90+j);
+      w->writeC(CMD_CHANNEL_SETLAYER+j);
       w->writeS_BE(0);
     }
 
-    w->writeC(0xdd);
+    w->writeC(CMD_CHANNEL_SETPAN);
     w->writeC(0x3f); // panning
 
-    w->writeC(0xdf);
+    w->writeC(CMD_CHANNEL_SETVOL);
     w->writeC(0x7f); // volume 2
 
-    w->writeC(0x6f); //priority
+    w->writeC(CMD_CHANNEL_SETNOTEPRIORITY); //priority
 
-    w->writeC(0xff);
+    w->writeC(CMD_END);
 
     for (unsigned char j=0; j<layerCount; j++) {
       /* layer/track data ~ patterns */
@@ -187,7 +283,7 @@ SafeWriter* DivEngine::saveM64(unsigned char muteBhv, unsigned char volumeScale,
       w->writeC(0xc0); //delay
       w->writeC(0x7f);
 
-      w->writeC(0xff);
+      w->writeC(CMD_END);
     }
 
 
@@ -196,7 +292,7 @@ SafeWriter* DivEngine::saveM64(unsigned char muteBhv, unsigned char volumeScale,
 
     for (unsigned char j=0; j<channels; j++) {
       w->seek(layerDataBegin[j],SEEK_SET);
-      w->writeC(0x90+j);
+      w->writeC(CMD_SEQ_STARTCHANNEL+j);
       w->writeS_BE(layerData[j]);
     }
 
