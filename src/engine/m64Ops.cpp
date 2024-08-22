@@ -24,7 +24,16 @@
 #include "../ta-log.h"
 
 enum m64Commands {
+  // shared commands
   CMD_END=0xff,
+  CMD_LOOPEND=0xf7,
+  CMD_LOOP=0xf8,
+  CMD_BLTZ=0xf9,
+  CMD_BEQZ=0xfa,
+  CMD_JUMP=0xfb,
+  CMD_CALL=0xfc,
+  CMD_DELAY=0xfd, // note used in layer
+  CMD_DELAY1=0xfe, // note used in layer
   // sequence
   CMD_SEQ_TESTCHDISABLED=0x00,
   CMD_SEQ_SUBVARIATION=0x50,
@@ -51,14 +60,6 @@ enum m64Commands {
   CMD_SEQ_UNRESERVENOTES=0xf1,
   CMD_SEQ_RESERVENOTES=0xf2,
   CMD_SEQ_BGEZ=0xf5,
-  CMD_SEQ_LOOPEND=0xf7,
-  CMD_SEQ_LOOP=0xf8,
-  CMD_SEQ_BLTZ=0xf9,
-  CMD_SEQ_BEQZ=0xfa,
-  CMD_SEQ_JUMP=0xfb,
-  CMD_SEQ_CALL=0xfc,
-  CMD_SEQ_DELAY=0xfd,
-  CMD_SEQ_DELAY1=0xfe,
   // channel
   CMD_CHANNEL_TESTLAYERFINISHED=0x00,
   CMD_CHANNEL_STARTCHANNEL=0x10,
@@ -108,15 +109,26 @@ enum m64Commands {
   CMD_CHANNEL_HANG=0xf3,
   CMD_CHANNEL_BGEZ=0xf5,
   CMD_CHANNEL_BREAK=0xf6,
-  CMD_CHANNEL_LOOPEND=0xf7,
-  CMD_CHANNEL_LOOP=0xf8,
-  CMD_CHANNEL_BLTZ=0xf9,
-  CMD_CHANNEL_BEQZ=0xfa,
-  CMD_CHANNEL_JUMP=0xfb,
-  CMD_CHANNEL_CALL=0xfc,
-  CMD_CHANNEL_DELAY=0xfd,
-  CMD_CHANNEL_DELAY1=0xfe
   // layer
+  CMD_LAYER_NOTE0=0x00,
+  CMD_LAYER_SMALLNOTE0=0x00,
+  CMD_LAYER_NOTE1=0x40,
+  CMD_LAYER_SMALLNOTE1=0x40,
+  CMD_LAYER_NOTE2=0x80,
+  CMD_LAYER_SMALLNOTE2=0x80,
+  CMD_LAYER_DELAY=0xc0,
+  CMD_LAYER_SETSHORTNOTEVELOCITY=0xc1,
+  CMD_LAYER_TRANSPOSE=0xc2,
+  CMD_LAYER_SETSHORTNOTEDEFAULTPLAYPERCENTAGE=0xc3,
+  CMD_LAYER_SOMETHINGON=0xc4,
+  CMD_LAYER_SOMETHINGOFF=0xc5,
+  CMD_LAYER_SETINSTR=0xc6,
+  CMD_LAYER_PORTAMENTO=0xc7,
+  CMD_LAYER_DISABLEPORTAMENTO=0xc8,
+  CMD_LAYER_SETSHORTNOTEDURATION=0xc9,
+  CMD_LAYER_SETPAN=0xca,
+  CMD_LAYER_SETSHORTNOTEVELOCITYFROMTABLE=0xd0,
+  CMD_LAYER_SETSHORTNOTEDURATIONFROMTABLE=0xe0
 };
 
 int getUniquePatternCount(DivEngine* e, int chan) {
@@ -198,7 +210,7 @@ SafeWriter* DivEngine::saveM64(unsigned char muteBhv, unsigned char volumeScale,
   w->writeC(CMD_SEQ_SETTEMPO);
   w->writeC((unsigned char)calcBPM()); // set song tempo
 
-  w->writeC(CMD_SEQ_DELAY); // delay
+  w->writeC(CMD_DELAY); // delay
   writeVar(w,0x7fff);
 
   w->writeC(CMD_SEQ_DISABLECHANNELS); // deinit channels
@@ -273,14 +285,14 @@ SafeWriter* DivEngine::saveM64(unsigned char muteBhv, unsigned char volumeScale,
       //   }
 
       // }
-      w->writeC(0xc2);
+      w->writeC(CMD_LAYER_TRANSPOSE);
       w->writeC(0x00); // transpose
 
-      w->writeC(0x40+0x27); // note
+      w->writeC(CMD_LAYER_NOTE1+0x27); // note
       writeVar(w,0x7fff); // play percentage
       w->writeC(0x7f); // vel
 
-      w->writeC(0xc0); //delay
+      w->writeC(CMD_LAYER_DELAY); // delay
       w->writeC(0x7f);
 
       w->writeC(CMD_END);
@@ -292,7 +304,7 @@ SafeWriter* DivEngine::saveM64(unsigned char muteBhv, unsigned char volumeScale,
 
     for (unsigned char j=0; j<channels; j++) {
       w->seek(layerDataBegin[j],SEEK_SET);
-      w->writeC(CMD_SEQ_STARTCHANNEL+j);
+      w->writeC(CMD_CHANNEL_SETLAYER+j);
       w->writeS_BE(layerData[j]);
     }
 
@@ -309,7 +321,7 @@ SafeWriter* DivEngine::saveM64(unsigned char muteBhv, unsigned char volumeScale,
   w->seek(chanDataBegin,SEEK_SET);
   // write correct pointers
   for (unsigned char i=0; i<channels; i++) {
-    w->writeC(0x90+i);
+    w->writeC(CMD_SEQ_STARTCHANNEL+i);
     w->writeS_BE(chanData[i]);
   }
 
