@@ -16,7 +16,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(CMAKE_PROJECT_VERSION_MAJOR 0)
 set(CMAKE_PROJECT_VERSION_MINOR 6)
-set(CMAKE_PROJECT_VERSION_PATCH 4)
+set(CMAKE_PROJECT_VERSION_PATCH 5)
 
 set(BUILD_GUI_DEFAULT ON)
 set(USE_SDL2_DEFAULT ON)
@@ -476,6 +476,8 @@ src/baseutils.cpp
 src/fileutils.cpp
 src/utfutils.cpp
 
+extern/itcompress/compression.c
+
 extern/SAASound/src/SAAAmp.cpp
 extern/SAASound/src/SAADevice.cpp
 extern/SAASound/src/SAAEnv.cpp
@@ -672,10 +674,20 @@ src/engine/fileOps/dmf.cpp
 src/engine/fileOps/fc.cpp
 src/engine/fileOps/ftm.cpp
 src/engine/fileOps/fur.cpp
+src/engine/fileOps/it.cpp
 src/engine/fileOps/mod.cpp
 src/engine/fileOps/s3m.cpp
 src/engine/fileOps/text.cpp
 src/engine/fileOps/tfm.cpp
+src/engine/fileOps/xm.cpp
+
+src/engine/fileOps/p.cpp
+src/engine/fileOps/p86.cpp
+src/engine/fileOps/pdx.cpp
+src/engine/fileOps/ppc.cpp
+src/engine/fileOps/pps.cpp
+src/engine/fileOps/pvi.cpp
+src/engine/fileOps/pzi.cpp
 
 src/engine/blip_buf.c
 src/engine/brrUtils.c
@@ -689,6 +701,7 @@ src/engine/configEngine.cpp
 src/engine/dispatchContainer.cpp
 src/engine/engine.cpp
 src/engine/export.cpp
+src/engine/exportDef.cpp
 src/engine/fileOpsIns.cpp
 src/engine/fileOpsSample.cpp
 src/engine/filter.cpp
@@ -704,8 +717,6 @@ src/engine/wavetable.cpp
 src/engine/waveSynth.cpp
 src/engine/wavOps.cpp
 src/engine/vgmOps.cpp
-src/engine/zsmOps.cpp
-src/engine/zsm.cpp
 
 src/engine/platform/abstract.cpp
 src/engine/platform/genesis.cpp
@@ -783,6 +794,8 @@ src/engine/platform/dummy.cpp
 
 src/engine/export/abstract.cpp
 src/engine/export/amigaValidation.cpp
+src/engine/export/tiuna.cpp
+src/engine/export/zsm.cpp
 
 src/engine/effect/abstract.cpp
 src/engine/effect/dummy.cpp
@@ -1069,6 +1082,7 @@ if (WITH_LOCALE)
         message(FATAL_ERROR "Could not find libintl! Try enabling USE_MOMO.")
       endif()
       list(APPEND DEPENDENCIES_DEFINES HAVE_LOCALE)
+      list(APPEND DEPENDENCIES_DEFINES GNULIB_overrides_sprintf)
       list(APPEND DEPENDENCIES_INCLUDE_DIRS ${Intl_INCLUDE_DIRS})
       list(APPEND DEPENDENCIES_LIBRARIES ${Intl_LIBRARIES})
       message(STATUS "Using libintl (system)")
@@ -1245,7 +1259,7 @@ if (NOT ANDROID OR TERMUX)
     install(DIRECTORY doc DESTINATION ${CMAKE_INSTALL_DOCDIR})
     install(DIRECTORY papers DESTINATION ${CMAKE_INSTALL_DOCDIR}/other)
     install(FILES LICENSE DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/furnace)
-    list(APPEND DEPENDENCIES_DEFINES LOCALE_DIR="${CMAKE_INSTALL_LOCALEDIR}")
+    list(APPEND DEPENDENCIES_DEFINES LOCALE_DIR="${CMAKE_INSTALL_FULL_LOCALEDIR}")
     install(DIRECTORY po/locale/ DESTINATION ${CMAKE_INSTALL_LOCALEDIR})
     if (WITH_DEMOS OR WITH_INSTRUMENTS OR WITH_WAVETABLES)
       set(FURNACE_DATADIR ${CMAKE_INSTALL_FULL_DATADIR}/furnace)

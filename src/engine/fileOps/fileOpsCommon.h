@@ -53,7 +53,7 @@ struct NotZlibException {
 #define DIV_FC13_MAGIC "SMOD"
 #define DIV_FC14_MAGIC "FC14"
 #define DIV_S3M_MAGIC "SCRM"
-#define DIV_XM_MAGIC "Extended Module:"
+#define DIV_XM_MAGIC "Extended Module: "
 #define DIV_IT_MAGIC "IMPM"
 #define DIV_TFM_MAGIC "TFMfmtV2"
 
@@ -63,3 +63,34 @@ enum DivFurVariants: int {
   DIV_FUR_VARIANT_VANILLA=0,
   DIV_FUR_VARIANT_B=1,
 };
+
+// MIDI-related
+struct midibank_t {
+  String name;
+  uint8_t bankMsb,
+          bankLsb;
+};
+
+// Reused patch data structures
+
+// SBI and some other OPL containers
+
+struct sbi_t {
+  uint8_t Mcharacteristics,
+          Ccharacteristics,
+          Mscaling_output,
+          Cscaling_output,
+          Meg_AD,
+          Ceg_AD,
+          Meg_SR,
+          Ceg_SR,
+          Mwave,
+          Cwave,
+          FeedConnect;
+};
+
+//bool stringNotBlank(String& str);
+// detune needs extra translation from register to furnace format
+//uint8_t fmDtRegisterToFurnace(uint8_t&& dtNative);
+
+//void readSbiOpData(sbi_t& sbi, SafeReader& reader);

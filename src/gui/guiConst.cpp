@@ -383,8 +383,8 @@ const FurnaceGUIColors fxColors[256]={
   GUI_COLOR_PATTERN_EFFECT_PANNING,
   GUI_COLOR_PATTERN_EFFECT_PANNING,
   GUI_COLOR_PATTERN_EFFECT_PANNING,
-  GUI_COLOR_PATTERN_EFFECT_INVALID,
-  GUI_COLOR_PATTERN_EFFECT_INVALID,
+  GUI_COLOR_PATTERN_EFFECT_PANNING,
+  GUI_COLOR_PATTERN_EFFECT_PANNING,
   GUI_COLOR_PATTERN_EFFECT_INVALID,
   GUI_COLOR_PATTERN_EFFECT_INVALID,
   GUI_COLOR_PATTERN_EFFECT_INVALID,
@@ -482,7 +482,7 @@ const FurnaceGUIColors fxColors[256]={
   GUI_COLOR_PATTERN_EFFECT_INVALID,
   GUI_COLOR_PATTERN_EFFECT_INVALID,
   GUI_COLOR_PATTERN_EFFECT_INVALID,
-  GUI_COLOR_PATTERN_EFFECT_INVALID,
+  GUI_COLOR_PATTERN_EFFECT_VOLUME, // DC
   GUI_COLOR_PATTERN_EFFECT_INVALID,
   GUI_COLOR_PATTERN_EFFECT_INVALID,
   GUI_COLOR_PATTERN_EFFECT_MISC, // DF
@@ -687,6 +687,7 @@ const FurnaceGUIActionDef guiActions[GUI_ACTION_MAX]={
   D("PAT_LATCH", _N("Set note input latch"), 0),
   D("PAT_SCROLL_MODE", _N("Change mobile scroll mode"), 0),
   D("PAT_CLEAR_LATCH", _N("Clear note input latch"), 0),
+  D("PAT_ABSORB_INSTRUMENT", _N("Absorb instrument/octave from status at cursor"), 0),
   D("PAT_MAX", "", NOT_AN_ACTION),
 
   D("INS_LIST_MIN", _N("---Instrument list"), NOT_AN_ACTION),
@@ -703,6 +704,7 @@ const FurnaceGUIActionDef guiActions[GUI_ACTION_MAX]={
   D("INS_LIST_UP", _N("Instrument cursor up"), SDLK_UP),
   D("INS_LIST_DOWN", _N("Instrument cursor down"), SDLK_DOWN),
   D("INS_LIST_DIR_VIEW", _N("Instruments: toggle folders/standard view"), FURKMOD_CMD|SDLK_v),
+  D("INS_LIST_SAVE_ALL", _N("Save all instruments"), 0),
   D("INS_LIST_MAX", "", NOT_AN_ACTION),
 
   D("WAVE_LIST_MIN", _N("---Wavetable list"), NOT_AN_ACTION),
@@ -720,6 +722,7 @@ const FurnaceGUIActionDef guiActions[GUI_ACTION_MAX]={
   D("WAVE_LIST_UP", _N("Wavetable cursor up"), SDLK_UP),
   D("WAVE_LIST_DOWN", _N("Wavetable cursor down"), SDLK_DOWN),
   D("WAVE_LIST_DIR_VIEW", _N("Wavetables: toggle folders/standard view"), FURKMOD_CMD|SDLK_v),
+  D("WAVE_LIST_SAVE_ALL", _N("Save all wavetables"), 0),
   D("WAVE_LIST_MAX", "", NOT_AN_ACTION),
 
   D("SAMPLE_LIST_MIN", _N("---Sample list"), NOT_AN_ACTION),
@@ -741,6 +744,7 @@ const FurnaceGUIActionDef guiActions[GUI_ACTION_MAX]={
   D("SAMPLE_LIST_STOP_PREVIEW", _N("Stop sample preview"), 0),
   D("SAMPLE_LIST_DIR_VIEW", _N("Samples: Toggle folders/standard view"), FURKMOD_CMD|SDLK_v),
   D("SAMPLE_LIST_MAKE_MAP", _N("Samples: Make me a drum kit"), 0),
+  D("SAMPLE_LIST_SAVE_ALL", _N("Save all samples"), 0),
   D("SAMPLE_LIST_MAX", "", NOT_AN_ACTION),
 
   D("SAMPLE_MIN", _N("---Sample editor"), NOT_AN_ACTION),
@@ -938,10 +942,15 @@ const FurnaceGUIColorDef guiColors[GUI_COLOR_MAX]={
   D(GUI_COLOR_FM_SSG,"",ImVec4(1.0f,1.0f,1.0f,1.0f)),
   D(GUI_COLOR_FM_WAVE,"",ImVec4(1.0f,1.0f,1.0f,1.0f)),
 
+  D(GUI_COLOR_MACRO_HIGHLIGHT,"",ImVec4(1.0f,1.0f,1.0f,1.0f)),
   D(GUI_COLOR_MACRO_VOLUME,"",ImVec4(0.2f,1.0f,0.0f,1.0f)),
   D(GUI_COLOR_MACRO_PITCH,"",ImVec4(1.0f,0.8f,0.0f,1.0f)),
   D(GUI_COLOR_MACRO_OTHER,"",ImVec4(0.0f,0.9f,1.0f,1.0f)),
   D(GUI_COLOR_MACRO_WAVE,"",ImVec4(1.0f,0.4f,0.0f,1.0f)),
+  D(GUI_COLOR_MACRO_NOISE,"",ImVec4(0.8f,0.8f,0.8f,1.0f)),
+  D(GUI_COLOR_MACRO_FILTER,"",ImVec4(0.4f,0.2f,1.0f,1.0f)),
+  D(GUI_COLOR_MACRO_ENVELOPE,"",ImVec4(0.0f,1.0f,0.5f,1.0f)),
+  D(GUI_COLOR_MACRO_GLOBAL,"",ImVec4(1.0f,0.1f,0.1f,1.0f)),
 
   D(GUI_COLOR_INSTR_STD,"",ImVec4(0.6f,1.0f,0.5f,1.0f)),
   D(GUI_COLOR_INSTR_FM,"",ImVec4(0.6f,0.9f,1.0f,1.0f)),

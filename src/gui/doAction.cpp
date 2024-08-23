@@ -123,16 +123,16 @@ void FurnaceGUI::doAction(int what) {
       pendingStepUpdate=1;
       break;
     case GUI_ACTION_OCTAVE_UP:
-      if (++curOctave>7) {
-        curOctave=7;
+      if (++curOctave>GUI_EDIT_OCTAVE_MAX) {
+        curOctave=GUI_EDIT_OCTAVE_MAX;
       } else {
         e->autoNoteOffAll();
         failedNoteOn=false;
       }
       break;
     case GUI_ACTION_OCTAVE_DOWN:
-      if (--curOctave<-5) {
-        curOctave=-5;
+      if (--curOctave<GUI_EDIT_OCTAVE_MIN) {
+        curOctave=GUI_EDIT_OCTAVE_MIN;
       } else {
         e->autoNoteOffAll();
         failedNoteOn=false;
@@ -676,6 +676,33 @@ void FurnaceGUI::doAction(int what) {
       latchTarget=0;
       latchNibble=false;
       break;
+    case GUI_ACTION_PAT_ABSORB_INSTRUMENT: {
+      DivPattern* pat=e->curPat[cursor.xCoarse].getPattern(e->curOrders->ord[cursor.xCoarse][curOrder],false);
+      if (!pat) break;
+      bool foundIns=false;
+      bool foundOctave=false;
+      for (int i=cursor.y; i>=0 && !(foundIns && foundOctave); i--) {
+        // absorb most recent instrument
+        if (!foundIns && pat->data[i][2] >= 0) {
+          curIns=pat->data[i][2];
+          foundIns=true;
+        }
+        // absorb most recent octave (i.e. set curOctave such that the "main row" (QWERTY) of notes
+        // will result in an octave number equal to the previous note).
+        if (!foundOctave && pat->data[i][0] != 0) {
+          // decode octave data (was signed cast to unsigned char)
+          int octave=pat->data[i][1];
+          if (octave>128) octave-=256;
+          // @NOTE the special handling when note==12, which is really an octave above what's
+          // stored in the octave data. without this handling, if you press Q, then
+          // "ABSORB_INSTRUMENT", then Q again, you'd get a different octave!
+          if (pat->data[i][0]==12) octave++;
+          curOctave=CLAMP(octave-1, GUI_EDIT_OCTAVE_MIN, GUI_EDIT_OCTAVE_MAX);
+          foundOctave=true;
+        }
+      }
+      break;
+    }
 
     case GUI_ACTION_INS_LIST_ADD:
       if (settings.insTypeMenu) {
@@ -781,8 +808,14 @@ void FurnaceGUI::doAction(int what) {
     case GUI_ACTION_INS_LIST_DIR_VIEW:
       insListDir=!insListDir;
       break;
+    case GUI_ACTION_INS_LIST_SAVE_ALL:
+      if (e->song.ins.empty()) {
+        showError(_("this song doesn't have any instruments."));
+      } else {
+        openFileDialog(GUI_FILE_INS_SAVE_ALL);
+      }
+      break;
 
-    
     case GUI_ACTION_WAVE_LIST_ADD: {
       std::vector<DivSystem> alreadyDone;
       waveSizeList.clear();
@@ -902,6 +935,13 @@ void FurnaceGUI::doAction(int what) {
     case GUI_ACTION_WAVE_LIST_DIR_VIEW:
       waveListDir=!waveListDir;
       break;
+    case GUI_ACTION_WAVE_LIST_SAVE_ALL:
+      if (e->song.wave.empty()) {
+        showError(_("this song doesn't have any wavetables."));
+      } else {
+        openFileDialog(GUI_FILE_WAVE_SAVE_ALL);
+      }
+      break;
 
     case GUI_ACTION_SAMPLE_LIST_ADD:
       curSample=e->addSample();
@@ -931,6 +971,7 @@ void FurnaceGUI::doAction(int what) {
               sample->loop=prevSample->loop;
               sample->loopMode=prevSample->loopMode;
               sample->brrEmphasis=prevSample->brrEmphasis;
+              sample->brrNoFilter=prevSample->brrNoFilter;
               sample->dither=prevSample->dither;
               sample->depth=prevSample->depth;
               if (sample->init(prevSample->samples)) {
@@ -1055,6 +1096,13 @@ void FurnaceGUI::doAction(int what) {
       displayInsTypeListMakeInsSample=-2;
       break;
     }
+    case GUI_ACTION_SAMPLE_LIST_SAVE_ALL:
+      if (e->song.sample.empty()) {
+        showError(_("this song doesn't have any samples."));
+      } else {
+        openFileDialog(GUI_FILE_SAMPLE_SAVE_ALL);
+      }
+      break;
 
     case GUI_ACTION_SAMPLE_SELECT:
       if (curSample<0 || curSample>=(int)e->song.sample.size()) break;

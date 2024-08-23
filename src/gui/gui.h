@@ -137,6 +137,9 @@ enum FurnaceGUIRenderBackend {
 #define ngettext momo_ngettext
 #endif
 
+#define GUI_EDIT_OCTAVE_MIN -5
+#define GUI_EDIT_OCTAVE_MAX 7
+
 // TODO:
 // - add colors for FM envelope and waveform
 // - maybe add "alternate" color for FM modulators/carriers (a bit difficult)
@@ -277,10 +280,15 @@ enum FurnaceGUIColors {
   GUI_COLOR_FM_SSG,
   GUI_COLOR_FM_WAVE,
 
+  GUI_COLOR_MACRO_HIGHLIGHT,
   GUI_COLOR_MACRO_VOLUME,
   GUI_COLOR_MACRO_PITCH,
   GUI_COLOR_MACRO_OTHER,
   GUI_COLOR_MACRO_WAVE,
+  GUI_COLOR_MACRO_NOISE,
+  GUI_COLOR_MACRO_FILTER,
+  GUI_COLOR_MACRO_ENVELOPE,
+  GUI_COLOR_MACRO_GLOBAL,
 
   GUI_COLOR_INSTR_STD,
   GUI_COLOR_INSTR_FM,
@@ -575,22 +583,24 @@ enum FurnaceGUIFileDialogs {
   GUI_FILE_INS_OPEN_REPLACE,
   GUI_FILE_INS_SAVE,
   GUI_FILE_INS_SAVE_DMP,
+  GUI_FILE_INS_SAVE_ALL,
   GUI_FILE_WAVE_OPEN,
   GUI_FILE_WAVE_OPEN_REPLACE,
   GUI_FILE_WAVE_SAVE,
   GUI_FILE_WAVE_SAVE_DMW,
   GUI_FILE_WAVE_SAVE_RAW,
+  GUI_FILE_WAVE_SAVE_ALL,
   GUI_FILE_SAMPLE_OPEN,
   GUI_FILE_SAMPLE_OPEN_RAW,
   GUI_FILE_SAMPLE_OPEN_REPLACE,
   GUI_FILE_SAMPLE_OPEN_REPLACE_RAW,
   GUI_FILE_SAMPLE_SAVE,
   GUI_FILE_SAMPLE_SAVE_RAW,
+  GUI_FILE_SAMPLE_SAVE_ALL,
   GUI_FILE_EXPORT_AUDIO_ONE,
   GUI_FILE_EXPORT_AUDIO_PER_SYS,
   GUI_FILE_EXPORT_AUDIO_PER_CHANNEL,
   GUI_FILE_EXPORT_VGM,
-  GUI_FILE_EXPORT_ZSM,
   GUI_FILE_EXPORT_CMDSTREAM,
   GUI_FILE_EXPORT_TEXT,
   GUI_FILE_EXPORT_ROM,
@@ -642,9 +652,8 @@ enum FurnaceGUIExportTypes {
 
   GUI_EXPORT_AUDIO=0,
   GUI_EXPORT_VGM,
-  GUI_EXPORT_ZSM,
+  GUI_EXPORT_ROM,
   GUI_EXPORT_CMD_STREAM,
-  GUI_EXPORT_AMIGA_VAL,
   GUI_EXPORT_TEXT,
   GUI_EXPORT_DMF
 };
@@ -808,6 +817,7 @@ enum FurnaceGUIActions {
   GUI_ACTION_PAT_LATCH,
   GUI_ACTION_PAT_SCROLL_MODE,
   GUI_ACTION_PAT_CLEAR_LATCH,
+  GUI_ACTION_PAT_ABSORB_INSTRUMENT,
   GUI_ACTION_PAT_MAX,
 
   GUI_ACTION_INS_LIST_MIN,
@@ -824,6 +834,7 @@ enum FurnaceGUIActions {
   GUI_ACTION_INS_LIST_UP,
   GUI_ACTION_INS_LIST_DOWN,
   GUI_ACTION_INS_LIST_DIR_VIEW,
+  GUI_ACTION_INS_LIST_SAVE_ALL,
   GUI_ACTION_INS_LIST_MAX,
 
   GUI_ACTION_WAVE_LIST_MIN,
@@ -841,6 +852,7 @@ enum FurnaceGUIActions {
   GUI_ACTION_WAVE_LIST_UP,
   GUI_ACTION_WAVE_LIST_DOWN,
   GUI_ACTION_WAVE_LIST_DIR_VIEW,
+  GUI_ACTION_WAVE_LIST_SAVE_ALL,
   GUI_ACTION_WAVE_LIST_MAX,
 
   GUI_ACTION_SAMPLE_LIST_MIN,
@@ -862,6 +874,7 @@ enum FurnaceGUIActions {
   GUI_ACTION_SAMPLE_LIST_STOP_PREVIEW,
   GUI_ACTION_SAMPLE_LIST_DIR_VIEW,
   GUI_ACTION_SAMPLE_LIST_MAKE_MAP,
+  GUI_ACTION_SAMPLE_LIST_SAVE_ALL,
   GUI_ACTION_SAMPLE_LIST_MAX,
 
   GUI_ACTION_SAMPLE_MIN,
@@ -1522,6 +1535,7 @@ class FurnaceGUIRender {
     virtual void drawOsc(float* data, size_t len, ImVec2 pos0, ImVec2 pos1, ImVec4 color, ImVec2 canvasSize, float lineWidth);
     virtual void present();
     virtual bool supportsDrawOsc();
+    virtual bool areTexturesSquare();
     virtual bool getOutputSize(int& w, int& h);
     virtual int getWindowFlags();
     virtual int getMaxTextureWidth();
@@ -1579,9 +1593,10 @@ class FurnaceGUI {
   int sampleTexW, sampleTexH;
   bool updateSampleTex;
 
-  String workingDir, fileName, clipboard, warnString, errorString, lastError, curFileName, nextFile, sysSearchQuery, newSongQuery, paletteQuery;
+  String workingDir, fileName, clipboard, warnString, errorString, lastError, curFileName, nextFile, sysSearchQuery, newSongQuery, paletteQuery, sampleBankSearchQuery;
   String workingDirSong, workingDirIns, workingDirWave, workingDirSample, workingDirAudioExport;
-  String workingDirVGMExport, workingDirZSMExport, workingDirROMExport, workingDirFont, workingDirColors, workingDirKeybinds;
+  String workingDirVGMExport, workingDirROMExport;
+  String workingDirFont, workingDirColors, workingDirKeybinds;
   String workingDirLayout, workingDirROM, workingDirTest;
   String workingDirConfig;
   String mmlString[32];
@@ -1590,6 +1605,7 @@ class FurnaceGUI {
   String folderString;
 
   std::vector<DivSystem> sysSearchResults;
+  std::vector<std::pair<DivSample*,bool>> sampleBankSearchResults;
   std::vector<FurnaceGUISysDef> newSongSearchResults;
   std::vector<int> paletteSearchResults;
   FixedQueue<String,32> recentFile;
@@ -1598,13 +1614,15 @@ class FurnaceGUI {
   std::vector<String> availRenderDrivers;
   std::vector<String> availAudioDrivers;
 
-  bool quit, warnQuit, willCommit, edit, editClone, isPatUnique, modified, displayError, displayExporting, vgmExportLoop, zsmExportLoop, zsmExportOptimize, vgmExportPatternHints;
+  bool quit, warnQuit, willCommit, edit, editClone, isPatUnique, modified, displayError, displayExporting, vgmExportLoop, vgmExportPatternHints;
   bool vgmExportDirectStream, displayInsTypeList, displayWaveSizeList;
   bool portrait, injectBackUp, mobileMenuOpen, warnColorPushed;
   bool wantCaptureKeyboard, oldWantCaptureKeyboard, displayMacroMenu;
   bool displayNew, displayExport, displayPalette, fullScreen, preserveChanPos, sysDupCloneChannels, sysDupEnd, noteInputPoly, notifyWaveChange;
   bool wantScrollListIns, wantScrollListWave, wantScrollListSample;
   bool displayPendingIns, pendingInsSingle, displayPendingRawSample, snesFilterHex, modTableHex, displayEditString;
+  bool displayPendingSamples, replacePendingSample;
+  bool displayExportingROM;
   bool changeCoarse;
   bool mobileEdit;
   bool killGraphics;
@@ -1617,7 +1635,6 @@ class FurnaceGUI {
   int vgmExportTrailingTicks;
   int cvHiScore;
   int drawHalt;
-  int zsmExportTickRate;
   int macroPointSize;
   int waveEditStyle;
   int displayInsTypeListMakeInsSample;
@@ -1705,6 +1722,16 @@ class FurnaceGUI {
   char macroRelLabel[32];
   char emptyLabel[32];
   char emptyLabel2[32];
+
+  std::vector<int> songOrdersLengths; //lengths of all orders (for drawing song export progress)
+  int songLength; //length of all the song in rows
+  int songLoopedSectionLength; //length of looped part of the song
+  int songFadeoutSectionLength; //length of fading part of the song
+  bool songHasSongEndCommand; //song has "Song end" command (FFxx)
+  int lengthOfOneFile; //length of one rendering pass. song length times num of loops + fadeout
+  int totalLength; //total length of render (lengthOfOneFile times num of files for per-channel export)
+  float curProgress;
+  int totalFiles;
 
   struct Settings {
     bool settingsChanged;
@@ -1910,7 +1937,6 @@ class FurnaceGUI {
     int wasapiEx;
     int chanOscThreads;
     int renderPoolThreads;
-    int showPool;
     int writeInsNames;
     int readInsNames;
     int fontBackend;
@@ -1940,9 +1966,11 @@ class FurnaceGUI {
     int backupInterval;
     int backupMaxCopies;
     int autoFillSave;
+    int autoMacroStepSize;
     unsigned int maxUndoSteps;
     float vibrationStrength;
     int vibrationLength;
+    int s3mOPL3;
     String mainFontPath;
     String headFontPath;
     String patFontPath;
@@ -2166,7 +2194,6 @@ class FurnaceGUI {
       wasapiEx(0),
       chanOscThreads(0),
       renderPoolThreads(0),
-      showPool(0),
       writeInsNames(0),
       readInsNames(1),
       fontBackend(1),
@@ -2196,9 +2223,11 @@ class FurnaceGUI {
       backupInterval(30),
       backupMaxCopies(5),
       autoFillSave(0),
+      autoMacroStepSize(0),
       maxUndoSteps(100),
       vibrationStrength(0.5f),
       vibrationLength(20),
+      s3mOPL3(1),
       mainFontPath(""),
       headFontPath(""),
       patFontPath(""),
@@ -2355,6 +2384,7 @@ class FurnaceGUI {
   std::vector<DivCommand> cmdStream;
   std::vector<Particle> particles;
   std::vector<std::pair<DivInstrument*,bool>> pendingIns;
+  std::vector<std::pair<DivSample*,bool>> pendingSamples;
 
   std::vector<FurnaceGUISysCategory> sysCategories;
 
@@ -2661,6 +2691,17 @@ class FurnaceGUI {
   int dmfExportVersion;
   FurnaceGUIExportTypes curExportType;
 
+  // ROM export specific
+  DivROMExportOptions romTarget;
+  DivConfig romConfig;
+  bool romMultiFile;
+  bool romExportSave;
+  String romFilterName, romFilterExt;
+  String romExportPath;
+  DivROMExport* pendingExport;
+  bool romExportAvail[DIV_ROM_MAX];
+  bool romExportExists;
+
   // user presets window
   std::vector<int> selectedUserPreset;
 
@@ -2668,8 +2709,7 @@ class FurnaceGUI {
 
   void drawExportAudio(bool onWindow=false);
   void drawExportVGM(bool onWindow=false);
-  void drawExportZSM(bool onWindow=false);
-  void drawExportAmigaVal(bool onWindow=false);
+  void drawExportROM(bool onWindow=false);
   void drawExportText(bool onWindow=false);
   void drawExportCommand(bool onWindow=false);
   void drawExportDMF(bool onWindow=false);
@@ -2709,6 +2749,7 @@ class FurnaceGUI {
   bool portSet(String label, unsigned int portSetID, int ins, int outs, int activeIns, int activeOuts, int& clickedPort, std::map<unsigned int,ImVec2>& portPos);
 
   void updateWindowTitle();
+  void updateROMExportAvail();
   void autoDetectSystem();
   void autoDetectSystemIter(std::vector<FurnaceGUISysDef>& category, bool& isMatch, std::map<DivSystem,int>& defCountMap, std::map<DivSystem,DivConfig>& defConfMap, std::map<DivSystem,int>& sysCountMap, std::map<DivSystem,DivConfig>& sysConfMap);
   void prepareLayout();
@@ -2738,6 +2779,7 @@ class FurnaceGUI {
   void drawMacros(std::vector<FurnaceGUIMacroDesc>& macros, FurnaceGUIMacroEditState& state);
   void alterSampleMap(int column, int val);
 
+  void insTabFMModernHeader(DivInstrument* ins);
   void insTabFM(DivInstrument* ins);
   void insTabSample(DivInstrument* ins);
 

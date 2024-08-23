@@ -42,6 +42,7 @@ bool FurnaceGUI::drawSysConf(int chan, int sysPos, DivSystem type, DivConfig& fl
       } else {
         chipType=flags.getBool("ladderEffect",0)?1:0;
       }
+      int interruptSimCycles=flags.getInt("interruptSimCycles",0);
       bool noExtMacros=flags.getBool("noExtMacros",false);
       bool fbAllOps=flags.getBool("fbAllOps",false);
       bool msw=flags.getBool("msw",false);
@@ -100,6 +101,13 @@ bool FurnaceGUI::drawSysConf(int chan, int sysPos, DivSystem type, DivConfig& fl
           altered=true;
         }
       }
+
+      ImGui::Text(_("DAC interrupt simulation:"));
+      if (CWSliderInt(_("cycles##InterruptSim"),&interruptSimCycles,0,256)) {
+        if (interruptSimCycles<0) interruptSimCycles=0;
+        if (interruptSimCycles>256) interruptSimCycles=256;
+        altered=true;
+      } rightClickable
       
       if (altered) {
         e->lockSave([&]() {
@@ -108,6 +116,7 @@ bool FurnaceGUI::drawSysConf(int chan, int sysPos, DivSystem type, DivConfig& fl
           flags.set("noExtMacros",noExtMacros);
           flags.set("fbAllOps",fbAllOps);
           flags.set("msw",msw);
+          flags.set("interruptSimCycles",interruptSimCycles);
         });
       }
       break;
@@ -385,8 +394,10 @@ bool FurnaceGUI::drawSysConf(int chan, int sysPos, DivSystem type, DivConfig& fl
         }
         ImGui::Unindent();
       }
-      if (ImGui::Checkbox(_("Pretty please one more compat flag when I use arpeggio and my sound length"),&enoughAlready)) {
-        altered=true;
+      if (enoughAlready) {
+        if (ImGui::Checkbox(_("Pretty please one more compat flag when I use arpeggio and my sound length"),&enoughAlready)) {
+          altered=true;
+        }
       }
 
       if (altered) {
@@ -750,8 +761,10 @@ bool FurnaceGUI::drawSysConf(int chan, int sysPos, DivSystem type, DivConfig& fl
         altered=true;
       }
 
-      if (ImGui::Checkbox(_("Relative duty and cutoff macros are coarse (compatibility)"),&multiplyRel)) {
-        altered=true;
+      if (multiplyRel) {
+        if (ImGui::Checkbox(_("Relative duty and cutoff macros are coarse (compatibility)"),&multiplyRel)) {
+          altered=true;
+        }
       }
 
       if (ImGui::Checkbox(_("Cutoff macro race conditions (compatibility)"),&macroRace)) {
@@ -1061,6 +1074,18 @@ bool FurnaceGUI::drawSysConf(int chan, int sysPos, DivSystem type, DivConfig& fl
     case DIV_SYSTEM_TIA: {
       bool clockSel=flags.getInt("clockSel",0);
       int mixingType=flags.getInt("mixingType",0);
+      bool softwarePitch=flags.getBool("softwarePitch",false);
+      bool oldPitch=flags.getBool("oldPitch",false);
+
+      ImGui::BeginDisabled(oldPitch);
+      if (ImGui::Checkbox(_("Software pitch driver"),&softwarePitch)) {
+        altered=true;
+      }
+      ImGui::EndDisabled();
+      if (ImGui::Checkbox(_("Old pitch table (compatibility)"),&oldPitch)) {
+        if (oldPitch) softwarePitch=false;
+        altered=true;
+      }
 
       ImGui::Text(_("Mixing mode:"));
       ImGui::Indent();
@@ -1086,6 +1111,8 @@ bool FurnaceGUI::drawSysConf(int chan, int sysPos, DivSystem type, DivConfig& fl
         e->lockSave([&]() {
           flags.set("clockSel",(int)clockSel);
           flags.set("mixingType",mixingType);
+          flags.set("softwarePitch",softwarePitch);
+          flags.set("oldPitch",oldPitch);
         });
       }
       break;
@@ -1258,6 +1285,8 @@ bool FurnaceGUI::drawSysConf(int chan, int sysPos, DivSystem type, DivConfig& fl
     case DIV_SYSTEM_ES5506: {
       int channels=flags.getInt("channels",0x1f)+1;
       int volScale=flags.getInt("volScale",4095);
+      bool amigaVol=flags.getBool("amigaVol",false);
+      bool amigaPitch=flags.getBool("amigaPitch",false);
       ImGui::Text(_("Initial channel limit:"));
       if (CWSliderInt("##OTTO_InitialChannelLimit",&channels,5,32)) {
         if (channels<5) channels=5;
@@ -1273,10 +1302,26 @@ bool FurnaceGUI::drawSysConf(int chan, int sysPos, DivSystem type, DivConfig& fl
         altered=true;
       } rightClickable
 
+      if (ImGui::Checkbox(_("Amiga channel volumes (64)"),&amigaVol)) {
+        altered=true;
+      }
+      pushWarningColor(amigaPitch && e->song.linearPitch==2);
+      if (ImGui::Checkbox(_("Amiga-like pitch (non-linear pitch only)"),&amigaPitch)) {
+        altered=true;
+      }
+      if (amigaPitch && e->song.linearPitch==2) {
+        if (ImGui::IsItemHovered()) {
+          ImGui::SetTooltip("pitch linearity is set to linear. this won't do anything!");
+        }
+      }
+      popWarningColor();
+
       if (altered) {
         e->lockSave([&]() {
           flags.set("channels",channels-1);
           flags.set("volScale",volScale);
+          flags.set("amigaVol",amigaVol);
+          flags.set("amigaPitch",amigaPitch);
         });
       }
       break;
@@ -1847,6 +1892,7 @@ bool FurnaceGUI::drawSysConf(int chan, int sysPos, DivSystem type, DivConfig& fl
       int sampRate=flags.getInt("rate",44100);
       int bitDepth=flags.getInt("outDepth",15)+1;
       int interpolation=flags.getInt("interpolation",0);
+      int volMax=flags.getInt("volMax",255);
       bool stereo=flags.getBool("stereo",false);
 
       ImGui::Text(_("Output rate:"));
@@ -1859,6 +1905,12 @@ bool FurnaceGUI::drawSysConf(int chan, int sysPos, DivSystem type, DivConfig& fl
       if (CWSliderInt("##BitDepth",&bitDepth,1,16)) {
         if (bitDepth<1) bitDepth=1;
         if (bitDepth>16) bitDepth=16;
+        altered=true;
+      } rightClickable
+      ImGui::Text(_("Maximum volume:"));
+      if (CWSliderInt("##VolMax",&volMax,1,255)) {
+        if (volMax<1) volMax=1;
+        if (volMax>255) volMax=255;
         altered=true;
       } rightClickable
       if (ImGui::Checkbox(_("Stereo"),&stereo)) {
@@ -1891,6 +1943,7 @@ bool FurnaceGUI::drawSysConf(int chan, int sysPos, DivSystem type, DivConfig& fl
           flags.set("outDepth",bitDepth-1);
           flags.set("stereo",stereo);
           flags.set("interpolation",interpolation);
+          flags.set("volMax",volMax);
         });
       }
       break;
@@ -2428,12 +2481,37 @@ bool FurnaceGUI::drawSysConf(int chan, int sysPos, DivSystem type, DivConfig& fl
       }
       break;
     }
+    case DIV_SYSTEM_VERA: {
+      int chipType=flags.getInt("chipType",2);
+
+      ImGui::Text(_("Chip revision:"));
+      ImGui::Indent();
+      if (ImGui::RadioButton(_("V 0.3.1"),chipType==0)) {
+        chipType=0;
+        altered=true;
+      }
+      if (ImGui::RadioButton(_("V 47.0.0 (9-bit volume)"),chipType==1)) {
+        chipType=1;
+        altered=true;
+      }
+      if (ImGui::RadioButton(_("V 47.0.2 (Tri/Saw PW XOR)"),chipType==2)) {
+        chipType=2;
+        altered=true;
+      }
+      ImGui::Unindent();
+
+      if (altered) {
+        e->lockSave([&]() {
+          flags.set("chipType",chipType);
+        });
+      }
+      break;
+    }
     case DIV_SYSTEM_SWAN:
     case DIV_SYSTEM_BUBSYS_WSG:
     case DIV_SYSTEM_PET:
     case DIV_SYSTEM_GA20:
     case DIV_SYSTEM_PV1000:
-    case DIV_SYSTEM_VERA:
     case DIV_SYSTEM_C219:
     case DIV_SYSTEM_BIFURCATOR:
     case DIV_SYSTEM_POWERNOISE:

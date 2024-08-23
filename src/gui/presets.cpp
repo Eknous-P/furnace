@@ -141,12 +141,15 @@ void FurnaceGUI::initSystemPresets() {
     }
   );
   ENTRY(
+     "Game Boy Advance", {}
+  );
+  SUB_ENTRY(
     "Game Boy Advance (no software mixing)", {
       CH(DIV_SYSTEM_GB, 1.0f, 0, "chipType=3"),
       CH(DIV_SYSTEM_GBA_DMA, 0.5f, 0, ""),
     }
   );
-  ENTRY(
+  SUB_ENTRY(
     "Game Boy Advance (with MinMod)", {
       CH(DIV_SYSTEM_GB, 1.0f, 0, "chipType=3"),
       CH(DIV_SYSTEM_GBA_MINMOD, 0.5f, 0, ""),
@@ -254,12 +257,23 @@ void FurnaceGUI::initSystemPresets() {
       CH(DIV_SYSTEM_TIA, 1.0f, 0, "")
     }
   );
+    SUB_ENTRY(
+      "Atari 2600/7800 (with software pitch driver)", {
+        CH(DIV_SYSTEM_TIA, 1.0f, 0, "softwarePitch=1")
+      }
+    );
   ENTRY(
     "Atari 7800 + Ballblazer/Commando", {
       CH(DIV_SYSTEM_TIA, 1.0f, 0, ""),
       CH(DIV_SYSTEM_POKEY, 1.0f, 0, "")
     }
   );
+    SUB_ENTRY(
+      "Atari 7800 (with software pitch driver) + Ballblazer/Commando", {
+        CH(DIV_SYSTEM_TIA, 1.0f, 0, "softwarePitch=1"),
+        CH(DIV_SYSTEM_POKEY, 1.0f, 0, "")
+      }
+    );
   ENTRY(
     "Atari Lynx", {
       CH(DIV_SYSTEM_LYNX, 1.0f, 0, "")
@@ -503,6 +517,11 @@ void FurnaceGUI::initSystemPresets() {
           "rate=55930\n"
           "outDepth=7\n"
         ) // variable rate, Mono DAC
+      }
+    );
+  ENTRY(
+      "NEC PC-6001", {
+        CH(DIV_SYSTEM_AY8910, 1.0f, 0, "customClock=3993600")
       }
     );
   ENTRY(
@@ -1184,6 +1203,41 @@ void FurnaceGUI::initSystemPresets() {
         CH(DIV_SYSTEM_PCSPKR, 1.0f, 0, "")
       }
     );
+    SUB_ENTRY(
+      "Sega TeraDrive", {
+        CH(DIV_SYSTEM_YM2612, 1.0f, 0, ""),
+        CH(DIV_SYSTEM_SMS, 0.5f, 0, ""),
+        CH(DIV_SYSTEM_PCSPKR, 1.0f, 0, "")
+      }
+    );
+      SUB_SUB_ENTRY(
+        "Sega TeraDrive (extended channel 3)", {
+          CH(DIV_SYSTEM_YM2612_EXT, 1.0f, 0, ""),
+          CH(DIV_SYSTEM_SMS, 0.5f, 0, ""),
+          CH(DIV_SYSTEM_PCSPKR, 1.0f, 0, "")
+        }
+    );
+      SUB_SUB_ENTRY(
+        "Sega TeraDrive (CSM)", {
+          CH(DIV_SYSTEM_YM2612_CSM, 1.0f, 0, ""),
+          CH(DIV_SYSTEM_SMS, 0.5f, 0, ""),
+          CH(DIV_SYSTEM_PCSPKR, 1.0f, 0, "")
+        }
+    );
+      SUB_SUB_ENTRY(
+        "Sega TeraDrive (DualPCM)", {
+          CH(DIV_SYSTEM_YM2612_DUALPCM, 1.0f, 0, ""),
+          CH(DIV_SYSTEM_SMS, 0.5f, 0, ""),
+          CH(DIV_SYSTEM_PCSPKR, 1.0f, 0, "")
+        }
+    );
+      SUB_SUB_ENTRY(
+        "Sega TeraDrive (DualPCM, extended channel 3)", {
+          CH(DIV_SYSTEM_YM2612_DUALPCM_EXT, 1.0f, 0, ""),
+          CH(DIV_SYSTEM_SMS, 0.5f, 0, ""),
+          CH(DIV_SYSTEM_PCSPKR, 1.0f, 0, "")
+        }
+    );
   ENTRY(
     "Sharp X1", {
       CH(DIV_SYSTEM_AY8910, 1.0f, 0, "clockSel=3")
@@ -1200,6 +1254,18 @@ void FurnaceGUI::initSystemPresets() {
       CH(DIV_SYSTEM_YM2151, 1.0f, 0, "clockSel=2"),
       CH(DIV_SYSTEM_MSM6258, 1.0f, 0, "clockSel=2")
     }
+  );
+  ENTRY(
+    "FM-7", {
+      CH(DIV_SYSTEM_AY8910, 1.0f, 0, "clockSel=12"),
+      CH(DIV_SYSTEM_YM2203, 1.0f, 0, "clockSel=5")
+    }
+  );
+   SUB_ENTRY(
+     "FM-7 (extended channel 3)", {
+       CH(DIV_SYSTEM_AY8910, 1.0f, 0, "clockSel=12"),
+       CH(DIV_SYSTEM_YM2203_EXT, 1.0f, 0, "clockSel=5")
+     }
   );
   ENTRY(
     "FM Towns", {
@@ -1245,6 +1311,14 @@ void FurnaceGUI::initSystemPresets() {
       )
     }
   );
+  ENTRY(
+  "Sord M5", {
+    CH(DIV_SYSTEM_SMS, 1.0f, 0,
+      "customClock=1773447\n"
+      "chipType=1\n"
+     )
+   }
+ );
   CATEGORY_END;
 
   CATEGORY_BEGIN("Arcade systems","INSERT COIN");
@@ -2978,6 +3052,11 @@ void FurnaceGUI::initSystemPresets() {
       CH(DIV_SYSTEM_TIA, 1.0f, 0, "")
     }
   );
+    SUB_ENTRY(
+      "Atari TIA (with software pitch driver)", {
+        CH(DIV_SYSTEM_TIA, 1.0f, 0, "softwarePitch=1")
+      }
+    );
   ENTRY(
     "NES (Ricoh 2A03)", {
       CH(DIV_SYSTEM_NES, 1.0f, 0, "")

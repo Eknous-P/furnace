@@ -1,8 +1,8 @@
 #!/bin/bash
 
-FUR_VERSION="0.6.4"
+FUR_VERSION="0.6.5"
 
-EXPORT_LANGS=("de" "es" "fr" "fi" "hy" "id" "ja" "ko" "nl" "pl" "pt_BR" "ru" "sk" "sv" "th" "tr" "uk")
+EXPORT_LANGS=("de" "es" "fr" "fi" "hy" "id" "ja" "ko" "nl" "pl" "pt_BR" "ru" "sk" "sv" "th" "tr" "uk" "zh" "zh_HK")
 
 echo '#
 msgid ""
@@ -19,9 +19,9 @@ cd po
 for i in ${EXPORT_LANGS[@]}; do
   if [ -e "$i".po ]; then
     echo "merging $i"".po..."
-    msgmerge --backup=none -U "$i".po furnace.pot
+    msgmerge --backup=none -N -U "$i".po furnace.pot || exit 1
   else
     echo "creating $i"".po..."
-    msginit -i furnace.pot -l "$i".UTF-8 --no-translator
+    msginit -i furnace.pot -l "$i".UTF-8 --no-translator || exit 1
   fi
 done

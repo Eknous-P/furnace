@@ -433,6 +433,7 @@ void DivEngine::registerSystems() {
     {0x25, {DIV_CMD_AY_ENVELOPE_SLIDE, _("25xx: Envelope slide up"), negEffectVal}},
     {0x26, {DIV_CMD_AY_ENVELOPE_SLIDE, _("26xx: Envelope slide down")}},
     {0x29, {DIV_CMD_AY_AUTO_ENVELOPE, _("29xy: Set auto-envelope (x: numerator; y: denominator)")}},
+    {0x2c, {DIV_CMD_AY_AUTO_PWM, _("2Cxx: Set timer period offset (bit 7: sign)")}},
     {0x2e, {DIV_CMD_AY_IO_WRITE, _("2Exx: Write to I/O port A"), constVal<0>, effectVal}},
     {0x2f, {DIV_CMD_AY_IO_WRITE, _("2Fxx: Write to I/O port B"), constVal<1>, effectVal}},
   };
@@ -1053,6 +1054,7 @@ void DivEngine::registerSystems() {
       {0x13, {DIV_CMD_FDS_MOD_LOW, _("13xx: Set modulation speed low byte")}},
       {0x14, {DIV_CMD_FDS_MOD_POS, _("14xx: Set modulator position")}},
       {0x15, {DIV_CMD_FDS_MOD_WAVE, _("15xx: Set modulator table to waveform")}},
+      {0x16, {DIV_CMD_FDS_MOD_AUTO, _("16xy: Automatic modulation speed (x: numerator; y: denominator)")}},
     }
   );
 

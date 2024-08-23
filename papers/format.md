@@ -32,6 +32,7 @@ these fields are 0 in format versions prior to 100 (0.6pre1).
 
 the format versions are:
 
+- 214: Furnace 0.6.5
 - 212: Furnace 0.6.4
 - 201: Furnace 0.6.3
 - 197: Furnace 0.6.2
@@ -246,8 +247,17 @@ size | description
      |   - 0xd7: Game Boy Advance (direct) - 2 channels
      |   - 0xd8: Game Boy Advance (MinMod) - 16 channels
      |   - 0xd9: Bifurcator - 4 channels
+     |   - 0xda: SCSP - 32 channels (UNAVAILABLE)
+     |   - 0xdb: YMF271 (OPX) - 48 channels (UNAVAILABLE)
+     |   - 0xdc: RF5C400 - 32 channels (UNAVAILABLE)
+     |   - 0xdd: YM2612 XGM - 9 channels (UNAVAILABLE)
      |   - 0xde: YM2610B extended - 19 channels
+     |   - 0xdf: YM2612 XGM extended - 13 channels (UNAVAILABLE)
      |   - 0xe0: QSound - 19 channels
+     |   - 0xe1: PS1 - 24 channels (UNAVAILABLE)
+     |   - 0xe2: C64 (6581) with PCM - 4 channels (UNAVAILABLE)
+     |   - 0xe3: Watara Supervision - 4 channels (UNAVAILABLE)
+     |   - 0xe4: µPD1771C - 1 channel (UNAVAILABLE)
      |   - 0xf0: SID2 - 3 channels
      |   - 0xf1: 5E01 - 5 channels
      |   - 0xfc: Pong - 1 channel
@@ -586,6 +596,7 @@ size | description
      | - 0: BRR emphasis
   1  | flags 2 (>=159) or reserved
      | - 0: dither
+     | - 1: no BRR filters (>=213)
   4  | loop start
      | - -1 means no loop
   4  | loop end
