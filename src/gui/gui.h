@@ -1723,13 +1723,13 @@ class FurnaceGUI {
   char emptyLabel[32];
   char emptyLabel2[32];
 
-  std::vector<int> songOrdersLengths; //lengths of all orders (for drawing song export progress)
-  int songLength; //length of all the song in rows
-  int songLoopedSectionLength; //length of looped part of the song
-  int songFadeoutSectionLength; //length of fading part of the song
-  bool songHasSongEndCommand; //song has "Song end" command (FFxx)
-  int lengthOfOneFile; //length of one rendering pass. song length times num of loops + fadeout
-  int totalLength; //total length of render (lengthOfOneFile times num of files for per-channel export)
+  std::vector<int> songOrdersLengths; // lengths of all orders (for drawing song export progress)
+  int songLength; // length of all the song in rows
+  int songLoopedSectionLength; // length of looped part of the song
+  int songFadeoutSectionLength; // length of fading part of the song
+  bool songHasSongEndCommand; // song has "Song end" command (FFxx)
+  int lengthOfOneFile; // length of one rendering pass. song length times num of loops + fadeout
+  int totalLength; // total length of render (lengthOfOneFile times num of files for per-channel export)
   float curProgress;
   int totalFiles;
 
@@ -2269,6 +2269,9 @@ class FurnaceGUI {
   std::vector<ImWchar> localeExtraRanges;
 
   DivInstrument* prevInsData;
+  DivInstrument cachedCurIns;
+  DivInstrument* cachedCurInsPtr;
+  bool insEditMayBeDirty;
 
   unsigned char* pendingLayoutImport;
   size_t pendingLayoutImportLen;
@@ -2829,7 +2832,7 @@ class FurnaceGUI {
   void drawMemory();
   void drawCompatFlags();
   void drawPiano();
-  void drawNotes();
+  void drawNotes(bool asChild=false);
   void drawChannels();
   void drawPatManager();
   void drawSysManager();
@@ -2919,13 +2922,14 @@ class FurnaceGUI {
   void doExpand(int multiplier, const SelectionPoint& sStart, const SelectionPoint& sEnd);
   void doCollapseSong(int divider);
   void doExpandSong(int multiplier);
+  void doAbsorbInstrument();
   void doUndo();
   void doRedo();
   void doFind();
   void doReplace();
   void doDrag();
   void editOptions(bool topMenu);
-  DivSystem systemPicker();
+  DivSystem systemPicker(bool fullWidth);
   void noteInput(int num, int key, int vol=-1);
   void valueInput(int num, bool direct=false, int target=-1);
   void orderInput(int num);
@@ -2934,6 +2938,10 @@ class FurnaceGUI {
 
   void doUndoSample();
   void doRedoSample();
+
+  void checkRecordInstrumentUndoStep();
+  void doUndoInstrument();
+  void doRedoInstrument();
 
   void play(int row=0);
   void setOrder(unsigned char order, bool forced=false);

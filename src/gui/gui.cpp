@@ -2589,34 +2589,32 @@ void FurnaceGUI::exportAudio(String path, DivAudioExportModes mode) {
   int loopEnd=0;
   e->walkSong(loopOrder,loopRow,loopEnd);
 
-  e->findSongLength(loopOrder, loopRow, audioExportOptions.fadeOut, songFadeoutSectionLength, songHasSongEndCommand, songOrdersLengths, songLength); //for progress estimation
+  e->findSongLength(loopOrder,loopRow,audioExportOptions.fadeOut,songFadeoutSectionLength,songHasSongEndCommand,songOrdersLengths,songLength); // for progress estimation
 
-  songLoopedSectionLength = songLength;
-  for(int i = 0; i < loopOrder; i++)
-  {
-    songLoopedSectionLength -= songOrdersLengths[i];
+  songLoopedSectionLength=songLength;
+  for (int i=0; i<loopOrder; i++) {
+    songLoopedSectionLength-=songOrdersLengths[i];
   }
-  songLoopedSectionLength -= loopRow;
+  songLoopedSectionLength-=loopRow;
 
   e->saveAudio(path.c_str(),audioExportOptions);
 
-  totalFiles = 0;
+  totalFiles=0;
   e->getTotalAudioFiles(totalFiles);
-  int totalLoops = 0;
+  int totalLoops=0;
 
-  lengthOfOneFile = songLength;
+  lengthOfOneFile=songLength;
 
-  if(!songHasSongEndCommand)
-  {
+  if (!songHasSongEndCommand) {
     e->getTotalLoops(totalLoops);
 
-    lengthOfOneFile += songLoopedSectionLength * totalLoops;
-    lengthOfOneFile += songFadeoutSectionLength; //account for fadeout
+    lengthOfOneFile+=songLoopedSectionLength*totalLoops;
+    lengthOfOneFile+=songFadeoutSectionLength; // account for fadeout
   }
 
-  totalLength = lengthOfOneFile * totalFiles;
+  totalLength=lengthOfOneFile*totalFiles;
 
-  curProgress = 0.0f;
+  curProgress=0.0f;
 
   displayExporting=true;
 }
@@ -3739,6 +3737,7 @@ bool FurnaceGUI::loop() {
       ImGui::GetIO().AddKeyEvent(ImGuiKey_Backspace,false);
       injectBackUp=false;
     }
+
     while (SDL_PollEvent(&ev)) {
       WAKE_UP;
       ImGui_ImplSDL2_ProcessEvent(&ev);
@@ -3755,13 +3754,16 @@ bool FurnaceGUI::loop() {
         }
         case SDL_MOUSEBUTTONUP:
           pointUp(ev.button.x,ev.button.y,ev.button.button);
+          insEditMayBeDirty=true;
           break;
         case SDL_MOUSEBUTTONDOWN:
           pointDown(ev.button.x,ev.button.y,ev.button.button);
+          insEditMayBeDirty=true;
           break;
         case SDL_MOUSEWHEEL:
           wheelX+=ev.wheel.x;
           wheelY+=ev.wheel.y;
+          insEditMayBeDirty=true;
           break;
         case SDL_WINDOWEVENT:
           switch (ev.window.event) {
@@ -3838,12 +3840,14 @@ bool FurnaceGUI::loop() {
           if (!ImGui::GetIO().WantCaptureKeyboard) {
             keyDown(ev);
           }
+          insEditMayBeDirty=true;
 #ifdef IS_MOBILE
           injectBackUp=true;
 #endif
           break;
         case SDL_KEYUP:
           // for now
+          insEditMayBeDirty=true;
           break;
         case SDL_DROPFILE:
           if (ev.drop.file!=NULL) {
@@ -4482,7 +4486,7 @@ bool FurnaceGUI::loop() {
         } else {
           if (ImGui::BeginMenu(_("add chip..."))) {
             exitDisabledTimer=1;
-            DivSystem picked=systemPicker();
+            DivSystem picked=systemPicker(false);
             if (picked!=DIV_SYSTEM_NULL) {
               if (!e->addSystem(picked)) {
                 showError(fmt::sprintf(_("cannot add chip! (%s)"),e->getLastError()));
@@ -4513,7 +4517,7 @@ bool FurnaceGUI::loop() {
             ImGui::Checkbox(_("Preserve channel positions"),&preserveChanPos);
             for (int i=0; i<e->song.systemLen; i++) {
               if (ImGui::BeginMenu(fmt::sprintf("%d. %s##_SYSC%d",i+1,getSystemName(e->song.system[i]),i).c_str())) {
-                DivSystem picked=systemPicker();
+                DivSystem picked=systemPicker(false);
                 if (picked!=DIV_SYSTEM_NULL) {
                   if (e->changeSystem(i,picked,preserveChanPos)) {
                     MARK_MODIFIED;
@@ -5855,68 +5859,53 @@ bool FurnaceGUI::loop() {
     MEASURE_BEGIN(popup);
 
     centerNextWindow(_("Rendering..."),canvasW,canvasH);
-    if (ImGui::BeginPopupModal(_("Rendering..."),NULL,ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove)) {
-      if(audioExportOptions.mode != DIV_EXPORT_MODE_MANY_CHAN)
-      {
+    if (ImGui::BeginPopupModal(_("Rendering..."),NULL,ImGuiWindowFlags_NoResize|ImGuiWindowFlags_NoMove)) {
+      // WHAT the HELL?!
+      WAKE_UP;
+      if (audioExportOptions.mode!=DIV_EXPORT_MODE_MANY_CHAN) {
         ImGui::Text(_("Please wait..."));
       }
-      float* progressLambda = &curProgress;
-      int curPosInRows = 0;
-      int* curPosInRowsLambda = &curPosInRows;
-      int loopsLeft = 0;
-      int* loopsLeftLambda = &loopsLeft;
-      int totalLoops = 0;
-      int* totalLoopsLambda = &totalLoops;
-      int curFile = 0;
-      int* curFileLambda = &curFile;
-      if(e->isExporting())
-      {
-        e->lockEngine([this, progressLambda, curPosInRowsLambda, curFileLambda, loopsLeftLambda, totalLoopsLambda]()
-        {
-          int curRow = 0;
-          int curOrder = 0;
-          e->getCurSongPos(curRow, curOrder);
-          *curFileLambda = 0;
-          e->getCurFileIndex(*curFileLambda);
+      float* progressLambda=&curProgress;
+      int curPosInRows=0;
+      int* curPosInRowsLambda=&curPosInRows;
+      int loopsLeft=0;
+      int* loopsLeftLambda=&loopsLeft;
+      int totalLoops=0;
+      int* totalLoopsLambda=&totalLoops;
+      int curFile=0;
+      int* curFileLambda=&curFile;
+      if (e->isExporting()) {
+        e->lockEngine([this, progressLambda, curPosInRowsLambda, curFileLambda,
+                       loopsLeftLambda, totalLoopsLambda] () {
+                      int curRow=0; int curOrder=0;
+                      e->getCurSongPos(curRow, curOrder); *curFileLambda=0;
+                      e->getCurFileIndex(*curFileLambda);
+                      *curPosInRowsLambda=curRow; for (int i=0; i<curOrder;
+                                                         i++) {
+                      *curPosInRowsLambda+=songOrdersLengths[i];}
 
-          *curPosInRowsLambda = curRow;
-
-          for(int i = 0; i < curOrder; i++)
-          {
-            *curPosInRowsLambda += songOrdersLengths[i];
-          }
-
-          if(!songHasSongEndCommand)
-          {
-            e->getLoopsLeft(*loopsLeftLambda);
-            e->getTotalLoops(*totalLoopsLambda);
-
-            if((*totalLoopsLambda) != (*loopsLeftLambda)) //we are going 2nd, 3rd, etc. time through the song
-            {
-              *curPosInRowsLambda -= (songLength - songLoopedSectionLength); //a hack so progress bar does not jump?
-            }
-            if(e->getIsFadingOut()) //we are in fadeout??? why it works like that bruh
-            {
-              *curPosInRowsLambda -= (songLength - songLoopedSectionLength); //a hack so progress bar does not jump?
-            }
-          }
-
-          *progressLambda = (float)((*curPosInRowsLambda) +
-            ((*totalLoopsLambda) - (*loopsLeftLambda)) * songLength +
-            lengthOfOneFile * (*curFileLambda))
-            / (float)totalLength;
-        });
+                      if (!songHasSongEndCommand) {
+                      e->getLoopsLeft(*loopsLeftLambda); e->getTotalLoops(*totalLoopsLambda); if ((*totalLoopsLambda)!=(*loopsLeftLambda))        //we are going 2nd, 3rd, etc. time through the song
+                      {
+                      *curPosInRowsLambda-=(songLength-songLoopedSectionLength);        //a hack so progress bar does not jump?
+                      }
+                      if (e->getIsFadingOut())        //we are in fadeout??? why it works like that bruh
+                      {
+                      // LIVE WITH IT damn it
+                      *curPosInRowsLambda-=(songLength-songLoopedSectionLength);        //a hack so progress bar does not jump?
+                      }
+                      }
+                      // this horrible indentation courtesy of `indent`
+                      *progressLambda=(float) ((*curPosInRowsLambda) +                                                 ((*totalLoopsLambda)-                                                 (*loopsLeftLambda)) *                                                 songLength +                                                 lengthOfOneFile *                                                 (*curFileLambda))                      / (float) totalLength;});
       }
 
-      ImGui::Text(_("Row %d of %d"), curPosInRows +
-            ((totalLoops) - (loopsLeft)) * songLength, lengthOfOneFile);
+      ImGui::Text(_("Row %d of %d"),curPosInRows+((totalLoops)-(loopsLeft))*songLength,lengthOfOneFile);
 
-      if(audioExportOptions.mode == DIV_EXPORT_MODE_MANY_CHAN)
-      {
-        ImGui::Text(_("Channel %d of %d"), curFile + 1, totalFiles);
+      if (audioExportOptions.mode==DIV_EXPORT_MODE_MANY_CHAN) {
+        ImGui::Text(_("Channel %d of %d"),curFile+1,totalFiles);
       }
 
-      ImGui::ProgressBar(curProgress,ImVec2(-FLT_MIN,0), fmt::sprintf("%.2f%%", curProgress * 100.0f).c_str());
+      ImGui::ProgressBar(curProgress,ImVec2(320.0f*dpiScale,0),fmt::sprintf("%.2f%%",curProgress*100.0f).c_str());
 
       if (ImGui::Button(_("Abort"))) {
         if (e->haltAudioFile()) {
@@ -7241,6 +7230,11 @@ bool FurnaceGUI::loop() {
       willCommit=false;
     }
 
+    // To check for instrument editor modification, we need an up-to-date `insEditMayBeDirty`
+    // (based on incoming user input events), and we want any possible instrument modifications
+    // to already have been made.
+    checkRecordInstrumentUndoStep();
+
     if (shallDetectScale) {
       if (--shallDetectScale<1) {
         if (settings.dpiScale<0.5f) {
@@ -8414,6 +8408,8 @@ FurnaceGUI::FurnaceGUI():
   localeRequiresChineseTrad(false),
   localeRequiresKorean(false),
   prevInsData(NULL),
+  cachedCurInsPtr(NULL),
+  insEditMayBeDirty(false),
   pendingLayoutImport(NULL),
   pendingLayoutImportLen(0),
   pendingLayoutImportStep(0),

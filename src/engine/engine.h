@@ -52,10 +52,10 @@ class DivWorkPool;
 #define EXTERN_BUSY_BEGIN_SOFT e->softLocked=true; e->isBusy.lock();
 #define EXTERN_BUSY_END e->isBusy.unlock(); e->softLocked=false;
 
-#define DIV_UNSTABLE
+//#define DIV_UNSTABLE
 
-#define DIV_VERSION "dev217"
-#define DIV_ENGINE_VERSION 217
+#define DIV_VERSION "0.6.7"
+#define DIV_ENGINE_VERSION 219
 // for imports
 #define DIV_VERSION_MOD 0xff01
 #define DIV_VERSION_FC 0xff02
@@ -133,7 +133,7 @@ struct DivAudioExportOptions {
 struct DivChannelState {
   std::vector<DivDelayedCommand> delayed;
   int note, oldNote, lastIns, pitch, portaSpeed, portaNote;
-  int volume, volSpeed, cut, volCut, legatoDelay, legatoTarget, rowDelay, volMax;
+  int volume, volSpeed, volSpeedTarget, cut, volCut, legatoDelay, legatoTarget, rowDelay, volMax;
   int delayOrder, delayRow, retrigSpeed, retrigTick;
   int vibratoDepth, vibratoRate, vibratoPos, vibratoPosGiant, vibratoShape, vibratoFine;
   int tremoloDepth, tremoloRate, tremoloPos;
@@ -157,6 +157,7 @@ struct DivChannelState {
     portaNote(-1),
     volume(0x7f00),
     volSpeed(0),
+    volSpeedTarget(-1),
     cut(-1),
     volCut(-1),
     legatoDelay(-1),
@@ -474,7 +475,7 @@ class DivEngine {
   int midiOutTimeRate;
   float midiVolExp;
   int softLockCount;
-  int subticks, ticks, curRow, curOrder, prevRow, prevOrder, remainingLoops, totalLoops, lastLoopPos, exportLoopCount, curExportChan /*for per-channel export progress*/, nextSpeed, elapsedBars, elapsedBeats, curSpeed;
+  int subticks, ticks, curRow, curOrder, prevRow, prevOrder, remainingLoops, totalLoops, lastLoopPos, exportLoopCount, curExportChan, nextSpeed, elapsedBars, elapsedBeats, curSpeed;
   size_t curSubSongIndex;
   size_t bufferPos;
   double divider;
@@ -1014,19 +1015,19 @@ class DivEngine {
     // get how many loops is left
     void getLoopsLeft(int& loops);
 
-    //get how many loops in total export needs to do
+    // get how many loops in total export needs to do
     void getTotalLoops(int& loops);
 
     // get current position in song
     void getCurSongPos(int& row, int& order);
 
-    //get how many files export needs to create
+    // get how many files export needs to create
     void getTotalAudioFiles(int& files);
 
-    //get which file is processed right now (progress for e.g. per-channel export)
+    // get which file is processed right now (progress for e.g. per-channel export)
     void getCurFileIndex(int& file);
 
-    //get fadeout state
+    // get fadeout state
     bool getIsFadingOut();
 
     // add instrument
