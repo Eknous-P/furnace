@@ -2656,12 +2656,15 @@ bool FurnaceGUI::drawSysConf(int chan, int sysPos, DivSystem type, DivConfig& fl
       float C=flags.getDouble("C", 0.001f)*1000.0f;
 
       if (ImGui::SliderFloat("R1 (Ω)", &R1, 1.0f, 10000.f)) {
+        if (R1<0) R1=0;
         altered=true;
       } rightClickable
       if (ImGui::SliderFloat("R2 (Ω)", &R2, 1.0f, 10000.f)) {
+        if (R2<0) R2=0;
         altered=true;
       } rightClickable
       if (ImGui::SliderFloat("C (µF)", &C, 0.01f, 10.0f)) {
+        if (C<0) C=0;
         altered=true;
       } rightClickable
   
