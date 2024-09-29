@@ -2307,6 +2307,17 @@ void DivEngine::registerSystems() {
     SID3PostEffectHandlerMap
   );
 
+  sysDefs[DIV_SYSTEM_NE555]=new DivSysDef(
+    "Signetics NE555", NULL, 0xfe, 0, 1, false, true, 0, false, 0, 0, 0,
+    "uhh",
+    {"Square"},
+    {"SQR"},
+    {DIV_CH_PULSE},
+    {DIV_INS_NULL},
+    {},
+    {}
+  );
+
   sysDefs[DIV_SYSTEM_DUMMY]=new DivSysDef(
     _("Dummy System"), NULL, 0xfd, 0, 8, false, true, 0, false, 0, 0, 0,
     _("this is a system designed for testing purposes."),

@@ -25,6 +25,7 @@
 #include "platform/msm6258.h"
 #include "platform/msm6295.h"
 #include "platform/namcowsg.h"
+#include "platform/ne555.h"
 #include "platform/sms.h"
 #include "platform/opll.h"
 #include "platform/gb.h"
@@ -789,6 +790,9 @@ void DivDispatchContainer::init(DivSystem sys, DivEngine* eng, int chanCount, do
       } else {
         ((DivPlatformOPL*)dispatch)->setCore(eng->getConfInt("opl4Core",0));
       }
+      break;
+    case DIV_SYSTEM_NE555:
+      dispatch=new DivPlatformNE555;
       break;
     case DIV_SYSTEM_DUMMY:
       dispatch=new DivPlatformDummy;

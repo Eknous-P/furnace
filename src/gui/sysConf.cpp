@@ -2649,6 +2649,33 @@ bool FurnaceGUI::drawSysConf(int chan, int sysPos, DivSystem type, DivConfig& fl
       }
       break;
     }
+    case DIV_SYSTEM_NE555: {
+      float R1=flags.getFloat("R1", 1000.0f);
+      float R2=flags.getFloat("R2", 1000.0f);
+      float C=flags.getDouble("C", 0.001f)*1000.0f;
+
+      if (ImGui::SliderFloat("R1 (Ω)", &R1, 1.0f, 10000.f)) {
+        altered=true;
+      } rightClickable
+      if (ImGui::SliderFloat("R2 (Ω)", &R2, 1.0f, 10000.f)) {
+        altered=true;
+      } rightClickable
+      if (ImGui::SliderFloat("C (µF)", &C, 0.01f, 10.0f)) {
+        altered=true;
+      } rightClickable
+  
+      ImGui::Text("Frequency: %f Hz", .72f/((R1+2*R2)*(C/1000000.0f)));
+      ImGui::Text("Duty Cycle: %f%%",100*R2/(R1+2*R2));
+
+      if (altered) {
+        e->lockSave([&]() {
+          flags.set("R1",R1);
+          flags.set("R2",R2);
+          flags.set("C",(double)C/1000.0f);
+        });
+      }
+      break;
+    };
     default: {
       bool sysPal=flags.getInt("clockSel",0);
 
