@@ -143,7 +143,6 @@ void DivPlatformNE555::notifyInsDeletion(void* ins) {
 }
 
 void DivPlatformNE555::setFlags(const DivConfig& flags) {
-  CHECK_CUSTOM_CLOCK;
   rate=chipClock/2;
   oscBuf->rate=rate;
 
@@ -172,7 +171,7 @@ int DivPlatformNE555::init(DivEngine* p, int channels, int sugRate, const DivCon
   parent=p;
   isMuted[0]=false;
   chipClock=1000000;
-  rate=chipClock/2;
+  rate=chipClock/4;
   oscBuf=new DivDispatchOscBuffer;
   for (int i=0; i<1; i++) {
     isMuted[i]=false;

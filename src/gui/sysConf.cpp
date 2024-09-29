@@ -2650,6 +2650,7 @@ bool FurnaceGUI::drawSysConf(int chan, int sysPos, DivSystem type, DivConfig& fl
       break;
     }
     case DIV_SYSTEM_NE555: {
+      supportsCustomRate=false;
       float R1=flags.getFloat("R1", 1000.0f);
       float R2=flags.getFloat("R2", 1000.0f);
       float C=flags.getDouble("C", 0.001f)*1000.0f;

@@ -1,8 +1,6 @@
 // lol 555 emulator
 // nope im not emulating pin 5
 
-#include <stdio.h>
-
 struct ne555_passives {
     float ra;
     float rb;
