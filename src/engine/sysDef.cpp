@@ -2308,8 +2308,8 @@ void DivEngine::registerSystems() {
   );
 
   sysDefs[DIV_SYSTEM_NE555]=new DivSysDef(
-    "Signetics NE555", NULL, 0xfe, 0, 1, false, true, 0, false, 0, 0, 0,
-    "uhh",
+    "NE555", NULL, 0xfe, 0, 1, false, true, 0, false, 0, 0, 0,
+    "Industry-standard precision timer IC",
     {"Square"},
     {"SQR"},
     {DIV_CH_PULSE},

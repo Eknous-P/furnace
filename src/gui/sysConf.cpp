@@ -2655,21 +2655,21 @@ bool FurnaceGUI::drawSysConf(int chan, int sysPos, DivSystem type, DivConfig& fl
       float R2=flags.getFloat("R2", 1000.0f);
       float C=flags.getDouble("C", 0.001f)*1000.0f;
 
-      if (ImGui::SliderFloat("R1 (Ω)", &R1, 1.0f, 10000.f)) {
+      if (ImGui::SliderFloat("R1", &R1, 1.0f, 10000.f, "%g Ω")) {
         if (R1<0) R1=0;
         altered=true;
       } rightClickable
-      if (ImGui::SliderFloat("R2 (Ω)", &R2, 1.0f, 10000.f)) {
+      if (ImGui::SliderFloat("R2", &R2, 1.0f, 10000.f, "%g Ω")) {
         if (R2<0) R2=0;
         altered=true;
       } rightClickable
-      if (ImGui::SliderFloat("C (µF)", &C, 0.01f, 10.0f)) {
+      if (ImGui::SliderFloat("C", &C, 0.01f, 10.0f, "%g µF")) {
         if (C<0) C=0;
         altered=true;
       } rightClickable
   
-      ImGui::Text("Frequency: %f Hz", .72f/((R1+2*R2)*(C/1000000.0f)));
-      ImGui::Text("Duty Cycle: %f%%",100*R2/(R1+2*R2));
+      ImGui::Text("Frequency: %g Hz", .72f/((R1+2*R2)*(C/1000000.0f)));
+      ImGui::Text("Duty Cycle: %g%%",100*R2/(R1+2*R2));
 
       if (altered) {
         e->lockSave([&]() {
