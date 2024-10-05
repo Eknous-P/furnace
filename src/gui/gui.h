@@ -1999,6 +1999,7 @@ class FurnaceGUI {
     float vibrationStrength;
     int vibrationLength;
     int s3mOPL3;
+    int importInsNamesAsComment;
     String mainFontPath;
     String headFontPath;
     String patFontPath;
@@ -2258,6 +2259,7 @@ class FurnaceGUI {
       vibrationStrength(0.5f),
       vibrationLength(20),
       s3mOPL3(1),
+      importInsNamesAsComment(0),
       mainFontPath(""),
       headFontPath(""),
       patFontPath(""),

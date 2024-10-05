@@ -22,6 +22,7 @@
 bool DivEngine::loadMod(unsigned char* file, size_t len) {
   struct InvalidHeaderException {};
   bool success=false;
+  bool insNamesAsComment=getConfInt("importInsNamesAsComment",0);
   int chCount=0;
   int ordCount=0;
   std::vector<int> patPtr;
@@ -414,6 +415,7 @@ bool DivEngine::loadMod(unsigned char* file, size_t len) {
       ins->type=DIV_INS_AMIGA;
       ins->amiga.initSample=i;
       ins->name=ds.sample[i]->name;
+      if (insNamesAsComment) ds.notes+=ds.sample[i]->name+"\n";
       ds.ins.push_back(ins);
     }
     ds.insLen=ds.ins.size();

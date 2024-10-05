@@ -37,6 +37,7 @@ bool DivEngine::loadS3M(unsigned char* file, size_t len) {
   struct InvalidHeaderException {};
   bool success=false;
   bool opl2=!getConfInt("s3mOPL3",0);
+  bool insNamesAsComment=getConfInt("importInsNamesAsComment",0);
   char magic[4]={0,0,0,0};
   SafeReader reader=SafeReader(file,len);
   warnings="";
@@ -475,6 +476,7 @@ bool DivEngine::loadS3M(unsigned char* file, size_t len) {
         String name=reader.readStringLatin1(28);
         s->name=dosName;
         ins->name=name;
+        if (insNamesAsComment) ds.notes+=name+"\n";
 
         // "SCRS"
         reader.readI();
@@ -626,6 +628,7 @@ bool DivEngine::loadS3M(unsigned char* file, size_t len) {
 
         String name=reader.readStringLatin1(28);
         ins->name=name;
+        if (insNamesAsComment) ds.notes+=name+"\n";
 
         // "SCRI"
         reader.readI();
