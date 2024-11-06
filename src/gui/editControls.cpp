@@ -620,6 +620,10 @@ void FurnaceGUI::drawMobileControls() {
           mobileMenuPos=0.0f;
           aboutOpen=true;
         }
+        ImGui::SameLine();
+        if (ImGui::Button(_("WelcPopup"))) {
+          tutorial.protoWelcome=false;
+        }
         if (ImGui::Button(_("Switch to Desktop Mode"))) {
           toggleMobileUI(!mobileUI);
         }
@@ -1020,7 +1024,7 @@ void FurnaceGUI::drawEditControls() {
         ImGui::SameLine();
         if (ImGui::Button(ICON_FA_PLAY_CIRCLE "##PlayAgain")) {
           e->setRepeatPattern(false);
-          play();
+          play(0);
         }
         if (ImGui::IsItemHovered()) {
           ImGui::SetTooltip(_("Play from the beginning of this pattern"));
@@ -1028,7 +1032,7 @@ void FurnaceGUI::drawEditControls() {
         ImGui::SameLine();
         if (ImGui::Button(ICON_FA_STEP_FORWARD "##PlayRepeat")) {
           e->setRepeatPattern(true);
-          play();
+          play(0);
         }
         if (ImGui::IsItemHovered()) {
           ImGui::SetTooltip(_("Repeat from the beginning of this pattern"));

@@ -34,7 +34,7 @@ extern "C" {
 #define CHIP_FREQBASE fmFreqBase
 #define CHIP_DIVIDER fmDivBase
 
-class DivYM2610Interface: public ymfm::ymfm_interface {
+class DivYM2610Interface: public DivOPNInterface {
   public:
     unsigned char* adpcmAMem;
     unsigned char* adpcmBMem;
@@ -49,9 +49,9 @@ class DivYM2610Interface: public ymfm::ymfm_interface {
 
 class DivPlatformYM2610Base: public DivPlatformOPN {
   protected:
-    OPNChannelStereo chan[16];
-    DivDispatchOscBuffer* oscBuf[16];
-    bool isMuted[16];
+    OPNChannelStereo chan[17];
+    DivDispatchOscBuffer* oscBuf[17];
+    bool isMuted[17];
 
     ym3438_t fm_nuked;
     ymfm::ym2610b* fm;
@@ -322,7 +322,7 @@ class DivPlatformYM2610Base: public DivPlatformOPN {
       } else {
         rate=fm->sample_rate(chipClock);
       }
-      for (int i=0; i<16; i++) {
+      for (int i=0; i<17; i++) {
         oscBuf[i]->rate=rate;
       }
     }
@@ -332,7 +332,7 @@ class DivPlatformYM2610Base: public DivPlatformOPN {
       ayFlags.set("chipType",1);
       dumpWrites=false;
       skipRegisterWrites=false;
-      for (int i=0; i<16; i++) {
+      for (int i=0; i<17; i++) {
         isMuted[i]=false;
         oscBuf[i]=new DivDispatchOscBuffer;
       }
@@ -348,13 +348,14 @@ class DivPlatformYM2610Base: public DivPlatformOPN {
       setFlags(flags);
       // YM2149, 2MHz
       ay=new DivPlatformAY8910(true,chipClock,32,144);
+      ay->setCore(0);
       ay->init(p,3,sugRate,ayFlags);
       ay->toggleRegisterDump(true);
       return 0;
     }
 
     void quit() {
-      for (int i=0; i<16; i++) {
+      for (int i=0; i<17; i++) {
         delete oscBuf[i];
       }
       ay->quit();
@@ -364,7 +365,7 @@ class DivPlatformYM2610Base: public DivPlatformOPN {
     }
 
     DivPlatformYM2610Base(int ext, int psg, int adpcmA, int adpcmB, int chanCount):
-      DivPlatformOPN(ext,psg,adpcmA,adpcmB,chanCount,9440540.0, 72, 32) {}
+      DivPlatformOPN(ext,psg,adpcmA,adpcmB,chanCount,9440540.0, 72, 32, false, 16) {}
 };
 
 #endif

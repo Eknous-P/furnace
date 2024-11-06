@@ -283,6 +283,30 @@ enum DivDispatchCmds {
   DIV_CMD_MULTIPCM_PSEUDO_REVERB, // (value)
   DIV_CMD_MULTIPCM_LFO_RESET, // (value)
   DIV_CMD_MULTIPCM_LEVEL_DIRECT, // (value)
+  
+  DIV_CMD_SID3_SPECIAL_WAVE,
+  DIV_CMD_SID3_RING_MOD_SRC,
+  DIV_CMD_SID3_HARD_SYNC_SRC,
+  DIV_CMD_SID3_PHASE_MOD_SRC,
+  DIV_CMD_SID3_WAVE_MIX,
+  DIV_CMD_SID3_LFSR_FEEDBACK_BITS,
+  DIV_CMD_SID3_1_BIT_NOISE,
+  DIV_CMD_SID3_FILTER_DISTORTION,
+  DIV_CMD_SID3_FILTER_OUTPUT_VOLUME,
+  DIV_CMD_SID3_CHANNEL_INVERSION,
+  DIV_CMD_SID3_FILTER_CONNECTION,
+  DIV_CMD_SID3_FILTER_MATRIX,
+  DIV_CMD_SID3_FILTER_ENABLE,
+
+  DIV_CMD_C64_PW_SLIDE,
+  DIV_CMD_C64_CUTOFF_SLIDE,
+
+  DIV_CMD_SID3_PHASE_RESET,
+  DIV_CMD_SID3_NOISE_PHASE_RESET,
+  DIV_CMD_SID3_ENVELOPE_RESET,
+
+  DIV_CMD_SID3_CUTOFF_SCALING,
+  DIV_CMD_SID3_RESONANCE_SCALING,
 
   DIV_CMD_MAX
 };
@@ -359,6 +383,8 @@ struct DivRegWrite {
    *   - xx is the instance ID
    *   - data is the sample position
    * - 0xffffffff: reset
+   * - 0xfffffffe: add delay
+   *   - data is the delay
    */
   unsigned int addr;
   unsigned int val;
@@ -370,9 +396,18 @@ struct DivRegWrite {
 
 struct DivDelayedWrite {
   int time;
+  // this variable is internal.
+  // it is used by VGM export to make sure these writes are in order.
+  // do not change.
+  int order;
   DivRegWrite write;
+  DivDelayedWrite(int t, int o, unsigned int a, unsigned int v):
+    time(t),
+    order(o),
+    write(a,v) {}
   DivDelayedWrite(int t, unsigned int a, unsigned int v):
     time(t),
+    order(0),
     write(a,v) {}
 };
 
@@ -601,10 +636,10 @@ class DivDispatch {
 
     /**
      * get "paired" channels.
-     * @param chan the channel to query.
-     * @return a DivChannelPair.
+     * @param ch the channel to query.
+     * @param ret the DivChannelPair vector of pairs.
      */
-    virtual DivChannelPair getPaired(int chan);
+    virtual void getPaired(int ch, std::vector<DivChannelPair>& ret);
 
     /**
      * get channel mode hints.

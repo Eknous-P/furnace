@@ -190,33 +190,37 @@ void DivPlatformOPL::acquire_nuked(short** buf, size_t len) {
   for (size_t h=0; h<len; h++) {
     os[0]=0; os[1]=0; os[2]=0; os[3]=0; os[4]=0; os[5]=0;
     if (!writes.empty() && --delay<0) {
-      delay=1;
       QueuedWrite& w=writes.front();
-      if (w.addr>=0x200) {
-        pcm.writeReg(w.addr&0xff,w.val);
-        regPool[0x200|(w.addr&0xff)]=w.val;
+      if (w.addr==0xfffffffe) {
+        delay=w.val;
       } else {
-        switch (w.addr) {
-          case 8:
-            if (adpcmChan>=0) {
-              adpcmB->write(w.addr-7,(w.val&15)|0x80);
-              OPL3_WriteReg(&fm,w.addr,w.val&0xc0);
-            } else {
+        delay=1;
+        if (w.addr>=0x200) {
+          pcm.writeReg(w.addr&0xff,w.val);
+          regPool[0x200|(w.addr&0xff)]=w.val;
+        } else {
+          switch (w.addr) {
+            case 8:
+              if (adpcmChan>=0) {
+                adpcmB->write(w.addr-7,(w.val&15)|0x80);
+                OPL3_WriteReg(&fm,w.addr,w.val&0xc0);
+              } else {
+                OPL3_WriteReg(&fm,w.addr,w.val);
+              }
+              break;
+            case 7: case 9: case 10: case 11: case 12: case 13: case 14: case 15: case 16: case 17: case 18: case 21: case 22: case 23:
+              if (adpcmChan>=0) {
+                adpcmB->write(w.addr-7,w.val);
+              } else {
+                OPL3_WriteReg(&fm,w.addr,w.val);
+              }
+              break;
+            default:
               OPL3_WriteReg(&fm,w.addr,w.val);
-            }
-            break;
-          case 7: case 9: case 10: case 11: case 12: case 13: case 14: case 15: case 16: case 17: case 18: case 21: case 22: case 23:
-            if (adpcmChan>=0) {
-              adpcmB->write(w.addr-7,w.val);
-            } else {
-              OPL3_WriteReg(&fm,w.addr,w.val);
-            }
-            break;
-          default:
-            OPL3_WriteReg(&fm,w.addr,w.val);
-            break;
+              break;
+          }
+          regPool[w.addr&511]=w.val;
         }
-        regPool[w.addr&511]=w.val;
       }
       writes.pop();
     }
@@ -353,11 +357,11 @@ void DivPlatformOPL::acquire_ymfm1(short** buf, size_t len) {
 
   for (size_t h=0; h<len; h++) {
     if (!writes.empty() && --delay<0) {
-      delay=1;
       QueuedWrite& w=writes.front();
 
       fm_ymfm1->write(0,w.addr);
       fm_ymfm1->write(1,w.val);
+      delay=1;
 
       regPool[w.addr&511]=w.val;
       writes.pop();
@@ -395,11 +399,11 @@ void DivPlatformOPL::acquire_ymfm2(short** buf, size_t len) {
 
   for (size_t h=0; h<len; h++) {
     if (!writes.empty() && --delay<0) {
-      delay=1;
       QueuedWrite& w=writes.front();
 
       fm_ymfm2->write(0,w.addr);
       fm_ymfm2->write(1,w.val);
+      delay=1;
 
       regPool[w.addr&511]=w.val;
       writes.pop();
@@ -438,11 +442,11 @@ void DivPlatformOPL::acquire_ymfm8950(short** buf, size_t len) {
 
   for (size_t h=0; h<len; h++) {
     if (!writes.empty() && --delay<0) {
-      delay=1;
       QueuedWrite& w=writes.front();
 
       fm_ymfm8950->write(0,w.addr);
       fm_ymfm8950->write(1,w.val);
+      delay=1;
 
       regPool[w.addr&511]=w.val;
       writes.pop();
@@ -482,17 +486,27 @@ void DivPlatformOPL::acquire_ymfm3(short** buf, size_t len) {
 
   for (size_t h=0; h<len; h++) {
     if (!writes.empty() && --delay<0) {
-      delay=1;
       QueuedWrite& w=writes.front();
 
       fm_ymfm3->write((w.addr&0x100)?2:0,w.addr);
       fm_ymfm3->write(1,w.val);
+      delay=1;
 
       regPool[w.addr&511]=w.val;
       writes.pop();
     }
 
     fm_ymfm3->generate(&out,1);
+
+    if (downsample) {
+      // 49716-44100
+      downsamplerStep+=5616;
+      if (downsamplerStep>=44100) {
+        downsamplerStep-=44100;
+        h--;
+        continue;
+      }
+    }
 
     buf[0][h]=out.data[0]>>1;
     if (totalOutputs>1) {
@@ -572,11 +586,11 @@ void DivPlatformOPL::acquire_ymfm4(short** buf, size_t len) {
 
   for (size_t h=0; h<len; h++) {
     if (!writes.empty() && --delay<0) {
-      delay=1;
       QueuedWrite& w=writes.front();
 
       fm_ymfm4->write((w.addr&0x200)?4:(w.addr&0x100)?2:0,w.addr);
       fm_ymfm4->write((w.addr&0x200)?5:1,w.val);
+      delay=1;
 
       regPool[(w.addr&0x200)?(0x200+(w.addr&255)):(w.addr&511)]=w.val;
       writes.pop();
@@ -975,7 +989,7 @@ double DivPlatformOPL::NOTE_ADPCMB(int note) {
   if (adpcmChan<0) return 0;
   if (chan[adpcmChan].sample>=0 && chan[adpcmChan].sample<parent->song.sampleLen) {
     double off=65535.0*(double)(parent->getSample(chan[adpcmChan].sample)->centerRate)/8363.0;
-    return parent->calcBaseFreq((double)chipClock/144,off,note,false);
+    return parent->calcBaseFreq((double)chipClock/(compatYPitch?144:72),off,note,false);
   }
   return 0;
 }
@@ -1218,6 +1232,16 @@ void DivPlatformOPL::tick(bool sysTick) {
 
   memset(weWillWriteRRLater,0,64*sizeof(bool));
 
+  unsigned char opMask=(int)(chan[0].fourOp)|(chan[2].fourOp<<1)|(chan[4].fourOp<<2)|(chan[6].fourOp<<3)|(chan[8].fourOp<<4)|(chan[10].fourOp<<5);
+
+  // write ops which are being enabled
+  if (update4OpMask) {
+    if (oplType==3) {
+      immWrite(0x104,opMask|oldOpMask);
+      //printf("updating opMask to %.2x\n",opMask);
+    }
+  }
+
   for (int i=0; i<melodicChans; i++) {
     int ops=(slots[3][i]!=255 && chan[i].state.ops==4 && oplType==3)?4:2;
 
@@ -1242,21 +1266,22 @@ void DivPlatformOPL::tick(bool sysTick) {
     }
   }
 
+  // and now the ones being disabled
   if (update4OpMask) {
     update4OpMask=false;
     if (oplType==3) {
-      unsigned char opMask=(int)(chan[0].fourOp)|(chan[2].fourOp<<1)|(chan[4].fourOp<<2)|(chan[6].fourOp<<3)|(chan[8].fourOp<<4)|(chan[10].fourOp<<5);
       immWrite(0x104,opMask);
       //printf("updating opMask to %.2x\n",opMask);
     }
+    oldOpMask=opMask;
   }
 
   // update drums
   if (properDrums) {
     bool updateDrums=false;
-    for (int i=melodicChans; i<totalChans; i++) {
+    for (int i=melodicChans; i<melodicChans+5; i++) {
       if (chan[i].keyOn || chan[i].keyOff) {
-        drumState&=~(1<<(totalChans-i-1));
+        drumState&=~(1<<(melodicChans+4-i));
         updateDrums=true;
         chan[i].keyOff=false;
       }
@@ -1294,7 +1319,7 @@ void DivPlatformOPL::tick(bool sysTick) {
     if (chan[adpcmChan].freqChanged || chan[adpcmChan].keyOn || chan[adpcmChan].keyOff) {
       if (chan[adpcmChan].sample>=0 && chan[adpcmChan].sample<parent->song.sampleLen) {
         double off=65535.0*(double)(parent->getSample(chan[adpcmChan].sample)->centerRate)/8363.0;
-        chan[adpcmChan].freq=parent->calcFreq(chan[adpcmChan].baseFreq,chan[adpcmChan].pitch,chan[adpcmChan].fixedArp?chan[adpcmChan].baseNoteOverride:chan[adpcmChan].arpOff,chan[adpcmChan].fixedArp,false,4,chan[adpcmChan].pitch2,(double)chipClock/144,off);
+        chan[adpcmChan].freq=parent->calcFreq(chan[adpcmChan].baseFreq,chan[adpcmChan].pitch,chan[adpcmChan].fixedArp?chan[adpcmChan].baseNoteOverride:chan[adpcmChan].arpOff,chan[adpcmChan].fixedArp,false,4,chan[adpcmChan].pitch2,(double)chipClock/(compatYPitch?144:72),off);
       } else {
         chan[adpcmChan].freq=0;
       }
@@ -1346,7 +1371,7 @@ void DivPlatformOPL::tick(bool sysTick) {
         double off=(s->centerRate>=1)?((double)s->centerRate/8363.0):1.0;
         chan[i].freq=(int)(off*parent->calcFreq(chan[i].baseFreq,chan[i].pitch,chan[i].fixedArp?chan[i].baseNoteOverride:chan[i].arpOff,chan[i].fixedArp,false,2,chan[i].pitch2,chipClock,(524288*768)));
         if (chan[i].freq<0x400) chan[i].freq=0x400;
-        if (chan[i].freq>0x4000000) chan[i].freq=0x4000000;
+        if (chan[i].freq>0x3ffffff) chan[i].freq=0x3ffffff;
         if (chan[i].freq>=0x2000000) {
           chan[i].freqH=15;
         } else if (chan[i].freq>=0x1000000) {
@@ -1442,7 +1467,7 @@ void DivPlatformOPL::tick(bool sysTick) {
       } else {
         if (chan[i].keyOn) {
           immWrite(chanMap[i]+ADDR_FREQH,chan[i].freqH);
-          if (!isMuted[i]) drumState|=(1<<(totalChans-i-1));
+          if (!isMuted[i]) drumState|=(1<<(melodicChans+4-i));
           updateDrums=true;
           chan[i].keyOn=false;
         } else if (chan[i].freqChanged) {
@@ -1459,9 +1484,7 @@ void DivPlatformOPL::tick(bool sysTick) {
 
   // hard reset handling
   if (mustHardReset) {
-    for (unsigned int i=hardResetElapsed; i<128; i++) {
-      immWrite(0x3f,i&0xff);
-    }
+    immWrite(0xfffffffe,128-hardResetElapsed);
     for (int i=0x80; i<0xa0; i++) {
       if (weWillWriteRRLater[i-0x80]) {
         immWrite(i,pendingWrites[i]&0xff);
@@ -2646,13 +2669,12 @@ unsigned short DivPlatformOPL::getPan(int ch) {
   return ((chan[ch].pan&1)<<8)|((chan[ch].pan&2)>>1);
 }
 
-DivChannelPair DivPlatformOPL::getPaired(int ch) {
+void DivPlatformOPL::getPaired(int ch, std::vector<DivChannelPair>& ret) {
   if (oplType==3 && ch<12 && !(ch&1)) {
     if (chan[ch].fourOp) {
-      return DivChannelPair("4OP",ch+1);
+      ret.push_back(DivChannelPair(_("4OP"),ch+1));
     }
   }
-  return DivChannelPair();
 }
 
 DivDispatchOscBuffer* DivPlatformOPL::getOscBuffer(int ch) {
@@ -2720,6 +2742,8 @@ void DivPlatformOPL::reset() {
   while (!writes.empty()) writes.pop();
   memset(regPool,0,768);
 
+  downsamplerStep=0;
+  oldOpMask=0;
   dacVal=0;
   dacVal2=0;
   dacOut=0;
@@ -3130,6 +3154,7 @@ void DivPlatformOPL::setFlags(const DivConfig& flags) {
       break;
   }
   compatPan=flags.getBool("compatPan",false);
+  compatYPitch=flags.getBool("compatYPitch",false);
 
   for (int i=0; i<44; i++) {
     oscBuf[i]->rate=rate;

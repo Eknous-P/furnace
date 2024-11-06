@@ -81,8 +81,6 @@ settings are saved when clicking the **OK** or **Apply** buttons at the bottom o
   - **Full (short when loading song)**: shows animated musical intro unless started with a song (command line, double-clicking a .fur file, etc.)
   - **Full (always)**: always shows animated musical intro.
 - **Disable fade-in during start-up**
-- **About screen party time**
-  - _warning:_ may cause epileptic seizures.
 
 ### Behavior
 
@@ -296,9 +294,14 @@ below all the binds, select a key from the dropdown list to add it. it will appe
   - **Yes**: allow drag-and-drop.
   - **Yes (while holding Ctrl only)**: allow drag-and-drop but only when holding Control (Command on macOS).
 - **Toggle channel solo on:** selects which interactions with a channel header will toggle solo for that channel.
-  - Right-click or double click
-  - Right-click
-  - Double-click
+  - **Right-click or double click**
+  - **Right-click**
+  - **Double-click**
+- **Modifier for alternate wheel-scrolling (vertical/zoom/slider-input)**: selects which key to hold for alternate scrolling of interface elements that support it.
+  - **Ctrl or Meta/Cmd**
+  - **Ctrl**
+  - **Meta/Cmd**
+  - **Alt**
 - **Double click selects entire column**: when enabled, double clicking on a cell of the pattern will select the entire column.
 
 ### Cursor behavior
@@ -488,7 +491,7 @@ below all the binds, select a key from the dropdown list to add it. it will appe
 
 - **Unified instrument/wavetable/sample list**: combines all three types of assets into one list.
   - the buttons act as appropriate to the currently selected asset or header.
-- **Horizontal instrument list**: when there are more instruments than there is room to display them...
+- **Horizontal instrument/wavetable list**: when there are more instruments/wavetables than there is room to display them...
   - if on, scroll horizontally through multiple columns.
   - if off, scroll vertically in one long column.
   - only appears if "Unified instrument/wavetable/sample list" is off.
@@ -505,7 +508,10 @@ below all the binds, select a key from the dropdown list to add it. it will appe
   - **Grid**
   - **Single (with list)**
 - **Use classic macro editor vertical slider**
-- **Automatic macro step size/horizontal zoom**
+- **Macro step size/horizontal zoom:**
+  - **Manual**
+  - **Automatic per macro**
+  - **Automatic (use longest macro)**
 
 ### Wave Editor
 

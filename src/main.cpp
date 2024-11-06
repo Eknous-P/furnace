@@ -339,6 +339,8 @@ TAParamResult pVersion(String) {
   printf("- PowerNoise emulator by scratchminer (MIT)\n");
   printf("- ep128emu by Istvan Varga (GPLv2)\n");
   printf("- NDS sound emulator by cam900 (zlib license)\n");
+  printf("- SID2 emulator by LTVA (GPLv2, modification of reSID emulator)\n");
+  printf("- SID3 emulator by LTVA (MIT)\n");
   printf("- openMSX YMF278 emulator (modified version) by the openMSX developers (GPLv2)\n");
   return TA_PARAM_QUIT;
 }
@@ -508,13 +510,6 @@ static void handleTermGUI(int) {
 // TODO: CoInitializeEx on Windows?
 // TODO: add crash log
 int main(int argc, char** argv) {
-  // uncomment these if you want Furnace to play in the background on Android.
-  // not recommended. it lags.
-#if defined(HAVE_SDL2) && defined(ANDROID)
-  //SDL_SetHint(SDL_HINT_ANDROID_BLOCK_ON_PAUSE,"0");
-  //SDL_SetHint(SDL_HINT_ANDROID_BLOCK_ON_PAUSE_PAUSEAUDIO,"0");
-#endif
-
   // Windows console thing - thanks dj.tuBIG/MaliceX
 #ifdef _WIN32
 #ifndef TA_SUBSYSTEM_CONSOLE
@@ -748,6 +743,14 @@ int main(int argc, char** argv) {
   if (safeMode && !safeModeWithAudio) {
     e.setAudio(DIV_AUDIO_DUMMY);
   }
+
+#if defined(HAVE_SDL2) && defined(ANDROID)
+  if (e.getConfInt("backgroundPlay",0)!=0) {
+    SDL_SetHint(SDL_HINT_ANDROID_BLOCK_ON_PAUSE,"0");
+    SDL_SetHint(SDL_HINT_ANDROID_BLOCK_ON_PAUSE_PAUSEAUDIO,"0");
+  }
+#endif
+
 
   if (!fileName.empty() && ((!e.getConfBool("tutIntroPlayed",TUT_INTRO_PLAYED)) || e.getConfInt("alwaysPlayIntro",0)!=3 || consoleMode || benchMode || infoMode || outName!="" || vgmOutName!="" || cmdOutName!="")) {
     logI("loading module...");
