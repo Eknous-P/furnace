@@ -118,6 +118,32 @@ const int vgmVersions[7]={
   0x172
 };
 
+const char* rthpImplementationNames[]={
+  "<Select>",
+  "Dummy",
+  "E-RTHP"
+};
+
+const char* rthpImplFlagNames[]={
+  "Bidirectional",
+  "Variable communication rate",
+  "Can send RTHPPacketShort",
+  "Can send RTHPPacketLong",
+  "Can send a custom packet",
+  "Can send raw data",
+  "Device can be disconnected during operation",
+  "Supports multiple chips",
+  "Can send samples",
+  "Can send song information",
+  "Can send legacy packet (RTHPPacketLegacy)"
+};
+
+const char* rthpPacketNames[]={
+  "Legacy",
+  "Short",
+  "Long"
+};
+
 // name, icon, letter icon
 const char* insTypes[DIV_INS_MAX+1][3]={
   {"SN76489/Sega PSG",ICON_FA_BAR_CHART,ICON_FUR_INS_STD},
@@ -654,6 +680,7 @@ const FurnaceGUIActionDef guiActions[GUI_ACTION_MAX]={
   D("WINDOW_MEMORY", _N("Memory Composition"), 0),
   D("WINDOW_CS_PLAYER", _N("Command Stream Player"), 0),
   D("WINDOW_USER_PRESETS", _N("User Presets"), 0),
+  D("WINDOW_RTHP_CONTROL", "RTHP Control", 0),
 
   D("COLLAPSE_WINDOW", _N("Collapse/expand current window"), 0),
   D("CLOSE_WINDOW", _N("Close current window"), FURKMOD_SHIFT|SDLK_ESCAPE),

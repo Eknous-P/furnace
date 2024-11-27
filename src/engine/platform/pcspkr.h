@@ -24,6 +24,7 @@
 #include "../../fixedQueue.h"
 #include <thread>
 #include <condition_variable>
+#include "../../rthp/rthp.h"
 
 class DivPlatformPCSpeaker: public DivDispatch {
   struct Channel: public SharedChannel<signed char> {
@@ -62,6 +63,8 @@ class DivPlatformPCSpeaker: public DivDispatch {
   unsigned short freq, lastFreq;
   unsigned char regPool[2];
 
+  RTHP* rthp;
+
   friend void putDispatchChip(void*,int);
   friend void putDispatchChan(void*,int,int);
 
@@ -92,6 +95,7 @@ class DivPlatformPCSpeaker: public DivDispatch {
     void poke(unsigned int addr, unsigned short val);
     void poke(std::vector<DivRegWrite>& wlist);
     const char** getRegisterSheet();
+    void bindRTHP(RTHP* r);
     int init(DivEngine* parent, int channels, int sugRate, const DivConfig& flags);
     void quit();
     ~DivPlatformPCSpeaker();

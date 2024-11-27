@@ -192,6 +192,10 @@ const char** DivPlatformPCSpeaker::getRegisterSheet() {
   return regCheatSheetPCSpeaker;
 }
 
+void DivPlatformPCSpeaker::bindRTHP(RTHP* r) {
+  rthp=r;
+}
+
 void DivPlatformPCSpeaker::acquire_unfilt(short** buf, size_t len) {
   int out=0;
   for (size_t i=0; i<len; i++) {
@@ -286,6 +290,12 @@ void DivPlatformPCSpeaker::beepFreq(int freq, int delay) {
     }
   }
   realQueue.push(RealQueueVal(ts.tv_sec,ts.tv_nsec,freq));
+  if (realOutMethod==5) {
+    if (rthp) {
+      rthp->send((unsigned short)0,freq&0xff); // cast to force addr/data oveload instead of buffer/buflen
+      rthp->send((unsigned short)1,(freq>>8)&0xff);
+    }
+  }
 #else
   realQueue.push(RealQueueVal(0,0,freq));
 #endif
@@ -576,6 +586,12 @@ void DivPlatformPCSpeaker::reset() {
           errno=ENOSYS;
 #endif
           break;
+        case 5: // rthp
+          if (rthp) {
+            rthp->send((unsigned short)0,0);
+            rthp->send((unsigned short)1,0);
+          }
+          break;
       }
       if (beepFD<0) {
         logW("error while opening PC speaker! %s",strerror(errno));
@@ -679,6 +695,9 @@ void DivPlatformPCSpeaker::quit() {
   if (beepFD>=0 && realOutMethod<3) close(beepFD);
 #endif
   delete oscBuf;
+  if (rthp) {
+    rthp=NULL;
+  }
 }
 
 DivPlatformPCSpeaker::~DivPlatformPCSpeaker() {

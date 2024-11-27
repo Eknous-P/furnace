@@ -223,7 +223,8 @@ const char* pcspkrOutMethods[]={
   _N("KIOCSOUND on /dev/tty1"),
   _N("/dev/port"),
   _N("KIOCSOUND on standard output"),
-  _N("outb()")
+  _N("outb()"),
+  "RTHP"
 };
 
 const char* valueInputStyles[]={
@@ -2150,7 +2151,7 @@ void FurnaceGUI::drawSettings() {
         ImGui::AlignTextToFramePadding();
         ImGui::Text(_("PC Speaker strategy"));
         ImGui::SameLine();
-        if (ImGui::Combo("##PCSOutMethod",&settings.pcSpeakerOutMethod,LocalizedComboGetter,pcspkrOutMethods,5)) settingsChanged=true;
+        if (ImGui::Combo("##PCSOutMethod",&settings.pcSpeakerOutMethod,LocalizedComboGetter,pcspkrOutMethods,6)) settingsChanged=true;
 
         ImGui::Separator();
         ImGui::Text(_("Sample ROMs:"));
@@ -5221,7 +5222,7 @@ void FurnaceGUI::readConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
   clampSetting(settings.smQualityRender,0,5);
   clampSetting(settings.swanQualityRender,0,5);
   clampSetting(settings.vbQualityRender,0,5);
-  clampSetting(settings.pcSpeakerOutMethod,0,4);
+  clampSetting(settings.pcSpeakerOutMethod,0,5);
   clampSetting(settings.mainFont,0,6);
   clampSetting(settings.patFont,0,6);
   clampSetting(settings.patRowsBase,0,1);

@@ -919,6 +919,7 @@ src/gui/pattern.cpp
 src/gui/piano.cpp
 src/gui/presets.cpp
 src/gui/regView.cpp
+src/gui/rthpControl.cpp
 src/gui/sampleEdit.cpp
 src/gui/scaling.cpp
 src/gui/settings.cpp
@@ -940,6 +941,38 @@ src/gui/waveEdit.cpp
 src/gui/volMeter.cpp
 src/gui/xyOsc.cpp
 src/gui/gui.cpp
+)
+# son of a-
+set(SERIAL_SOURCES
+  extern/serial/src/serial.cc
+  extern/serial/include/serial/serial.h
+  extern/serial/include/serial/v8stdint.h
+)
+if(APPLE)
+  # If OSX
+  list(APPEND SERIAL_SOURCES extern/serial/src/impl/unix.cc)
+  list(APPEND SERIAL_SOURCES extern/serial/src/impl/list_ports/list_ports_osx.cc)
+elseif(UNIX)
+  # If unix
+  list(APPEND SERIAL_SOURCES extern/serial/src/impl/unix.cc)
+  list(APPEND SERIAL_SOURCES extern/serial/src/impl/list_ports/list_ports_linux.cc)
+elseif(WIN32)
+  # If windows
+  list(APPEND SERIAL_SOURCES extern/serial/src/impl/win.cc)
+  list(APPEND SERIAL_SOURCES extern/serial/src/impl/list_ports/list_ports_win.cc)
+endif()
+
+set (RTHP_SOURCES
+src/rthp/rthp.cpp
+src/rthp/impl/abstract.cpp
+src/rthp/impl/dummy.cpp
+src/rthp/impl/erthp.cpp
+${SERIAL_SOURCES}
+)
+
+list (APPEND DEPENDENCIES_INCLUDE_DIRS
+src/rthp
+extern/serial/include
 )
 
 if (WIN32 AND NOT SUPPORT_XP)
@@ -1106,7 +1139,7 @@ if (WITH_LOCALE)
   endif()
 endif()
 
-set(USED_SOURCES ${ENGINE_SOURCES} ${AUDIO_SOURCES} ${CLI_SOURCES} src/main.cpp)
+set(USED_SOURCES ${ENGINE_SOURCES} ${AUDIO_SOURCES} ${CLI_SOURCES} ${RTHP_SOURCES} src/main.cpp)
 
 if (USE_BACKWARD)
   list(APPEND USED_SOURCES src/backtrace.cpp)

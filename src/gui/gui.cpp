@@ -94,6 +94,10 @@ void FurnaceGUI::bindEngine(DivEngine* eng) {
   wavePreview.setEngine(e);
 }
 
+void FurnaceGUI::bindRTHP(RTHP* r) {
+  rthp=r;
+}
+
 void FurnaceGUI::enableSafeMode() {
   safeMode=true;
 }
@@ -2387,6 +2391,7 @@ int FurnaceGUI::save(String path, int dmfVersion) {
 
 int FurnaceGUI::load(String path) {
   bool wasPlaying=e->isPlaying();
+  e->stop();
   if (!path.empty()) {
     logI("loading module...");
     FILE* f=ps_fopen(path.c_str(),"rb");
@@ -2489,6 +2494,10 @@ int FurnaceGUI::load(String path) {
   if (!tutorial.importedIT && e->song.version==DIV_VERSION_IT) {
     showWarning(_("you have imported an Impulse Tracker module!\nkeep the following in mind:\n\n- Furnace is not a replacement for your IT player\n- import is not perfect. your song may sound different:\n  - envelopes have been converted to macros\n  - global volume changes are not supported\n  - channel volume changes are not supported\n  - New Note Actions (NNA) are not supported\n\nhave fun!"),GUI_WARN_IMPORT);
   }
+
+  if (e->song.systemLen-1 < dumpedChip) dumpedChip=0;
+  rthp->scanWhitelist(&(e->song),dumpedChip);
+  rthp->sendInfo(&(e->song));
   return 0;
 }
 
@@ -3727,6 +3736,7 @@ bool FurnaceGUI::loop() {
   DECLARE_METRIC(log)
   DECLARE_METRIC(effectList)
   DECLARE_METRIC(userPresets)
+  DECLARE_METRIC(rthpControl)
   DECLARE_METRIC(popup)
 
 #ifdef IS_MOBILE
@@ -4333,6 +4343,7 @@ bool FurnaceGUI::loop() {
         IMPORT_CLOSE(memoryOpen);
         IMPORT_CLOSE(csPlayerOpen);
         IMPORT_CLOSE(userPresetsOpen);
+        IMPORT_CLOSE(rthpControlOpen);
       } else if (pendingLayoutImportStep==1) {
         // let the UI settle
       } else if (pendingLayoutImportStep==2) {
@@ -4703,6 +4714,7 @@ bool FurnaceGUI::loop() {
         if (ImGui::MenuItem(_("play/edit controls"),BIND_FOR(GUI_ACTION_WINDOW_EDIT_CONTROLS),editControlsOpen)) editControlsOpen=!editControlsOpen;
         if (ImGui::MenuItem(_("piano/input pad"),BIND_FOR(GUI_ACTION_WINDOW_PIANO),pianoOpen)) pianoOpen=!pianoOpen;
         if (spoilerOpen) if (ImGui::MenuItem(_("spoiler"),NULL,spoilerOpen)) spoilerOpen=!spoilerOpen;
+        if (ImGui::MenuItem("RTHP control",BIND_FOR(GUI_ACTION_WINDOW_RTHP_CONTROL),rthpControlOpen)) rthpControlOpen=!rthpControlOpen;
 
         ImGui::EndMenu();
       }
@@ -4919,6 +4931,7 @@ bool FurnaceGUI::loop() {
       MEASURE(regView,drawRegView());
       MEASURE(memory,drawMemory());
       MEASURE(userPresets,drawUserPresets());
+      MEASURE(rthpControl,drawRthpControl());
       MEASURE(patManager,drawPatManager());
     } else {
       globalWinFlags=0;
@@ -4963,6 +4976,7 @@ bool FurnaceGUI::loop() {
       MEASURE(log,drawLog());
       MEASURE(effectList,drawEffectList());
       MEASURE(userPresets,drawUserPresets());
+      MEASURE(rthpControl,drawRthpControl());
     }
 
     // release selection if mouse released
@@ -8003,6 +8017,7 @@ void FurnaceGUI::syncState() {
   findOpen=e->getConfBool("findOpen",false);
   spoilerOpen=e->getConfBool("spoilerOpen",false);
   userPresetsOpen=e->getConfBool("userPresetsOpen",false);
+  rthpControlOpen=e->getConfBool("rthpControlOpen",false);
 
   insListDir=e->getConfBool("insListDir",false);
   waveListDir=e->getConfBool("waveListDir",false);
@@ -8158,6 +8173,7 @@ void FurnaceGUI::commitState(DivConfig& conf) {
   conf.set("findOpen",findOpen);
   conf.set("spoilerOpen",spoilerOpen);
   conf.set("userPresetsOpen",userPresetsOpen);
+  conf.set("rthpControlOpen",rthpControlOpen);
 
   // commit dir state
   conf.set("insListDir",insListDir);
@@ -8538,6 +8554,7 @@ FurnaceGUI::FurnaceGUI():
   csPlayerOpen(false),
   cvOpen(false),
   userPresetsOpen(false),
+  rthpControlOpen(false),
   cvNotSerious(false),
   shortIntro(false),
   insListDir(false),
@@ -8851,7 +8868,13 @@ FurnaceGUI::FurnaceGUI():
   romMultiFile(false),
   romExportSave(false),
   pendingExport(NULL),
-  romExportExists(false) {
+  romExportExists(false),
+  currentImpl(RTHP_IMPL_NONE),
+  rthpRate(0),
+  rthpTimeout(0),
+  currentRTHPDevice(0),
+  dumpedChip(0),
+  rthpPacket(1) {
   // value keys
   valueKeys[SDLK_0]=0;
   valueKeys[SDLK_1]=1;
@@ -8977,4 +9000,7 @@ FurnaceGUI::FurnaceGUI():
   strncpy(macroRelLabel,"REL",32);
   strncpy(emptyLabel,"...",32);
   strncpy(emptyLabel2,"..",32);
+
+  // moar rthp
+  memset(customParamValues,0,256);
 }

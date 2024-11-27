@@ -34,6 +34,7 @@
 #include <initializer_list>
 #include <thread>
 #include "../fixedQueue.h"
+#include "rthp.h"
 
 class DivWorkPool;
 
@@ -439,6 +440,7 @@ class DivEngine {
   TAAudioDesc want, got;
   String exportPath;
   std::thread* exportThread;
+  RTHP* rthp;
   int chans;
   bool configLoaded;
   bool active;
@@ -1350,6 +1352,12 @@ class DivEngine {
 
     // get audio desc
     TAAudioDesc& getAudioDescGot();
+
+    // bind RTHP
+    void bindRTHP(RTHP* r);
+
+    // get RTHP pointer (for pc speaker uhh)
+    RTHP* getRTHP();
 
     // init dispatch
     void initDispatch(bool isRender=false);
