@@ -934,7 +934,7 @@ bool DivEngine::loadXM(unsigned char* file, size_t len) {
                   break;
                 case 0xf: // porta
                   if ((vol&15)!=0) {
-                    portaStatus[k]=(vol&15);
+                    portaStatus[k]=(vol&15)<<4;
                     portaStatusChanged[k]=true;
                   }
                   if (portaType[k]!=3 || (hasNote && note>0)) {
@@ -1077,8 +1077,24 @@ bool DivEngine::loadXM(unsigned char* file, size_t len) {
                     p->data[j][effectCol[k]++]=0x0c;
                     p->data[j][effectCol[k]++]=(effectVal&15);
                     break;
+                  case 0xa: // vol slide up (fine)
+                    volSlideStatus[k]=((effectVal&15)<<4)|0xf;
+                    volSlideStatusChanged[k]=true;
+                    if (hasNote || hasIns) {
+                      volSlideStatusChanged[k]=true;
+                    }
+                    volSliding[k]=true;
+                    break;
+                  case 0xb: // vol slide down (fine)
+                    volSlideStatus[k]=0xf0|(effectVal&15);
+                    volSlideStatusChanged[k]=true;
+                    if (hasNote || hasIns) {
+                      volSlideStatusChanged[k]=true;
+                    }
+                    volSliding[k]=true;
+                    break;
                   case 0xc:
-                    p->data[j][effectCol[k]++]=0xec;
+                    p->data[j][effectCol[k]++]=0xdc;
                     p->data[j][effectCol[k]++]=MAX(1,effectVal&15);
                     break;
                   case 0xd:

@@ -935,13 +935,21 @@ bool FurnaceGUI::drawSysConf(int chan, int sysPos, DivSystem type, DivConfig& fl
           chipType=2;
           altered=true;
         }
+        pushWarningColor(chipType==3 && settings.ayCore==1);
         if (ImGui::RadioButton(_("AY-3-8914"),chipType==3)) {
           chipType=3;
           altered=true;
         }
+        popWarningColor();
         ImGui::Unindent();
         if (ImGui::IsItemHovered()) {
-          ImGui::SetTooltip(_("note: AY-3-8914 is not supported by the VGM format!"));
+          if (ImGui::BeginTooltip()) {
+            ImGui::TextUnformatted(_("note: AY-3-8914 is not supported by the VGM format!"));
+            if (settings.ayCore==1) {
+              ImGui::TextUnformatted(_("AtomicSSG will not emulate AY-3-8914. falling back to MAME!"));
+            }
+            ImGui::EndTooltip();
+          }
         }
       }
       ImGui::BeginDisabled(type==DIV_SYSTEM_AY8910 && chipType==2);
@@ -1757,6 +1765,7 @@ bool FurnaceGUI::drawSysConf(int chan, int sysPos, DivSystem type, DivConfig& fl
     case DIV_SYSTEM_Y8950:
     case DIV_SYSTEM_Y8950_DRUMS: {
       int clockSel=flags.getInt("clockSel",0);
+      bool compatYPitch=flags.getBool("compatYPitch",false);
 
       ImGui::Text(_("Clock rate:"));
       ImGui::Indent();
@@ -1786,9 +1795,16 @@ bool FurnaceGUI::drawSysConf(int chan, int sysPos, DivSystem type, DivConfig& fl
       }
       ImGui::Unindent();
 
+      if ((type==DIV_SYSTEM_Y8950 || type==DIV_SYSTEM_Y8950_DRUMS) && compatYPitch) {
+        if (ImGui::Checkbox(_("ADPCM channel one octave up (compatibility)"),&compatYPitch)) {
+          altered=true;
+        }
+      }
+
       if (altered) {
         e->lockSave([&]() {
           flags.set("clockSel",clockSel);
+          flags.set("compatYPitch",compatYPitch);
         });
       }
       break;
@@ -1969,6 +1985,9 @@ bool FurnaceGUI::drawSysConf(int chan, int sysPos, DivSystem type, DivConfig& fl
       echoFilter[6]=flags.getInt("echoFilter6",0);
       echoFilter[7]=flags.getInt("echoFilter7",0);
 
+      bool interpolationOff=flags.getBool("interpolationOff",false);
+      bool antiClick=flags.getBool("antiClick",true);
+
       ImGui::Text(_("Volume scale:"));
       if (CWSliderInt(_("Left##VolScaleL"),&vsL,0,127)) {
         if (vsL<0) vsL=0;
@@ -2084,6 +2103,14 @@ bool FurnaceGUI::drawSysConf(int chan, int sysPos, DivSystem type, DivConfig& fl
       ImGui::Text(_("sum: %d"),filterSum);
       ImGui::PopStyleColor();
 
+      if (ImGui::Checkbox(_("Disable Gaussian interpolation"),&interpolationOff)) {
+        altered=true;
+      }
+
+      if (ImGui::Checkbox(_("Anti-click"),&antiClick)) {
+        altered=true;
+      }
+
       if (altered) {
         e->lockSave([&]() {
           flags.set("volScaleL",127-vsL);
@@ -2102,6 +2129,8 @@ bool FurnaceGUI::drawSysConf(int chan, int sysPos, DivSystem type, DivConfig& fl
           flags.set("echoFilter6",echoFilter[6]);
           flags.set("echoFilter7",echoFilter[7]);
           flags.set("echoMask",echoMask);
+          flags.set("interpolationOff",interpolationOff);
+          flags.set("antiClick",antiClick);
         });
       }
 
@@ -2317,6 +2346,29 @@ bool FurnaceGUI::drawSysConf(int chan, int sysPos, DivSystem type, DivConfig& fl
       }
       break;
     }
+    case DIV_SYSTEM_SUPERVISION: {
+      bool swapDuty=flags.getInt("swapDuty",true);
+
+      if (ImGui::Checkbox(_("Swap noise duty cycles"),&swapDuty)) {
+        altered=true;
+      }
+
+      bool sqStereo=flags.getInt("sqStereo",false);
+
+      if (ImGui::Checkbox(_("Stereo pulse waves"),&sqStereo)) {
+        altered=true;
+      }
+
+      if (altered) {
+        e->lockSave([&]() {
+          flags.set("swapDuty",(int)swapDuty);
+        });
+        e->lockSave([&]() {
+          flags.set("sqStereo",(int)sqStereo);
+        });
+      }
+      break;
+    }
     case DIV_SYSTEM_SM8521:/*  {
       bool noAntiClick=flags.getBool("noAntiClick",false);
 
@@ -2482,7 +2534,7 @@ bool FurnaceGUI::drawSysConf(int chan, int sysPos, DivSystem type, DivConfig& fl
       break;
     }
     case DIV_SYSTEM_VERA: {
-      int chipType=flags.getInt("chipType",1);
+      int chipType=flags.getInt("chipType",2);
 
       ImGui::Text(_("Chip revision:"));
       ImGui::Indent();
@@ -2494,11 +2546,95 @@ bool FurnaceGUI::drawSysConf(int chan, int sysPos, DivSystem type, DivConfig& fl
         chipType=1;
         altered=true;
       }
+      if (ImGui::RadioButton(_("V 47.0.2 (Tri/Saw PW XOR)"),chipType==2)) {
+        chipType=2;
+        altered=true;
+      }
       ImGui::Unindent();
 
       if (altered) {
         e->lockSave([&]() {
           flags.set("chipType",chipType);
+        });
+      }
+      break;
+    }
+    case DIV_SYSTEM_OPL4:
+    case DIV_SYSTEM_OPL4_DRUMS: {
+      int clockSel=flags.getInt("clockSel",0);
+      int ramSize=flags.getInt("ramSize",0);
+
+      ImGui::Text(_("Clock rate:"));
+      ImGui::Indent();
+      if (ImGui::RadioButton(_("33.8688MHz"),clockSel==0)) {
+        clockSel=0;
+        altered=true;
+      }
+      if (ImGui::RadioButton(_("28.64MHz (NTSC)"),clockSel==1)) {
+        clockSel=1;
+        altered=true;
+      }
+      if (ImGui::RadioButton(_("28.38MHz (PAL)"),clockSel==2)) {
+        clockSel=2;
+        altered=true;
+      }
+      ImGui::Unindent();
+
+      ImGui::Text(_("RAM size:"));
+      ImGui::Indent();
+      if (ImGui::RadioButton(_("4MB"),ramSize==0)) {
+        ramSize=0;
+        altered=true;
+      }
+      if (ImGui::RadioButton(_("2MB"),ramSize==1)) {
+        ramSize=1;
+        altered=true;
+      }
+      if (ImGui::RadioButton(_("1MB"),ramSize==2)) {
+        ramSize=2;
+        altered=true;
+      }
+      if (ImGui::RadioButton(_("640KB"),ramSize==3)) {
+        ramSize=3;
+        altered=true;
+      }
+      if (ImGui::RadioButton(_("512KB"),ramSize==4)) {
+        ramSize=4;
+        altered=true;
+      }
+      if (ImGui::RadioButton(_("256KB"),ramSize==5)) {
+        ramSize=5;
+        altered=true;
+      }
+      if (ImGui::RadioButton(_("128KB"),ramSize==6)) {
+        ramSize=6;
+        altered=true;
+      }
+      ImGui::Unindent();
+
+      if (altered) {
+        e->lockSave([&]() {
+          flags.set("clockSel",clockSel);
+          flags.set("ramSize",ramSize);
+        });
+      }
+      break;
+    }
+    case DIV_SYSTEM_VIC20: {
+      bool sysPal=flags.getInt("clockSel",0);
+      bool filterOff=flags.getBool("filterOff",false);
+
+      if (ImGui::Checkbox(_("PAL"),&sysPal)) {
+        altered=true;
+      }
+      if (ImGui::Checkbox(_("Disable filtering"),&filterOff)) {
+        altered=true;
+      }
+
+      if (altered) {
+        e->lockSave([&]() {
+          flags.set("clockSel",(int)sysPal);
+          flags.set("filterOff",filterOff);
         });
       }
       break;
@@ -2511,12 +2647,35 @@ bool FurnaceGUI::drawSysConf(int chan, int sysPos, DivSystem type, DivConfig& fl
     case DIV_SYSTEM_C219:
     case DIV_SYSTEM_BIFURCATOR:
     case DIV_SYSTEM_POWERNOISE:
+    case DIV_SYSTEM_UPD1771C:
       break;
     case DIV_SYSTEM_YMU759:
     case DIV_SYSTEM_ESFM:
       supportsCustomRate=false;
       ImGui::Text(_("nothing to configure"));
       break;
+    case DIV_SYSTEM_SID3: {
+      bool quarterClock=flags.getBool("quarterClock",false);
+      if (ImGui::Checkbox(_("Quarter clock speed"),&quarterClock)) {
+        altered=true;
+      }
+      if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip(_("Decreases clock speed and CPU audio load by 4 times.\nCan be used if your CPU is too slow for the chip."
+        "\nDoes not affect clock speed during export!\n\n"
+
+        "Warning! Filters may become unstable at high cutoff and resonance\nif this option or lower clock speed are used!\n"
+        "Also filters' timbre may be different near these values.\n\n"
+
+        "Default clock speed is 1MHz (1000000Hz)."));
+      }
+
+      if (altered) {
+        e->lockSave([&]() {
+          flags.set("quarterClock",(int)quarterClock);
+        });
+      }
+      break;
+    }
     default: {
       bool sysPal=flags.getInt("clockSel",0);
 

@@ -50,7 +50,7 @@ std::vector<FurnaceGUISysDef>* digDeep(std::vector<FurnaceGUISysDef>& entries, i
 
 bool FurnaceGUI::loadUserPresets(bool redundancy, String path, bool append) {
   if (path.empty()) path=e->getConfigPath()+PRESETS_FILE;
-  String line;
+  String line, lineStr;
   logD("opening user presets: %s",path);
 
   FILE* f=NULL;
@@ -145,19 +145,27 @@ bool FurnaceGUI::loadUserPresets(bool redundancy, String path, bool append) {
   if (!append) userCategory->systems.clear();
 
   char nextLine[4096];
+  lineStr="";
   while (!feof(f)) {
     if (fgets(nextLine,4095,f)==NULL) {
       break;
     }
+    lineStr+=nextLine;
+    if (!lineStr.empty() && !feof(f)) {
+      if (lineStr[lineStr.size()-1]!='\n') {
+        continue;
+      }
+    }
+
     int indent=0;
     bool readIndent=true;
     bool keyOrValue=false;
     String key="";
     String value="";
-    for (char* i=nextLine; *i; i++) {
-      if ((*i)=='\n') break;
+    for (char i: lineStr) {
+      if (i=='\n') break;
       if (readIndent) {
-        if ((*i)==' ') {
+        if (i==' ') {
           indent++;
         } else {
           readIndent=false;
@@ -165,12 +173,12 @@ bool FurnaceGUI::loadUserPresets(bool redundancy, String path, bool append) {
       }
       if (!readIndent) {
         if (keyOrValue) {
-          value+=*i;
+          value+=i;
         } else {
-          if ((*i)=='=') {
+          if (i=='=') {
             keyOrValue=true;
           } else {
-            key+=*i;
+            key+=i;
           }
         }
       }
@@ -181,6 +189,9 @@ bool FurnaceGUI::loadUserPresets(bool redundancy, String path, bool append) {
       std::vector<FurnaceGUISysDef>* where=digDeep(userCategory->systems,indent);
       where->push_back(FurnaceGUISysDef(key.c_str(),value.c_str(),e));
     }
+
+    lineStr="";
+    lineStr.reserve(4096);
   }
 
   fclose(f);
@@ -192,7 +203,7 @@ void writeSubEntries(FILE* f, std::vector<FurnaceGUISysDef>& entries, int depth)
     String safeName;
     safeName.reserve(i.name.size());
     bool beginning=false;
-    for (char j: i.name) {
+    for (unsigned char j: i.name) {
       if (beginning && j==' ') continue;
       if (j=='=') continue;
       if (j<0x20) continue;
@@ -392,7 +403,7 @@ void FurnaceGUI::drawUserPresets() {
               tempID=fmt::sprintf("%s##USystem",getSystemName(chip.sys));
               ImGui::Button(tempID.c_str(),ImVec2(ImGui::GetContentRegionAvail().x-ImGui::CalcTextSize(_("Invert")).x-ImGui::GetFrameHeightWithSpacing()*2.0-ImGui::GetStyle().ItemSpacing.x*2.0,0));
               if (ImGui::BeginPopupContextItem("SysPickerCU",ImGuiPopupFlags_MouseButtonLeft)) {
-                DivSystem picked=systemPicker();
+                DivSystem picked=systemPicker(false);
                 if (picked!=DIV_SYSTEM_NULL) {
                   chip.sys=picked;
                   mustBake=true;
@@ -456,7 +467,7 @@ void FurnaceGUI::drawUserPresets() {
 
             ImGui::Button(ICON_FA_PLUS "##SysAddU");
             if (ImGui::BeginPopupContextItem("SysPickerU",ImGuiPopupFlags_MouseButtonLeft)) {
-              DivSystem picked=systemPicker();
+              DivSystem picked=systemPicker(false);
               if (picked!=DIV_SYSTEM_NULL) {
                 preset->orig.push_back(FurnaceGUISysDefChip(picked,1.0f,0.0f,""));
                 mustBake=true;
@@ -475,7 +486,8 @@ void FurnaceGUI::drawUserPresets() {
               ImGui::SetTooltip(_(
                 "insert additional settings in `option=value` format.\n"
                 "available options:\n"
-                "- tickRate"
+                "- tickRate \n"
+                "- chanMask \n"
               ));
             }
 

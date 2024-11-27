@@ -89,7 +89,6 @@ FurnaceCLI cli;
 
 String outName;
 String vgmOutName;
-String zsmOutName;
 String cmdOutName;
 int benchMode=0;
 int subsong=-1;
@@ -112,6 +111,8 @@ bool safeMode=false;
 bool safeModeWithAudio=false;
 
 bool infoMode=false;
+
+bool noReportError=false;
 
 std::vector<TAParam> params;
 
@@ -200,6 +201,11 @@ TAParamResult pView(String val) {
 
 TAParamResult pConsole(String val) {
   consoleMode=true;
+  return TA_PARAM_SUCCESS;
+}
+
+TAParamResult pQuiet(String val) {
+  noReportError=true;
   return TA_PARAM_SUCCESS;
 }
 
@@ -337,6 +343,9 @@ TAParamResult pVersion(String) {
   printf("- PowerNoise emulator by scratchminer (MIT)\n");
   printf("- ep128emu by Istvan Varga (GPLv2)\n");
   printf("- NDS sound emulator by cam900 (zlib license)\n");
+  printf("- SID2 emulator by LTVA (GPLv2, modification of reSID emulator)\n");
+  printf("- SID3 emulator by LTVA (MIT)\n");
+  printf("- openMSX YMF278 emulator (modified version) by the openMSX developers (GPLv2)\n");
   return TA_PARAM_QUIT;
 }
 
@@ -426,12 +435,6 @@ TAParamResult pVGMOut(String val) {
   return TA_PARAM_SUCCESS;
 }
 
-TAParamResult pZSMOut(String val) {
-  zsmOutName=val;
-  e.setAudio(DIV_AUDIO_DUMMY);
-  return TA_PARAM_SUCCESS;
-}
-
 TAParamResult pCmdOut(String val) {
   cmdOutName=val;
   e.setAudio(DIV_AUDIO_DUMMY);
@@ -454,12 +457,12 @@ void initParams() {
   params.push_back(TAParam("o","output",true,pOutput,"<filename>","output audio to file"));
   params.push_back(TAParam("O","vgmout",true,pVGMOut,"<filename>","output .vgm data"));
   params.push_back(TAParam("D","direct",false,pDirect,"","set VGM export direct stream mode"));
-  params.push_back(TAParam("Z","zsmout",true,pZSMOut,"<filename>","output .zsm data for Commander X16 Zsound"));
   params.push_back(TAParam("C","cmdout",true,pCmdOut,"<filename>","output command stream"));
   params.push_back(TAParam("L","loglevel",true,pLogLevel,"debug|info|warning|error","set the log level (info by default)"));
   params.push_back(TAParam("v","view",true,pView,"pattern|commands|nothing","set visualization (nothing by default)"));
   params.push_back(TAParam("i","info",false,pInfo,"","get info about a song"));
   params.push_back(TAParam("c","console",false,pConsole,"","enable console mode"));
+  params.push_back(TAParam("q","noreport",false,pQuiet,"","do not display message box on error"));
   params.push_back(TAParam("n","nostatus",false,pNoStatus,"","disable playback status in console mode"));
   params.push_back(TAParam("N","nocontrols",false,pNoControls,"","disable standard input controls in console mode"));
 
@@ -478,18 +481,25 @@ void initParams() {
 #ifdef _WIN32
 void reportError(String what) {
   logE("%s",what);
-  MessageBox(NULL,what.c_str(),"Furnace",MB_OK|MB_ICONERROR);
+  if (!noReportError) {
+    MessageBox(NULL,what.c_str(),"Furnace",MB_OK|MB_ICONERROR);
+  }
 }
 #elif defined(ANDROID) || defined(__APPLE__)
 void reportError(String what) {
   logE("%s",what);
 #ifdef HAVE_SDL2
-  SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,"Error",what.c_str(),NULL);
+  if (!noReportError) {
+    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,"Error",what.c_str(),NULL);
+  }
 #endif
 }
 #else
 void reportError(String what) {
   logE("%s",what);
+  if (!noReportError) {
+    // dummy
+  }
 }
 #endif
 
@@ -504,13 +514,6 @@ static void handleTermGUI(int) {
 // TODO: CoInitializeEx on Windows?
 // TODO: add crash log
 int main(int argc, char** argv) {
-  // uncomment these if you want Furnace to play in the background on Android.
-  // not recommended. it lags.
-#if defined(HAVE_SDL2) && defined(ANDROID)
-  //SDL_SetHint(SDL_HINT_ANDROID_BLOCK_ON_PAUSE,"0");
-  //SDL_SetHint(SDL_HINT_ANDROID_BLOCK_ON_PAUSE_PAUSEAUDIO,"0");
-#endif
-
   // Windows console thing - thanks dj.tuBIG/MaliceX
 #ifdef _WIN32
 #ifndef TA_SUBSYSTEM_CONSOLE
@@ -549,7 +552,6 @@ int main(int argc, char** argv) {
 #endif
   outName="";
   vgmOutName="";
-  zsmOutName="";
   cmdOutName="";
 
   // load config for locale
@@ -745,6 +747,14 @@ int main(int argc, char** argv) {
   if (safeMode && !safeModeWithAudio) {
     e.setAudio(DIV_AUDIO_DUMMY);
   }
+
+#if defined(HAVE_SDL2) && defined(ANDROID)
+  if (e.getConfInt("backgroundPlay",0)!=0) {
+    SDL_SetHint(SDL_HINT_ANDROID_BLOCK_ON_PAUSE,"0");
+    SDL_SetHint(SDL_HINT_ANDROID_BLOCK_ON_PAUSE_PAUSEAUDIO,"0");
+  }
+#endif
+
 
   if (!fileName.empty() && ((!e.getConfBool("tutIntroPlayed",TUT_INTRO_PLAYED)) || e.getConfInt("alwaysPlayIntro",0)!=3 || consoleMode || benchMode || infoMode || outName!="" || vgmOutName!="" || cmdOutName!="")) {
     logI("loading module...");

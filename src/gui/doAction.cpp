@@ -73,6 +73,8 @@ void FurnaceGUI::doAction(int what) {
     case GUI_ACTION_UNDO:
       if (curWindow==GUI_WINDOW_SAMPLE_EDIT) {
         doUndoSample();
+      } else if (curWindow==GUI_WINDOW_INS_EDIT) {
+        doUndoInstrument();
       } else {
         doUndo();
       }
@@ -80,6 +82,8 @@ void FurnaceGUI::doAction(int what) {
     case GUI_ACTION_REDO:
       if (curWindow==GUI_WINDOW_SAMPLE_EDIT) {
         doRedoSample();
+      } else if (curWindow==GUI_WINDOW_INS_EDIT) {
+        doRedoInstrument();
       } else {
         doRedo();
       }
@@ -123,16 +127,16 @@ void FurnaceGUI::doAction(int what) {
       pendingStepUpdate=1;
       break;
     case GUI_ACTION_OCTAVE_UP:
-      if (++curOctave>7) {
-        curOctave=7;
+      if (++curOctave>GUI_EDIT_OCTAVE_MAX) {
+        curOctave=GUI_EDIT_OCTAVE_MAX;
       } else {
         e->autoNoteOffAll();
         failedNoteOn=false;
       }
       break;
     case GUI_ACTION_OCTAVE_DOWN:
-      if (--curOctave<-5) {
-        curOctave=-5;
+      if (--curOctave<GUI_EDIT_OCTAVE_MIN) {
+        curOctave=GUI_EDIT_OCTAVE_MIN;
       } else {
         e->autoNoteOffAll();
         failedNoteOn=false;
@@ -682,6 +686,15 @@ void FurnaceGUI::doAction(int what) {
       latchTarget=0;
       latchNibble=false;
       break;
+    case GUI_ACTION_PAT_ABSORB_INSTRUMENT:
+      doAbsorbInstrument();
+      break;
+    case GUI_ACTION_PAT_CURSOR_UNDO:
+      doCursorUndo();
+      break;
+    case GUI_ACTION_PAT_CURSOR_REDO:
+      doCursorRedo();
+      break;
 
     case GUI_ACTION_INS_LIST_ADD:
       if (settings.insTypeMenu) {
@@ -787,8 +800,14 @@ void FurnaceGUI::doAction(int what) {
     case GUI_ACTION_INS_LIST_DIR_VIEW:
       insListDir=!insListDir;
       break;
+    case GUI_ACTION_INS_LIST_SAVE_ALL:
+      if (e->song.ins.empty()) {
+        showError(_("this song doesn't have any instruments."));
+      } else {
+        openFileDialog(GUI_FILE_INS_SAVE_ALL);
+      }
+      break;
 
-    
     case GUI_ACTION_WAVE_LIST_ADD: {
       std::vector<DivSystem> alreadyDone;
       waveSizeList.clear();
@@ -907,6 +926,13 @@ void FurnaceGUI::doAction(int what) {
       break;
     case GUI_ACTION_WAVE_LIST_DIR_VIEW:
       waveListDir=!waveListDir;
+      break;
+    case GUI_ACTION_WAVE_LIST_SAVE_ALL:
+      if (e->song.wave.empty()) {
+        showError(_("this song doesn't have any wavetables."));
+      } else {
+        openFileDialog(GUI_FILE_WAVE_SAVE_ALL);
+      }
       break;
 
     case GUI_ACTION_SAMPLE_LIST_ADD:
@@ -1062,6 +1088,13 @@ void FurnaceGUI::doAction(int what) {
       displayInsTypeListMakeInsSample=-2;
       break;
     }
+    case GUI_ACTION_SAMPLE_LIST_SAVE_ALL:
+      if (e->song.sample.empty()) {
+        showError(_("this song doesn't have any samples."));
+      } else {
+        openFileDialog(GUI_FILE_SAMPLE_SAVE_ALL);
+      }
+      break;
 
     case GUI_ACTION_SAMPLE_SELECT:
       if (curSample<0 || curSample>=(int)e->song.sample.size()) break;
@@ -1658,11 +1691,17 @@ void FurnaceGUI::doAction(int what) {
     case GUI_ACTION_ORDERS_UP:
       if (curOrder>0) {
         setOrder(curOrder-1);
+        if (orderEditMode!=0) {
+          curNibble=false;
+        }
       }
       break;
     case GUI_ACTION_ORDERS_DOWN:
       if (curOrder<e->curSubSong->ordersLen-1) {
         setOrder(curOrder+1);
+        if (orderEditMode!=0) {
+          curNibble=false;
+        }
       }
       break;
     case GUI_ACTION_ORDERS_LEFT: {
@@ -1675,6 +1714,9 @@ void FurnaceGUI::doAction(int what) {
           break;
         }
       } while (!e->curSubSong->chanShow[orderCursor]);
+      if (orderEditMode!=0) {
+        curNibble=false;
+      }
       break;
     }
     case GUI_ACTION_ORDERS_RIGHT: {
@@ -1687,6 +1729,9 @@ void FurnaceGUI::doAction(int what) {
           break;
         }
       } while (!e->curSubSong->chanShow[orderCursor]);
+      if (orderEditMode!=0) {
+        curNibble=false;
+      }
       break;
     }
     case GUI_ACTION_ORDERS_INCREASE: {
@@ -1694,12 +1739,18 @@ void FurnaceGUI::doAction(int what) {
       if (e->curOrders->ord[orderCursor][curOrder]<0xff) {
         e->curOrders->ord[orderCursor][curOrder]++;
       }
+      if (orderEditMode!=0) {
+        curNibble=false;
+      }
       break;
     }
     case GUI_ACTION_ORDERS_DECREASE: {
       if (orderCursor<0 || orderCursor>=e->getTotalChannelCount()) break;
       if (e->curOrders->ord[orderCursor][curOrder]>0) {
         e->curOrders->ord[orderCursor][curOrder]--;
+      }
+      if (orderEditMode!=0) {
+        curNibble=false;
       }
       break;
     }

@@ -19,7 +19,6 @@
 
 #include "ym2203ext.h"
 #include "../engine.h"
-#include <math.h>
 
 #define CHIP_FREQBASE fmFreqBase
 #define CHIP_DIVIDER fmDivBase
@@ -396,6 +395,16 @@ void DivPlatformYM2203Ext::tick(bool sysTick) {
   int hardResetElapsed=0;
   bool mustHardReset=false;
 
+  if (extMode && !noExtMacros) for (int i=0; i<4; i++) {
+    opChan[i].std.next();
+
+    if (opChan[i].std.phaseReset.had) {
+      if (opChan[i].std.phaseReset.val==1 && opChan[i].active) {
+        opChan[i].keyOn=true;
+      }
+    }
+  }
+
   if (extMode) {
     bool writeSomething=false;
     unsigned char writeMask=2;
@@ -414,13 +423,14 @@ void DivPlatformYM2203Ext::tick(bool sysTick) {
       }
     }
     if (writeSomething) {
+      if (chan[csmChan].active) { // CSM
+        writeMask^=0xf0;
+      }
       immWrite(0x28,writeMask);
     }
   }
 
   if (extMode && !noExtMacros) for (int i=0; i<4; i++) {
-    opChan[i].std.next();
-
     if (opChan[i].std.vol.had) {
       opChan[i].outVol=VOL_SCALE_LOG_BROKEN(opChan[i].vol,MIN(127,opChan[i].std.vol.val),127);
       unsigned short baseAddr=chanOffs[2]|opOffs[orderedOps[i]];
@@ -565,16 +575,35 @@ void DivPlatformYM2203Ext::tick(bool sysTick) {
       }
     }
   }
+  if (extMode) {
+    if (chan[csmChan].freqChanged) {
+      chan[csmChan].freq=parent->calcFreq(chan[csmChan].baseFreq,chan[csmChan].pitch,chan[csmChan].fixedArp?chan[csmChan].baseNoteOverride:chan[csmChan].arpOff,chan[csmChan].fixedArp,true,0,chan[csmChan].pitch2,chipClock,CHIP_DIVIDER);
+      if (chan[csmChan].freq<1) chan[csmChan].freq=1;
+      if (chan[csmChan].freq>1024) chan[csmChan].freq=1024;
+      int wf=0x400-chan[csmChan].freq;
+      immWrite(0x24,wf>>2);
+      immWrite(0x25,wf&3);
+      chan[csmChan].freqChanged=false;
+    }
+
+    if (chan[csmChan].keyOff || chan[csmChan].keyOn) {
+      writeNoteOn=true;
+      for (int i=0; i<4; i++) {
+        writeMask|=opChan[i].active<<(4+i);
+      }
+    }
+  }
   if (writeNoteOn) {
+    if (chan[csmChan].active) { // CSM
+      writeMask^=0xf0;
+    }
     writeMask^=hardResetMask;
     immWrite(0x28,writeMask);
     writeMask^=hardResetMask;
 
     // hard reset handling
     if (mustHardReset) {
-      for (unsigned int i=hardResetElapsed; i<hardResetCycles; i++) {
-        immWrite(0xf0,i&0xff);
-      }
+      immWrite(0xfffffffe,(hardResetCycles-hardResetElapsed)*3);
       for (int i=0; i<4; i++) {
         if (opChan[i].keyOn && opChan[i].hardReset) {
           // restore SL/RR
@@ -585,6 +614,17 @@ void DivPlatformYM2203Ext::tick(bool sysTick) {
         }
       }
       immWrite(0x28,writeMask);
+    }
+  }
+
+  if (extMode) {
+    if (chan[csmChan].keyOn) {
+      immWrite(0x27,0x81);
+      chan[csmChan].keyOn=false;
+    }
+    if (chan[csmChan].keyOff) {
+      immWrite(0x27,0x40);
+      chan[csmChan].keyOff=false;
     }
   }
 }
@@ -666,6 +706,12 @@ void DivPlatformYM2203Ext::forceIns() {
       opChan[i].freqChanged=true;
     }
   }
+
+  if (extMode && chan[csmChan].active) { // CSM
+    chan[csmChan].insChanged=true;
+    chan[csmChan].freqChanged=true;
+    chan[csmChan].keyOn=true;
+  }
   if (!extMode) {
     immWrite(0x27,0x00);
   }
@@ -678,7 +724,7 @@ void* DivPlatformYM2203Ext::getChanState(int ch) {
 }
 
 DivMacroInt* DivPlatformYM2203Ext::getChanMacroInt(int ch) {
-  if (ch>=6) return ay->getChanMacroInt(ch-6);
+  if (ch>=(6+isCSM)) return ay->getChanMacroInt(ch-(6+isCSM));
   if (ch>=2) return &opChan[ch-2].std;
   return &chan[ch].std;
 }
@@ -738,11 +784,20 @@ int DivPlatformYM2203Ext::init(DivEngine* parent, int channels, int sugRate, con
   extSys=true;
 
   reset();
-  return 9;
+  return 3+2+4+isCSM; // 3xPSG + 2xFM + 4xOP + optional CSM
 }
 
 void DivPlatformYM2203Ext::quit() {
   DivPlatformYM2203::quit();
+}
+
+void DivPlatformYM2203Ext::setCSM(bool isCSM) {
+  this->isCSM=isCSM?1:0;
+  if (isCSM) {
+    csmChan=3;
+  } else {
+    csmChan=6;
+  }
 }
 
 DivPlatformYM2203Ext::~DivPlatformYM2203Ext() {

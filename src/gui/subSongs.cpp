@@ -36,6 +36,7 @@ void FurnaceGUI::drawSubSongs(bool asChild) {
           ImGui::TableNextRow();
           ImGui::TableNextColumn();
           if (ImGui::Selectable(id,i==e->getCurrentSubSong())) {
+            makeCursorUndo();
             e->changeSongP(i);
             updateScroll(0);
             oldRow=0;
@@ -72,6 +73,7 @@ void FurnaceGUI::drawSubSongs(bool asChild) {
       if (!e->addSubSong()) {
         showError(_("too many subsongs!"));
       } else {
+        makeCursorUndo();
         e->changeSongP(e->song.subsong.size()-1);
         updateScroll(0);
         oldRow=0;
@@ -92,6 +94,7 @@ void FurnaceGUI::drawSubSongs(bool asChild) {
       if (!e->duplicateSubSong(e->getCurrentSubSong())) {
         showError(_("too many subsongs!"));
       } else {
+        makeCursorUndo();
         e->changeSongP(e->song.subsong.size()-1);
         updateScroll(0);
         oldRow=0;
@@ -129,7 +132,7 @@ void FurnaceGUI::drawSubSongs(bool asChild) {
       MARK_MODIFIED;
     }
 
-    if (!asChild && ImGui::GetContentRegionAvail().y>(10.0f*dpiScale)) {
+    if (ImGui::GetContentRegionAvail().y>(10.0f*dpiScale)) {
       if (ImGui::InputTextMultiline("##SubSongNotes",&e->curSubSong->notes,ImGui::GetContentRegionAvail(),ImGuiInputTextFlags_UndoRedo)) {
         MARK_MODIFIED;
       }

@@ -76,11 +76,11 @@ class DivPlatformFMBase: public DivDispatch {
     };
 
     struct QueuedWrite {
-      unsigned short addr;
-      unsigned char val;
+      unsigned int addr;
+      unsigned short val;
       bool addrOrVal;
       QueuedWrite(): addr(0), val(0), addrOrVal(false) {}
-      QueuedWrite(unsigned short a, unsigned char v): addr(a), val(v), addrOrVal(false) {}
+      QueuedWrite(unsigned int a, unsigned char v): addr(a), val(v), addrOrVal(false) {}
     };
     FixedQueue<QueuedWrite,2048> writes;
 
@@ -97,7 +97,7 @@ class DivPlatformFMBase: public DivDispatch {
         pendingWrites[a]=v;
       }
     }
-    inline void immWrite(unsigned short a, unsigned char v) {
+    inline void immWrite(unsigned int a, unsigned short v) {
       if (!skipRegisterWrites) {
         writes.push_back(QueuedWrite(a,v));
         if (dumpWrites) {
@@ -134,6 +134,11 @@ class DivPlatformFMBase: public DivDispatch {
       if (vel==0) return 0;
       if (vel>=1.0) return 127;
       return CLAMP(round(128.0-(56.0-log2(vel*127.0)*8.0)),0,127);
+    }
+
+    virtual float getGain(int ch, int vol) {
+      if (vol==0) return 0;
+      return 1.0/pow(10.0,(float)(127-vol)*0.75/20.0);
     }
 
     bool getLegacyAlwaysSetVolume() {

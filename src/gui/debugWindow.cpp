@@ -36,6 +36,8 @@ static float oscDebugMax=1.0;
 static float oscDebugPower=1.0;
 static int oscDebugRepeat=1;
 static int numApples=1;
+static int getGainChan=0;
+static int getGainVol=0;
 
 static void _drawOsc(const ImDrawList* drawList, const ImDrawCmd* cmd) {
   if (cmd!=NULL) {
@@ -143,6 +145,7 @@ void FurnaceGUI::drawDebug() {
           ImGui::Text("- portaNote = %d",ch->portaNote);
           ImGui::Text("- volume = %.4x",ch->volume);
           ImGui::Text("- volSpeed = %d",ch->volSpeed);
+          ImGui::Text("- volSpeedTarget = %d",ch->volSpeedTarget);
           ImGui::Text("- cut = %d",ch->cut);
           ImGui::Text("- rowDelay = %d",ch->rowDelay);
           ImGui::Text("- volMax = %.4x",ch->volMax);
@@ -342,6 +345,15 @@ void FurnaceGUI::drawDebug() {
           }
         }
       }
+      ImGui::TreePop();
+    }
+    if (ImGui::TreeNode("Scroll Text Test")) {
+      /*
+      ImGui::ScrollText(ImGui::GetID("scrolltest1"),"Lorem ipsum, quia dolor sit, amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt, ut labore et dolore magnam aliquam quaerat voluptatem. ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur?");
+      ImGui::ScrollText(ImGui::GetID("scrolltest2"),"quis autem vel eum iure reprehenderit");
+      ImGui::ScrollText(ImGui::GetID("scrolltest3"),"qui in ea voluptate velit esse",ImVec2(100.0f*dpiScale,0),true);
+      ImGui::ScrollText(ImGui::GetID("scrolltest4"),"quam nihil molestiae consequatur, vel illum, qui dolorem eum fugiat, quo voluptas nulla pariatur?",ImVec2(0,0),true);
+      */
       ImGui::TreePop();
     }
     if (ImGui::TreeNode("Pitch Table Calculator")) {
@@ -721,6 +733,32 @@ void FurnaceGUI::drawDebug() {
       ImGui::TreePop();
     }
 #endif
+    if (ImGui::TreeNode("Get Gain Test")) {
+      float realVol=e->getGain(getGainChan,getGainVol);
+      ImGui::InputInt("Chan",&getGainChan);
+      ImGui::InputInt("Vol",&getGainVol);
+      ImGui::Text("result: %.0f%%",realVol*100.0f);
+      ImGui::TreePop();
+    }
+    if (ImGui::TreeNode("Cursor Undo Debug")) {
+      auto DrawSpot=[&](const CursorJumpPoint& spot) {
+        ImGui::Text("[%d:%d] <%d:%d, %d>", spot.subSong, spot.order, spot.point.xCoarse, spot.point.xFine, spot.point.y);
+      };
+      if (ImGui::BeginChild("##CursorUndoDebugChild", ImVec2(0, 300), true)) {
+        if (ImGui::BeginTable("##CursorUndoDebug", 2, ImGuiTableFlags_Borders|ImGuiTableFlags_SizingStretchSame)) {
+          for (size_t row=0; row<MAX(cursorUndoHist.size(),cursorRedoHist.size()); ++row) {
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            if (row<cursorUndoHist.size()) DrawSpot(cursorUndoHist[cursorUndoHist.size()-row-1]);
+            ImGui::TableNextColumn();
+            if (row<cursorRedoHist.size()) DrawSpot(cursorRedoHist[cursorRedoHist.size()-row-1]);
+          }
+          ImGui::EndTable();
+        }
+      }
+      ImGui::EndChild();
+      ImGui::TreePop();
+    }
     if (ImGui::TreeNode("User Interface")) {
       if (ImGui::Button("Inspect")) {
         inspectorOpen=!inspectorOpen;
