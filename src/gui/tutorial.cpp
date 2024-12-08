@@ -23,6 +23,7 @@
 #include "imgui_internal.h"
 
 #include "gif_load.h"
+#include <imgui.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -391,7 +392,7 @@ struct FurnaceCV {
   unsigned char* prioBuf;
   DivEngine* e;
   unsigned char* tileData;
-  
+
   // state
   unsigned short* curStage;
   int stageWidth, stageHeight;
@@ -406,6 +407,7 @@ struct FurnaceCV {
   int ticksToInit;
 
   bool inGame, inTransition, newHiScore, playSongs, pleaseInitSongs;
+  bool paused, gameOvered;
   unsigned char lives, respawnTime, stage, shotType;
   int score;
   int hiScore;
@@ -433,12 +435,15 @@ struct FurnaceCV {
   template<typename T> T* createObject(short x=0, short y=0);
   void buildStage(int which);
 
+  void newStage(bool gameOver);
+  void togglePause();
+
   void putText(int fontBase, bool fontHeight, String text, int x, int y);
 
   void startTyping(const char* text, int x, int y);
 
   void soundEffect(int ins, int chan, int note);
-  void stopSoundEffect(int ins, int chan, int note);
+  void stopSoundEffect(int chan);
 
   void addScore(int amount);
 
@@ -475,6 +480,8 @@ struct FurnaceCV {
     newHiScore(false),
     playSongs(true),
     pleaseInitSongs(false),
+    paused(false),
+    gameOvered(false),
     lives(5),
     respawnTime(0),
     stage(0),
@@ -513,9 +520,17 @@ static const char* cvText[]={
   "X - Shoot      Arrow Key - Move\n"
   "Z - Special    Esc - Quit"),
 
-  _N("GAME OVER"),
+  _N("GAME OVER!\n\n"
+  "Try again?\n"
+  "(Y)es/(N)o"),
 
-  _N("High Score!")
+  _N("High Score!\n"
+  "Try again?\n"
+  "(Y)es/(N)o"),
+
+  _N("   PAUSE\n\n"
+  "Esc- Resume\n"
+  " Q - Quit")
 };
 
 void FurnaceGUI::syncTutorial() {
@@ -917,11 +932,31 @@ void FurnaceGUI::drawTutorial() {
 
     if (ImGui::IsKeyPressed(ImGuiKey_Escape)) {
       if (cv!=NULL) {
+        if (cv->inGame && !cv->gameOvered) cv->togglePause();
+      }
+    }
+    if (ImGui::IsKeyPressed(ImGuiKey_Q) && cv->paused) {
+      if (cv!=NULL) {
         cv->unload();
         delete cv;
         cv=NULL;
       }
       cvOpen=false;
+    }
+    if (cv!=NULL) {
+      if (cv->gameOvered) {
+        if (ImGui::IsKeyPressed(ImGuiKey_Y)) {
+          cv->newStage(true);
+        }
+        if (ImGui::IsKeyPressed(ImGuiKey_N)) {
+          if (cv!=NULL) {
+            cv->unload();
+            delete cv;
+            cv=NULL;
+          }
+          cvOpen=false;
+        }
+      }
     }
   }
 }
@@ -1042,6 +1077,7 @@ static const unsigned char cvPalette[1024]={
 #define SE_VORTEXMOVE 13, 3, 55
 #define SE_VORTEXSHOOT 14, 3, 48
 #define SE_RESIST 15, 1, 48
+#define SE_PAUSE 16, 0, 51
 
 template<typename T> T* FurnaceCV::createObject(short x, short y) {
   T* ret=new T(this);
@@ -1059,7 +1095,7 @@ void FurnaceCV::soundEffect(int ins, int chan, int note) {
   */
 }
 
-void FurnaceCV::stopSoundEffect(int ins, int chan, int note) {
+void FurnaceCV::stopSoundEffect(int chan) {
   e->noteOff(chan+fxChanBase);
   //e->dispatchCmd(DivCommand(DIV_CMD_NOTE_OFF,chan));
 }
@@ -1227,9 +1263,46 @@ void FurnaceCV::buildStage(int which) {
   }
 }
 
+void FurnaceCV::newStage(bool gameOver) {
+  if (gameOver) {
+    score=0;
+    lives=5;
+    stage=0;
+    shotType=0;
+    weaponStack.clear();
+    gameOvered=false;
+  }
+  inTransition=true;
+  inGame=false;
+  transWait=100;
+  soundEffect(SE_TRANSITION1);
+  stopSoundEffect(0);
+  stopSoundEffect(3);
+  respawnTime=0;
+  for (FurnaceCVObject* i: sprite) {
+    i->dead=true;
+  }
+  memset(tile0,0,80*56*sizeof(short));
+  memset(tile1,0,80*56*sizeof(short));
+}
+
 #define CV_FONTBASE_8x8 0x250
 #define CV_FONTBASE_8x8_RED 0x2d0
 #define CV_FONTBASE_8x16 0x0
+
+void FurnaceCV::togglePause() {
+  paused=!paused;
+  if (paused) {
+    stopSoundEffect(0);
+    stopSoundEffect(1);
+    stopSoundEffect(2);
+    stopSoundEffect(3);
+    putText(CV_FONTBASE_8x16, true, cvText[4], 15, 10);
+  } else {
+    memset(tile1,0,80*56*sizeof(short));
+  }
+  soundEffect(SE_PAUSE);
+}
 
 void FurnaceCV::putText(int fontBase, bool fontHeight, String text, int x, int y) {
   int initX=x;
@@ -1289,7 +1362,7 @@ void FurnaceCV::typeTick() {
 
   if (*(++typeAddr)==0) {
     typeAddr=NULL;
-    stopSoundEffect(SE_TYPEWRITER);
+    stopSoundEffect(0);
   }
 }
 
@@ -1319,26 +1392,28 @@ void FurnaceCV::render(unsigned char joyIn) {
 
   int enemyCount=0;
 
-  for (size_t i=0; i<sprite.size(); i++) {
-    for (size_t j=i+1; j<sprite.size(); j++) {
-      const short s_x0=sprite[i]->x+sprite[i]->collX0;
-      const short s_x1=sprite[i]->x+sprite[i]->collX1;
-      const short s_y0=sprite[i]->y+sprite[i]->collY0;
-      const short s_y1=sprite[i]->y+sprite[i]->collY1;
-      const short d_x0=sprite[j]->x+sprite[j]->collX0;
-      const short d_x1=sprite[j]->x+sprite[j]->collX1;
-      const short d_y0=sprite[j]->y+sprite[j]->collY0;
-      const short d_y1=sprite[j]->y+sprite[j]->collY1;
-      if (d_y0<s_y1 && d_y1>s_y0 && d_x0<s_x1 && d_x1>s_x0) {
-        sprite[i]->collision(sprite[j]);
-        sprite[j]->collision(sprite[i]);
+  if (!paused) {
+    for (size_t i=0; i<sprite.size(); i++) {
+      for (size_t j=i+1; j<sprite.size(); j++) {
+        const short s_x0=sprite[i]->x+sprite[i]->collX0;
+        const short s_x1=sprite[i]->x+sprite[i]->collX1;
+        const short s_y0=sprite[i]->y+sprite[i]->collY0;
+        const short s_y1=sprite[i]->y+sprite[i]->collY1;
+        const short d_x0=sprite[j]->x+sprite[j]->collX0;
+        const short d_x1=sprite[j]->x+sprite[j]->collX1;
+        const short d_y0=sprite[j]->y+sprite[j]->collY0;
+        const short d_y1=sprite[j]->y+sprite[j]->collY1;
+        if (d_y0<s_y1 && d_y1>s_y0 && d_x0<s_x1 && d_x1>s_x0) {
+          sprite[i]->collision(sprite[j]);
+          sprite[j]->collision(sprite[i]);
+        }
       }
-    }
-    sprite[i]->tick();
-    if (sprite[i]->dead) {
-      delete sprite[i];
-      sprite.erase(sprite.begin()+i);
-      i--;
+      sprite[i]->tick();
+      if (sprite[i]->dead) {
+        delete sprite[i];
+        sprite.erase(sprite.begin()+i);
+        i--;
+      }
     }
   }
 
@@ -1362,18 +1437,8 @@ void FurnaceCV::render(unsigned char joyIn) {
         }
       }
       if (!hasEnemy) {
-        inTransition=true;
-        inGame=false;
-        transWait=100;
-        soundEffect(SE_TRANSITION1);
-        stopSoundEffect(0,0,0);
-        stopSoundEffect(0,3,0);
-        respawnTime=0;
-        for (FurnaceCVObject* i: sprite) {
-          i->dead=true;
-        }
-        memset(tile0,0,80*56*sizeof(short));
-        memset(tile1,0,80*56*sizeof(short));
+        stage++;
+        newStage(false);
       }
     }
     
@@ -1385,6 +1450,7 @@ void FurnaceCV::render(unsigned char joyIn) {
           soundEffect(SE_RESPAWN);
           lives--;
         } else {
+          gameOvered=true;
           if (newHiScore) {
             inGame=false;
             inTransition=false;
@@ -1399,7 +1465,8 @@ void FurnaceCV::render(unsigned char joyIn) {
             curText=4;
             textWait=90;
           } else {
-            startTyping(_(cvText[2]),15,13);
+            startTyping(_(cvText[2]),14,11);
+            curText=3;
           }
         }
       }
@@ -1408,9 +1475,9 @@ void FurnaceCV::render(unsigned char joyIn) {
     // draw score
     putText(CV_FONTBASE_8x8_RED,false,"1UP",0,0);
     putText(CV_FONTBASE_8x8,false,fmt::sprintf("%8d",score),3,0);
-
     putText(CV_FONTBASE_8x8_RED,false,"HI",15,0);
     putText(CV_FONTBASE_8x8,false,fmt::sprintf("%8d",hiScore),17,0);
+    tile1[0][27]=1137+shotType; // weapon indicator
     tile1[0][31]=0x27e;
     putText(CV_FONTBASE_8x8,false,fmt::sprintf("*%2d",enemyCount),32,0);
     tile1[0][36]=0x27f;
@@ -1419,7 +1486,6 @@ void FurnaceCV::render(unsigned char joyIn) {
   } else {
     if (inTransition) {
       if (--transWait<0) {
-        stage++;
         logV("stage %d",stage+1);
         soundEffect(SE_TRANSITION2);
         buildStage(stage);
@@ -1428,7 +1494,7 @@ void FurnaceCV::render(unsigned char joyIn) {
         inGame=true;
       }
       if (transWait==40) {
-        putText(CV_FONTBASE_8x16,true,fmt::sprintf(_("STAGE %d"),stage+2),16,13);
+        putText(CV_FONTBASE_8x16,true,fmt::sprintf(_("STAGE %d"),stage+1),16,13);
       } else if (transWait>40) {
         for (int i=1; i<28; i++) {
           for (int j=0; j<40; j++) {
@@ -2177,7 +2243,7 @@ void FurnaceCVEnemy1::tick() {
     stopped=((rand()%10)==0);
     if (stopped) {
       nextTime>>=2;
-      cv->stopSoundEffect(SE_TANKMOVE);
+      cv->stopSoundEffect(3);
     } else {
       unsigned char oldOrient=orient;
       orient=rand()&3;
@@ -2719,6 +2785,18 @@ static const unsigned char __0f_fui[] = {
   0x50, 0x4e, 0x01, 0x00, 0x03
 };
 static const unsigned int __0f_fui_len = 101;
+static const unsigned char __10_fui[] = {
+    0x46, 0x49, 0x4E, 0x53, 0xDF, 0x00, 0x38, 0x00, 0x4E, 0x41, 0x0A, 0x00, 0x70, 0x61, 0x75, 0x73, 
+    0x65, 0x20, 0x64, 0x23, 0x34, 0x00, 0x4D, 0x41, 0x69, 0x00, 0x08, 0x00, 0x00, 0x19, 0xFF, 0xFF, 
+    0x00, 0x01, 0x00, 0x01, 0x0B, 0x09, 0x07, 0x05, 0x03, 0x0F, 0x0C, 0x0A, 0x08, 0x06, 0x04, 0x02, 
+    0x07, 0x05, 0x04, 0x03, 0x02, 0x08, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, 0x00, 0x01, 0x18, 0xFF, 
+    0xFF, 0x00, 0x01, 0x00, 0x01, 0x09, 0x09, 0x09, 0x09, 0x09, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 
+    0x04, 0x09, 0x09, 0x09, 0x09, 0x09, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x05, 0x01, 0x01, 
+    0xFF, 0x00, 0x01, 0x00, 0x01, 0x00, 0x0E, 0x01, 0xFF, 0xFF, 0x00, 0x01, 0x00, 0x01, 0x01, 0x0F, 
+    0x01, 0xFF, 0xFF, 0x00, 0x01, 0x00, 0x01, 0x01, 0x13, 0x01, 0xFF, 0xFF, 0x00, 0x81, 0x00, 0x01, 
+    0x55, 0x55, 0xFF, 0x50, 0x4E, 0x01, 0x00, 0x00, 
+};
+static const unsigned int __10_fui_len = 136;
 
 #define LOAD_INS(x,y) { \
   DivInstrument* newIns=new DivInstrument; \
@@ -2774,6 +2852,7 @@ void FurnaceCV::loadInstruments() {
   LOAD_INS(__0d_fui,__0d_fui_len);
   LOAD_INS(__0e_fui,__0e_fui_len);
   LOAD_INS(__0f_fui,__0f_fui_len);
+  LOAD_INS(__10_fui,__10_fui_len);
 }
 
 // FurnaceCVMine IMPLEMENTATION
