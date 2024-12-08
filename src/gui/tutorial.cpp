@@ -1465,6 +1465,7 @@ void FurnaceCV::render(unsigned char joyIn) {
             curText=4;
             textWait=90;
           } else {
+            paused=false;
             startTyping(_(cvText[2]),14,11);
             curText=3;
           }
