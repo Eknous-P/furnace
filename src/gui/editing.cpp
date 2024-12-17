@@ -1722,6 +1722,9 @@ void FurnaceGUI::doCollapseSong(int divider) {
       }
     }
   }
+
+  MARK_MODIFIED;
+
   // magic
   unsigned char* subSongInfoCopy=new unsigned char[1024];
   memcpy(subSongInfoCopy,e->curSubSong,1024);
@@ -1802,6 +1805,9 @@ void FurnaceGUI::doExpandSong(int multiplier) {
       }
     }
   }
+
+  MARK_MODIFIED;
+
   // magic
   unsigned char* subSongInfoCopy=new unsigned char[1024];
   memcpy(subSongInfoCopy,e->curSubSong,1024);
@@ -1894,6 +1900,73 @@ void FurnaceGUI::doDrag() {
 }
 
 void FurnaceGUI::moveSelected(int x, int y) {
+  SelectionPoint selStartOld, selEndOld, selStartNew, selEndNew;
+  selStartOld=selStart;
+  selEndOld=selEnd;
+
+  // move selection
+  DETERMINE_FIRST_LAST;
+
+  bool outOfBounds=false;
+
+  if (x>0) {
+    for (int i=0; i<x; i++) {
+      do {
+        selStart.xCoarse++;
+        if (selStart.xCoarse>=lastChannel) {
+          outOfBounds=true;
+          break;
+        }
+      } while (!e->curSubSong->chanShow[selStart.xCoarse]);
+
+      do {
+        selEnd.xCoarse++;
+        if (selEnd.xCoarse>=lastChannel) {
+          outOfBounds=true;
+          break;
+        }
+      } while (!e->curSubSong->chanShow[selEnd.xCoarse]);
+
+      if (outOfBounds) break;
+    }
+  } else if (x<0) {
+    for (int i=0; i<-x; i++) {
+      do {
+        selStart.xCoarse--;
+        if (selStart.xCoarse<firstChannel) {
+          outOfBounds=true;
+          break;
+        }
+      } while (!e->curSubSong->chanShow[selStart.xCoarse]);
+
+      do {
+        selEnd.xCoarse--;
+        if (selEnd.xCoarse<firstChannel) {
+          outOfBounds=true;
+          break;
+        }
+      } while (!e->curSubSong->chanShow[selEnd.xCoarse]);
+
+      if (outOfBounds) break;
+    }
+  }
+
+  selStart.y+=y;
+  selEnd.y+=y;
+
+  if (selStart.y<0 || selStart.y>=e->curSubSong->patLen) outOfBounds=true;
+  if (selEnd.y<0 || selEnd.y>=e->curSubSong->patLen) outOfBounds=true;
+
+  selStartNew=selStart;
+  selEndNew=selEnd;
+
+  selStart=selStartOld;
+  selEnd=selEndOld;
+
+  if (outOfBounds) {
+    return;
+  }
+
   prepareUndo(GUI_UNDO_PATTERN_DRAG);
 
   // copy and clear
@@ -1901,11 +1974,11 @@ void FurnaceGUI::moveSelected(int x, int y) {
 
   logV(_("copy: %s"),c);
 
+  // move
+  selStart=selStartNew;
+  selEnd=selEndNew;
+
   // replace
-  selStart.xCoarse+=x;
-  selEnd.xCoarse+=x;
-  selStart.y+=y;
-  selEnd.y+=y;
   cursor=selStart;
   doPaste(GUI_PASTE_MODE_NORMAL,0,false,c);
 

@@ -3078,7 +3078,7 @@ void FurnaceGUI::insTabWavetable(DivInstrument* ins)
         wavePreviewHeight=31;
         break;
     }
-    if (ImGui::Checkbox(_("Enable synthesizer"),&ins->ws.enabled)) {
+    if (ImGui::Checkbox(_("Enable synthesizer"),&ins->ws.enabled)) { PARAMETER
       wavePreviewInit=true;
     }
     if (ins->ws.enabled) {
@@ -3099,7 +3099,7 @@ void FurnaceGUI::insTabWavetable(DivInstrument* ins)
         ImGui::Text(_("Single-waveform"));
         ImGui::Indent();
         for (int i=0; i<DIV_WS_SINGLE_MAX; i++) {
-          if (ImGui::Selectable(_(singleWSEffects[i]))) {
+          if (ImGui::Selectable(_(singleWSEffects[i]))) { PARAMETER
             ins->ws.effect=i;
             wavePreviewInit=true;
           }
@@ -3108,7 +3108,7 @@ void FurnaceGUI::insTabWavetable(DivInstrument* ins)
         ImGui::Text(_("Dual-waveform"));
         ImGui::Indent();
         for (int i=129; i<DIV_WS_DUAL_MAX; i++) {
-          if (ImGui::Selectable(_(dualWSEffects[i-128]))) {
+          if (ImGui::Selectable(_(dualWSEffects[i-128]))) { PARAMETER
             ins->ws.effect=i;
             wavePreviewInit=true;
           }
@@ -3191,7 +3191,7 @@ void FurnaceGUI::insTabWavetable(DivInstrument* ins)
         }
         ImGui::SameLine();
         ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-        if (ImGui::InputInt("##SelWave1",&ins->ws.wave1,1,4)) {
+        if (ImGui::InputInt("##SelWave1",&ins->ws.wave1,1,4)) { PARAMETER
           if (ins->ws.wave1<0) ins->ws.wave1=0;
           if (ins->ws.wave1>=(int)e->song.wave.size()) ins->ws.wave1=e->song.wave.size()-1;
           wavePreviewInit=true;
@@ -3207,7 +3207,7 @@ void FurnaceGUI::insTabWavetable(DivInstrument* ins)
           ImGui::Text(_("Wave 2"));
           ImGui::SameLine();
           ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-          if (ImGui::InputInt("##SelWave2",&ins->ws.wave2,1,4)) {
+          if (ImGui::InputInt("##SelWave2",&ins->ws.wave2,1,4)) { PARAMETER
             if (ins->ws.wave2<0) ins->ws.wave2=0;
             if (ins->ws.wave2>=(int)e->song.wave.size()) ins->ws.wave2=e->song.wave.size()-1;
             wavePreviewInit=true;
@@ -3256,28 +3256,28 @@ void FurnaceGUI::insTabWavetable(DivInstrument* ins)
         ImGui::EndTable();
       }
 
-      if (ImGui::InputScalar(_("Update Rate"),ImGuiDataType_U8,&ins->ws.rateDivider,&_ONE,&_EIGHT)) {
+      if (ImGui::InputScalar(_("Update Rate"),ImGuiDataType_U8,&ins->ws.rateDivider,&_ONE,&_EIGHT)) { PARAMETER
         wavePreviewInit=true;
       }
       int speed=ins->ws.speed+1;
-      if (ImGui::InputInt(_("Speed"),&speed,1,8)) {
+      if (ImGui::InputInt(_("Speed"),&speed,1,8)) { PARAMETER
         if (speed<1) speed=1;
         if (speed>256) speed=256;
         ins->ws.speed=speed-1;
         wavePreviewInit=true;
       }
 
-      if (ImGui::InputScalar(_("Amount"),ImGuiDataType_U8,&ins->ws.param1,&_ONE,&_EIGHT)) {
+      if (ImGui::InputScalar(_("Amount"),ImGuiDataType_U8,&ins->ws.param1,&_ONE,&_EIGHT)) { PARAMETER
         wavePreviewInit=true;
       }
 
       if (ins->ws.effect==DIV_WS_PHASE_MOD) {
-        if (ImGui::InputScalar(_("Power"),ImGuiDataType_U8,&ins->ws.param2,&_ONE,&_EIGHT)) {
+        if (ImGui::InputScalar(_("Power"),ImGuiDataType_U8,&ins->ws.param2,&_ONE,&_EIGHT)) { PARAMETER
           wavePreviewInit=true;
         }
       }
 
-      if (ImGui::Checkbox(_("Global"),&ins->ws.global)) {
+      if (ImGui::Checkbox(_("Global"),&ins->ws.global)) { PARAMETER
         wavePreviewInit=true;
       }
     } else {
@@ -4450,8 +4450,15 @@ void FurnaceGUI::insTabFM(DivInstrument* ins) {
           }
 
           ImGui::TableNextColumn();
+          pushWarningColor(ins->type==DIV_INS_OPL_DRUMS && i==0);
           CENTER_VSLIDER;
           P(CWVSliderScalar("##MULT",ImVec2(20.0f*dpiScale,sliderHeight),ImGuiDataType_U8,&op.mult,&_ZERO,&_FIFTEEN)); rightClickable
+          if (ins->type==DIV_INS_OPL_DRUMS && i==0) {
+            if (ImGui::IsItemHovered()) {
+              ImGui::SetTooltip("%s",_("Snare's multiplier is determined by HiHat's."));
+            }
+          }
+          popWarningColor();
 
           if (ins->type==DIV_INS_OPZ) {
             ImGui::TableNextColumn();
@@ -5096,9 +5103,16 @@ void FurnaceGUI::insTabFM(DivInstrument* ins) {
                   ImGui::EndTable();
                 }
 
+                pushWarningColor(ins->type==DIV_INS_OPL_DRUMS && i==0);          
                 ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
                 snprintf(tempID,1024,"%s: %%d",FM_NAME(FM_MULT));
                 P(CWSliderScalar("##MULT",ImGuiDataType_U8,&op.mult,&_ZERO,&_FIFTEEN,tempID)); rightClickable
+                if (ins->type==DIV_INS_OPL_DRUMS && i==0) {
+                  if (ImGui::IsItemHovered()) {
+                    ImGui::SetTooltip("%s",_("Snare's multiplier is determined by HiHat's."));
+                  }
+                }
+                popWarningColor();
 
                 ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
                 snprintf(tempID,1024,"%s: %%d",FM_NAME(FM_KSL));
@@ -5773,8 +5787,15 @@ void FurnaceGUI::insTabFM(DivInstrument* ins) {
             } else {
               ImGui::TableNextRow();
               ImGui::TableNextColumn();
+              pushWarningColor(ins->type==DIV_INS_OPL_DRUMS && i==0);          
               ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
               P(CWSliderScalar(FM_NAME(FM_MULT),ImGuiDataType_U8,&op.mult,&_ZERO,&_FIFTEEN)); rightClickable
+              if (ins->type==DIV_INS_OPL_DRUMS && i==0) {
+                if (ImGui::IsItemHovered()) {
+                  ImGui::SetTooltip("%s",_("Snare's multiplier is determined by HiHat's."));
+                }
+              }
+              popWarningColor();
               ImGui::TableNextColumn();
               ImGui::Text("%s",FM_NAME(FM_MULT));
             }

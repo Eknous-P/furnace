@@ -1655,6 +1655,7 @@ void DivEngine::playSub(bool preserveDrift, int goalRow) {
     ticks=1;
     tempoAccum=0;
     totalTicks=0;
+    totalTicksOff=0;
     totalSeconds=0;
     totalTicksR=0;
     curMidiClock=0;
@@ -2575,6 +2576,9 @@ int DivEngine::addInstrument(int refChan, DivInstrumentType fallbackType) {
   DivInstrument* ins=new DivInstrument;
   int insCount=(int)song.ins.size();
   DivInstrumentType prefType;
+  if (refChan>chans) {
+    refChan=chans-1;
+  }
   if (refChan<0) {
     prefType=fallbackType;
   } else {
@@ -3723,6 +3727,7 @@ void DivEngine::quitDispatch() {
   changeOrd=-1;
   changePos=0;
   totalTicks=0;
+  totalTicksOff=0;
   totalSeconds=0;
   totalTicksR=0;
   curMidiClock=0;

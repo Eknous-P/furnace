@@ -358,12 +358,15 @@ void DivPlatformOPL::acquire_ymfm1(short** buf, size_t len) {
   for (size_t h=0; h<len; h++) {
     if (!writes.empty() && --delay<0) {
       QueuedWrite& w=writes.front();
+      if (w.addr==0xfffffffe) {
+        delay=w.val;
+      } else {
+        fm_ymfm1->write(0,w.addr);
+        fm_ymfm1->write(1,w.val);
+        delay=1;
 
-      fm_ymfm1->write(0,w.addr);
-      fm_ymfm1->write(1,w.val);
-      delay=1;
-
-      regPool[w.addr&511]=w.val;
+        regPool[w.addr&511]=w.val;
+      }
       writes.pop();
     }
 
@@ -400,12 +403,15 @@ void DivPlatformOPL::acquire_ymfm2(short** buf, size_t len) {
   for (size_t h=0; h<len; h++) {
     if (!writes.empty() && --delay<0) {
       QueuedWrite& w=writes.front();
+      if (w.addr==0xfffffffe) {
+        delay=w.val;
+      } else {
+        fm_ymfm2->write(0,w.addr);
+        fm_ymfm2->write(1,w.val);
+        delay=1;
 
-      fm_ymfm2->write(0,w.addr);
-      fm_ymfm2->write(1,w.val);
-      delay=1;
-
-      regPool[w.addr&511]=w.val;
+        regPool[w.addr&511]=w.val;
+      }
       writes.pop();
     }
 
@@ -443,12 +449,15 @@ void DivPlatformOPL::acquire_ymfm8950(short** buf, size_t len) {
   for (size_t h=0; h<len; h++) {
     if (!writes.empty() && --delay<0) {
       QueuedWrite& w=writes.front();
+      if (w.addr==0xfffffffe) {
+        delay=w.val;
+      } else {
+        fm_ymfm8950->write(0,w.addr);
+        fm_ymfm8950->write(1,w.val);
+        delay=1;
 
-      fm_ymfm8950->write(0,w.addr);
-      fm_ymfm8950->write(1,w.val);
-      delay=1;
-
-      regPool[w.addr&511]=w.val;
+        regPool[w.addr&511]=w.val;
+      }
       writes.pop();
     }
 
@@ -487,12 +496,15 @@ void DivPlatformOPL::acquire_ymfm3(short** buf, size_t len) {
   for (size_t h=0; h<len; h++) {
     if (!writes.empty() && --delay<0) {
       QueuedWrite& w=writes.front();
+      if (w.addr==0xfffffffe) {
+        delay=w.val;
+      } else {
+        fm_ymfm3->write((w.addr&0x100)?2:0,w.addr);
+        fm_ymfm3->write(1,w.val);
+        delay=1;
 
-      fm_ymfm3->write((w.addr&0x100)?2:0,w.addr);
-      fm_ymfm3->write(1,w.val);
-      delay=1;
-
-      regPool[w.addr&511]=w.val;
+        regPool[w.addr&511]=w.val;
+      }
       writes.pop();
     }
 
@@ -587,12 +599,15 @@ void DivPlatformOPL::acquire_ymfm4(short** buf, size_t len) {
   for (size_t h=0; h<len; h++) {
     if (!writes.empty() && --delay<0) {
       QueuedWrite& w=writes.front();
+      if (w.addr==0xfffffffe) {
+        delay=w.val;
+      } else {
+        fm_ymfm4->write((w.addr&0x200)?4:(w.addr&0x100)?2:0,w.addr);
+        fm_ymfm4->write((w.addr&0x200)?5:1,w.val);
+        delay=1;
 
-      fm_ymfm4->write((w.addr&0x200)?4:(w.addr&0x100)?2:0,w.addr);
-      fm_ymfm4->write((w.addr&0x200)?5:1,w.val);
-      delay=1;
-
-      regPool[(w.addr&0x200)?(0x200+(w.addr&255)):(w.addr&511)]=w.val;
+        regPool[(w.addr&0x200)?(0x200+(w.addr&255)):(w.addr&511)]=w.val;
+      }
       writes.pop();
     }
 
@@ -1092,7 +1107,7 @@ void DivPlatformOPL::tick(bool sysTick) {
           unsigned short baseAddr=slotMap[slot];
           DivInstrumentFM::Operator& op=chan[i].state.op[(ops==4)?orderedOpsL[j]:j];
 
-          if (isMuted[i] && i<=melodicChans) {
+          if (isMuted[i]) {
             rWrite(baseAddr+ADDR_KSL_TL,63|(op.ksl<<6));
           } else {
             if (KVSL(i,j) || i>melodicChans) {
@@ -1212,7 +1227,7 @@ void DivPlatformOPL::tick(bool sysTick) {
           op.ksl=m.ksl.val;
         }
         if (m.tl.had || m.ksl.had) {
-          if (isMuted[i] && i<=melodicChans) {
+          if (isMuted[i]) {
             rWrite(baseAddr+ADDR_KSL_TL,63|(op.ksl<<6));
           } else {
             if (KVSL(i,j) || i>melodicChans) {
@@ -1579,7 +1594,7 @@ void DivPlatformOPL::muteChannel(int ch, bool mute) {
     unsigned short baseAddr=slotMap[slot];
     DivInstrumentFM::Operator& op=chan[ch].state.op[(ops==4)?orderedOpsL[i]:i];
 
-    if (isMuted[ch] && ch<=melodicChans) {
+    if (isMuted[ch]) {
       rWrite(baseAddr+ADDR_KSL_TL,63|(op.ksl<<6));
     } else {
       if (KVSL(ch,i) || ch>melodicChans) {
@@ -1638,7 +1653,11 @@ void DivPlatformOPL::commitState(int ch, DivInstrument* ins) {
         DivInstrumentFM::Operator& op=chan[ch].state.op[0];
         chan[ch].fourOp=false;
 
-        rWrite(baseAddr+ADDR_KSL_TL,(63-VOL_SCALE_LOG_BROKEN(63-op.tl,chan[ch].outVol&0x3f,63))|(op.ksl<<6));
+        if (isMuted[ch]) {
+          rWrite(baseAddr+ADDR_KSL_TL,63|(op.ksl<<6));
+        } else {
+          rWrite(baseAddr+ADDR_KSL_TL,(63-VOL_SCALE_LOG_BROKEN(63-op.tl,chan[ch].outVol&0x3f,63))|(op.ksl<<6));
+        }
 
         rWrite(baseAddr+ADDR_AM_VIB_SUS_KSR_MULT,(op.am<<7)|(op.vib<<6)|(op.sus<<5)|(op.ksr<<4)|op.mult);
         rWrite(baseAddr+ADDR_AR_DR,(op.ar<<4)|op.dr);
@@ -1670,7 +1689,7 @@ void DivPlatformOPL::commitState(int ch, DivInstrument* ins) {
         unsigned short baseAddr=slotMap[slot];
         DivInstrumentFM::Operator& op=chan[ch].state.op[(ops==4)?orderedOpsL[i]:i];
 
-        if (isMuted[ch] && ch<=melodicChans) {
+        if (isMuted[ch]) {
           rWrite(baseAddr+ADDR_KSL_TL,63|(op.ksl<<6));
         } else {
           if (KVSL(ch,i) || ch>melodicChans) {
@@ -1933,7 +1952,7 @@ int DivPlatformOPL::dispatch(DivCommand c) {
         unsigned short baseAddr=slotMap[slot];
         DivInstrumentFM::Operator& op=chan[c.chan].state.op[(ops==4)?orderedOpsL[i]:i];
 
-        if (isMuted[c.chan] && c.chan<=melodicChans) {
+        if (isMuted[c.chan]) {
           rWrite(baseAddr+ADDR_KSL_TL,63|(op.ksl<<6));
         } else {
           if (KVSL(c.chan,i) || c.chan>melodicChans) {
@@ -2157,7 +2176,7 @@ int DivPlatformOPL::dispatch(DivCommand c) {
       unsigned char slot=slots[c.value][c.chan];
       if (slot==255) break;
       unsigned short baseAddr=slotMap[slot];
-      if (isMuted[c.chan] && c.chan<=melodicChans) {
+      if (isMuted[c.chan]) {
         rWrite(baseAddr+ADDR_KSL_TL,63|(op.ksl<<6));
       } else {
         if (KVSL(c.chan,c.value) || c.chan>melodicChans) {
@@ -2397,7 +2416,7 @@ int DivPlatformOPL::dispatch(DivCommand c) {
           unsigned short baseAddr=slotMap[slot];
           DivInstrumentFM::Operator& op=chan[c.chan].state.op[(ops==4)?orderedOpsL[i]:i];
           op.ksl=c.value2&3;
-          if (isMuted[c.chan] && c.chan<=melodicChans) {
+          if (isMuted[c.chan]) {
             rWrite(baseAddr+ADDR_KSL_TL,63|(op.ksl<<6));
           } else {
             if (KVSL(c.chan,i) || c.chan>melodicChans) {
@@ -2414,7 +2433,7 @@ int DivPlatformOPL::dispatch(DivCommand c) {
         unsigned char slot=slots[c.value][c.chan];
         if (slot==255) break;
         unsigned short baseAddr=slotMap[slot];
-        if (isMuted[c.chan] && c.chan<=melodicChans) {
+        if (isMuted[c.chan]) {
           rWrite(baseAddr+ADDR_KSL_TL,63|(op.ksl<<6));
         } else {
           if (KVSL(c.chan,c.value) || c.chan>melodicChans) {
@@ -2604,7 +2623,7 @@ void DivPlatformOPL::forceIns() {
       unsigned short baseAddr=slotMap[slot];
       DivInstrumentFM::Operator& op=chan[i].state.op[(ops==4)?orderedOpsL[j]:j];
 
-      if (isMuted[i] && c.chan<=melodicChans) {
+      if (isMuted[i]) {
         rWrite(baseAddr+ADDR_KSL_TL,63|(op.ksl<<6));
       } else {
         if (KVSL(i,j) || i>melodicChans) {

@@ -2809,8 +2809,8 @@ void FurnaceGUI::processDrags(int dragX, int dragY) {
     }
   }
   if (sampleDragActive) {
-    int x=samplePos+round(double(dragX-sampleDragStart.x)*sampleZoom);
-    int x1=samplePos+round(double(dragX-sampleDragStart.x+1)*sampleZoom);
+    int x=samplePos+floor(double(dragX-sampleDragStart.x)*sampleZoom);
+    int x1=samplePos+floor(double(dragX-sampleDragStart.x+1)*sampleZoom);
     if (x<0) x=0;
     if (sampleDragMode) {
       if (x>=(int)sampleDragLen) x=sampleDragLen-1;
@@ -3270,6 +3270,7 @@ void FurnaceGUI::toggleMobileUI(bool enable, bool force) {
       ImGui::GetIO().IniFilename=NULL;
       ImGui::GetIO().ConfigFlags|=ImGuiConfigFlags_InertialScrollEnable;
       ImGui::GetIO().ConfigFlags|=ImGuiConfigFlags_NoHoverColors;
+      ImGui::GetIO().AlwaysScrollText=true;
       fileDialog->mobileUI=true;
     } else {
       ImGui::GetIO().IniFilename=NULL;
@@ -3279,6 +3280,7 @@ void FurnaceGUI::toggleMobileUI(bool enable, bool force) {
       }
       ImGui::GetIO().ConfigFlags&=~ImGuiConfigFlags_InertialScrollEnable;
       ImGui::GetIO().ConfigFlags&=~ImGuiConfigFlags_NoHoverColors;
+      ImGui::GetIO().AlwaysScrollText=false;
       fileDialog->mobileUI=false;
     }
   }
@@ -3864,7 +3866,7 @@ bool FurnaceGUI::loop() {
         }
 #endif
         case SDL_KEYDOWN:
-          if (!ImGui::GetIO().WantCaptureKeyboard) {
+          if (!ImGui::GetIO().WantCaptureKeyboard || (ImGuiFileDialog::Instance()->IsOpened() && !ImGui::GetIO().WantTextInput)) {
             keyDown(ev);
           }
           insEditMayBeDirty=true;
@@ -5416,44 +5418,33 @@ bool FurnaceGUI::loop() {
               }
               break;
             }
-             case GUI_FILE_SAMPLE_OPEN_REPLACE: 
-            {
+            case GUI_FILE_SAMPLE_OPEN_REPLACE: {
               std::vector<DivSample*> samples=e->sampleFromFile(copyOfName.c_str());
-              if (samples.empty()) 
-              {
+              if (samples.empty()) {
                 showError(e->getLastError());
-              } 
-              else 
-              {
-                if((int)samples.size() == 1)
-                {
-                  if (curSample>=0 && curSample<(int)e->song.sample.size()) 
-                  {
-                    DivSample* s = samples[0];
-                    e->lockEngine([this, s]()
-                    {
+              } else {
+                if ((int)samples.size()==1) {
+                  if (curSample>=0 && curSample<(int)e->song.sample.size()) {
+                    DivSample* s=samples[0];
+                    e->lockEngine([this,s]() {
                       // if it crashes here please tell me...
                       DivSample* oldSample=e->song.sample[curSample];
-                      e->song.sample[curSample]= s;
+                      e->song.sample[curSample]=s;
                       delete oldSample;
                       e->renderSamples();
                       MARK_MODIFIED;
                     });
                     updateSampleTex=true;
-                  } 
-                  else 
-                  {
+                  } else {
                     showError(_("...but you haven't selected a sample!"));
                     delete samples[0];
                   }
-                }
-                else
-                {
-                  for (DivSample* s: samples) { //ask which samples to load!
+                } else {
+                  for (DivSample* s: samples) { // ask which samples to load!
                     pendingSamples.push_back(std::make_pair(s,false));
                   }
                   displayPendingSamples=true;
-                  replacePendingSample = true;
+                  replacePendingSample=true;
                 }
               }
               break;
@@ -5538,6 +5529,7 @@ bool FurnaceGUI::loop() {
                   int instrumentCount=-1;
                   for (DivInstrument* i: instruments) {
                     instrumentCount=e->addInstrumentPtr(i);
+                    MARK_MODIFIED;
                   }
                   if (instrumentCount>=0 && settings.selectAssetOnLoad) {
                     curIns=instrumentCount-1;
@@ -5565,6 +5557,7 @@ bool FurnaceGUI::loop() {
                 } else { // replace with the only instrument
                   if (curIns>=0 && curIns<(int)e->song.ins.size()) {
                     *e->song.ins[curIns]=*instruments[0];
+                    MARK_MODIFIED;
                   } else {
                     showError(_("...but you haven't selected an instrument!"));
                   }

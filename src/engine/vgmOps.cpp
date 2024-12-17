@@ -553,7 +553,7 @@ void DivEngine::performVGMWrite(SafeWriter* w, DivSystem sys, DivRegWrite& write
         w->writeC(0xff);
         break;
       case DIV_SYSTEM_MSM6258:
-        w->writeC(0xb8); // stop
+        w->writeC(0xb7); // stop
         w->writeC(baseAddr2|0);
         w->writeC(1);
         break;
@@ -716,7 +716,7 @@ void DivEngine::performVGMWrite(SafeWriter* w, DivSystem sys, DivRegWrite& write
       case DIV_SYSTEM_NES: {
         unsigned int bankAddr=bankOffset+(write.val<<14);
         w->writeC(0x68);
-        w->writeC(0x6c);
+        w->writeC(0x66);
         w->writeC(0x07|(isSecond?0x80:0x00));
         w->writeC(bankAddr&0xff);
         w->writeC((bankAddr>>8)&0xff);
@@ -2195,7 +2195,7 @@ SafeWriter* DivEngine::saveVGM(bool* sysToExport, bool loop, int version, bool p
     w->writeC(0);
     w->writeI(sample->length8);
     for (unsigned int j=0; j<sample->length8; j++) {
-      w->writeC((unsigned char)sample->data8[j]+0x80);
+      w->writeC((unsigned char)sample->data8[j]^0x80);
     }
   }
 
@@ -2206,7 +2206,7 @@ SafeWriter* DivEngine::saveVGM(bool* sysToExport, bool loop, int version, bool p
     w->writeC(7);
     w->writeI(sample->length8);
     for (unsigned int j=0; j<sample->length8; j++) {
-      w->writeC(((unsigned char)sample->data8[j]+0x80)>>1);
+      w->writeC(((unsigned char)sample->data8[j]^0x80)>>1);
     }
     bankOffsetNESCurrent+=sample->length8;
   }
@@ -2218,7 +2218,7 @@ SafeWriter* DivEngine::saveVGM(bool* sysToExport, bool loop, int version, bool p
     w->writeC(5);
     w->writeI(sample->length8);
     for (unsigned int j=0; j<sample->length8; j++) {
-      w->writeC(((unsigned char)sample->data8[j]+0x80)>>3);
+      w->writeC(((unsigned char)sample->data8[j]^0x80)>>3);
     }
   }
 

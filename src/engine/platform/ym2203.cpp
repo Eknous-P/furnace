@@ -188,7 +188,7 @@ void DivPlatformYM2203::acquire_combo(short** buf, size_t len) {
           QueuedWrite& w=writes.front();
 
           if (w.addr==0xfffffffe) {
-            delay=w.val;
+            delay=w.val*24;
             writes.pop_front();
           } else if (w.addr<=0x1c || w.addr==0x2d || w.addr==0x2e || w.addr==0x2f) {
             // ymfm write
@@ -271,7 +271,7 @@ void DivPlatformYM2203::acquire_ymfm(short** buf, size_t len) {
       if (--delay<1) {
         QueuedWrite& w=writes.front();
         if (w.addr==0xfffffffe) {
-          delay=w.val*6;
+          delay=w.val*3;
         } else {
           fm->write(0x0,w.addr);
           fm->write(0x1,w.val);
@@ -668,7 +668,7 @@ void DivPlatformYM2203::tick(bool sysTick) {
 
   // hard reset handling
   if (mustHardReset) {
-    immWrite(0xfffffffe,hardResetCycles-hardResetElapsed);
+    immWrite(0xfffffffe,(hardResetCycles-hardResetElapsed)*3);
     for (int i=0; i<3; i++) {
       if (i==2 && extMode) continue;
       if ((chan[i].keyOn || chan[i].opMaskChanged) && chan[i].hardReset) {
@@ -938,6 +938,7 @@ int DivPlatformYM2203::dispatch(DivCommand c) {
       break;
     }
     case DIV_CMD_FM_RS: {
+      if (c.chan>=psgChanOffs) break;
       if (c.value<0)  {
         for (int i=0; i<4; i++) {
           DivInstrumentFM::Operator& op=chan[c.chan].state.op[i];
@@ -954,6 +955,7 @@ int DivPlatformYM2203::dispatch(DivCommand c) {
       break;
     }
     case DIV_CMD_FM_AM: {
+      if (c.chan>=psgChanOffs) break;
       if (c.value<0)  {
         for (int i=0; i<4; i++) {
           DivInstrumentFM::Operator& op=chan[c.chan].state.op[i];
@@ -970,6 +972,7 @@ int DivPlatformYM2203::dispatch(DivCommand c) {
       break;
     }
     case DIV_CMD_FM_DR: {
+      if (c.chan>=psgChanOffs) break;
       if (c.value<0)  {
         for (int i=0; i<4; i++) {
           DivInstrumentFM::Operator& op=chan[c.chan].state.op[i];
@@ -986,6 +989,7 @@ int DivPlatformYM2203::dispatch(DivCommand c) {
       break;
     }
     case DIV_CMD_FM_SL: {
+      if (c.chan>=psgChanOffs) break;
       if (c.value<0)  {
         for (int i=0; i<4; i++) {
           DivInstrumentFM::Operator& op=chan[c.chan].state.op[i];
@@ -1002,6 +1006,7 @@ int DivPlatformYM2203::dispatch(DivCommand c) {
       break;
     }
     case DIV_CMD_FM_RR: {
+      if (c.chan>=psgChanOffs) break;
       if (c.value<0)  {
         for (int i=0; i<4; i++) {
           DivInstrumentFM::Operator& op=chan[c.chan].state.op[i];
@@ -1018,6 +1023,7 @@ int DivPlatformYM2203::dispatch(DivCommand c) {
       break;
     }
     case DIV_CMD_FM_D2R: {
+      if (c.chan>=psgChanOffs) break;
       if (c.value<0)  {
         for (int i=0; i<4; i++) {
           DivInstrumentFM::Operator& op=chan[c.chan].state.op[i];
@@ -1034,6 +1040,7 @@ int DivPlatformYM2203::dispatch(DivCommand c) {
       break;
     }
     case DIV_CMD_FM_DT: {
+      if (c.chan>=psgChanOffs) break;
       if (c.value<0)  {
         for (int i=0; i<4; i++) {
           DivInstrumentFM::Operator& op=chan[c.chan].state.op[i];
@@ -1050,6 +1057,7 @@ int DivPlatformYM2203::dispatch(DivCommand c) {
       break;
     }
     case DIV_CMD_FM_SSG: {
+      if (c.chan>=psgChanOffs) break;
       if (c.value<0)  {
         for (int i=0; i<4; i++) {
           DivInstrumentFM::Operator& op=chan[c.chan].state.op[i];
@@ -1086,6 +1094,7 @@ int DivPlatformYM2203::dispatch(DivCommand c) {
       }
       break;
     case DIV_CMD_FM_HARD_RESET:
+      if (c.chan>=psgChanOffs) break;
       chan[c.chan].hardReset=c.value;
       break;
     case DIV_CMD_MACRO_OFF:
