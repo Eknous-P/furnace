@@ -1624,12 +1624,14 @@ class FurnaceGUI {
 
   SDL_Window* sdlWin;
   SDL_Haptic* vibrator;
+  SDL_Joystick* joyHW;
   bool vibratorAvailable;
 
   FurnaceCV* cv;
   FurnaceGUITexture* cvTex;
   uint64_t lastCVFrame;
   int cvFrameTime, cvFrameHold;
+  uint8_t joyHWState;
 
   FurnaceGUITexture* sampleTex;
   int sampleTexW, sampleTexH;

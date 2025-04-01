@@ -1,3 +1,5 @@
+#include "SDL.h"
+#include "SDL_events.h"
 #define _USE_MATH_DEFINES
 // OK, sorry for inserting the define here but I'm so tired of this extension
 /**
@@ -4184,6 +4186,31 @@ bool FurnaceGUI::loop() {
         case SDL_USEREVENT:
           // used for MIDI wake up
           break;
+        case SDL_JOYHATMOTION: {
+          unsigned char v=ev.jhat.value;
+          joyHWState&=15;
+          if (v&SDL_HAT_UP) joyHWState|=16;
+          if (v&SDL_HAT_DOWN) joyHWState|=32;
+          if (v&SDL_HAT_LEFT) joyHWState|=64;
+          if (v&SDL_HAT_RIGHT) joyHWState|=128;
+          break;
+        }
+        case SDL_JOYBUTTONUP: {
+          switch (ev.jbutton.button) {
+            case 0: joyHWState&=(unsigned char)~1; break;
+            case 1: joyHWState&=(unsigned char)~2; break;
+            default: break;
+          }
+          break;
+        }
+        case SDL_JOYBUTTONDOWN: {
+          switch (ev.jbutton.button) {
+            case 0: joyHWState|=1; break;
+            case 1: joyHWState|=2; break;
+            default: break;
+          }
+          break;
+        }
         case SDL_QUIT:
           if (requestQuit()) {
             return true;
@@ -7675,6 +7702,11 @@ bool FurnaceGUI::init() {
   }
 #endif
 
+  logD("initializing joystick...");
+  if (SDL_Init(SDL_INIT_JOYSTICK)!=0) {
+    logW("could not initialize joystick! %s",SDL_GetError());
+  }
+
   const char* videoBackend=SDL_GetCurrentVideoDriver();
   if (videoBackend!=NULL) {
     logV("video backend: %s",videoBackend);
@@ -8109,6 +8141,13 @@ bool FurnaceGUI::init() {
     }
   }
 #endif
+  if (SDL_NumJoysticks()>0) {
+    logD("opening joystick...");
+    joyHW=SDL_JoystickOpen(0);
+    if (joyHW==NULL) {
+      logW("could not open joystick! %s",SDL_GetError());
+    }
+  }
 
   cpuCores=SDL_GetCPUCount();
   if (cpuCores<1) cpuCores=1;
@@ -8542,6 +8581,10 @@ bool FurnaceGUI::finish(bool saveConfig) {
     SDL_HapticClose(vibrator);
   }
 
+  if (joyHW) {
+    SDL_JoystickClose(joyHW);
+  }
+
   for (int i=0; i<DIV_MAX_OUTPUTS; i++) {
     if (oscValues[i]) {
       delete[] oscValues[i];
@@ -8579,11 +8622,13 @@ FurnaceGUI::FurnaceGUI():
   rend(NULL),
   sdlWin(NULL),
   vibrator(NULL),
+  joyHW(NULL),
   vibratorAvailable(false),
   cv(NULL),
   lastCVFrame(0),
   cvFrameTime(100000),
   cvFrameHold(0),
+  joyHWState(0),
   sampleTex(NULL),
   sampleTexW(0),
   sampleTexH(0),

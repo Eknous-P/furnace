@@ -758,6 +758,14 @@ void FurnaceGUI::drawDebug() {
       ImGui::EndChild();
       ImGui::TreePop();
     }
+    if (ImGui::TreeNode("Joystick")) {
+      if (joyHW) {
+        ImGui::Text("state: %.2x", joyHWState);
+      } else {
+        ImGui::Text("not opened");
+      }
+      ImGui::TreePop();
+    }
     if (ImGui::TreeNode("User Interface")) {
       if (ImGui::Button("Inspect")) {
         inspectorOpen=!inspectorOpen;

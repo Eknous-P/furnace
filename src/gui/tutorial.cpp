@@ -17,13 +17,14 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include "SDL_events.h"
+#include "SDL_joystick.h"
 #include "gui.h"
 #include "../ta-log.h"
 #include "IconsFontAwesome4.h"
 #include "imgui_internal.h"
 
 #include "gif_load.h"
-#include <imgui.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -1074,7 +1075,7 @@ void FurnaceGUI::drawTutorial() {
       cvFrameTime=(cvFrameTime*15+delta)/16;
       cvFrameHold+=delta;
       if (cvFrameHold>=16667 || cvFrameTime>15000) {
-        cv->render(touchControls);
+        cv->render(touchControls|this->joyHWState);
         cvFrameHold%=16667;
       }
       lastCVFrame=nextFrame;
