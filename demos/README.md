@@ -7,20 +7,24 @@ these demo songs are not under the GPL. all rights are reserved to the original 
 # contributors
 
 - 0x5066
+- 4sythe
 - Abstract 64
 - Aburtos
 - ActualNK358
 - Aishi Tsukumo
 - akumanatt
 - aloelucidity
+- ALTMUS
 - AmigaX
 - AquaDoesStuff
+- asikwus
 - AstralBlue
 - Background2982
 - battybeats
 - bbqzzd
 - Bernie
 - billimanmcjonnson
+- biolizardshadow
 - BlastBrothers
 - Blaze Weednix
 - BlueElectric05
@@ -51,12 +55,14 @@ these demo songs are not under the GPL. all rights are reserved to the original 
 - Fragmare
 - freq-mod
 - gtr3qq
+- Heckett Heriot
 - Heemin
 - Hortus
 - ifrit05
 - iyatemu
 - JayBOB18
 - Jimmy-DS
+- jvsTSX
 - Kagamiin~
 - Kaoru
 - kleeder
@@ -82,7 +88,6 @@ these demo songs are not under the GPL. all rights are reserved to the original 
 - Notakin
 - nwcr
 - NyaongI
-- Pale Moon
 - PeyPey
 - PichuMario
 - pixelated
@@ -102,7 +107,6 @@ these demo songs are not under the GPL. all rights are reserved to the original 
 - scooblee
 - sheffield^2
 - sillygoose
-- Slightly Large NC
 - smaybius
 - SnugglyBun
 - Someone64
@@ -123,6 +127,7 @@ these demo songs are not under the GPL. all rights are reserved to the original 
 - TheDuccinator
 - theloredev
 - The Beesh-Spweesh!
+- The Goofy-Mouse
 - TheRealHedgehogSonic
 - tildearrow
 - tom\_atom
@@ -135,6 +140,7 @@ these demo songs are not under the GPL. all rights are reserved to the original 
 - Xan
 - Yuzu4K
 - Zabir
+- Zaxinoth Digital
 - Zaxolotl
 - ZoomTen (Zumi)
 

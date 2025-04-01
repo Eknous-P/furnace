@@ -2,7 +2,7 @@
 // OK, sorry for inserting the define here but I'm so tired of this extension
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -569,6 +569,12 @@ void FurnaceGUI::addScroll(int amount) {
   haveHitBounds=false;
 }
 
+void FurnaceGUI::addScrollX(int amount) {
+  float lineHeight=(patFont->FontSize+2*dpiScale);
+  nextAddScrollX=lineHeight*amount;
+  haveHitBounds=false;
+}
+
 void FurnaceGUI::setFileName(String name) {
 #ifdef _WIN32
   wchar_t ret[4096];
@@ -769,60 +775,13 @@ void FurnaceGUI::autoDetectSystem() {
 }
 
 void FurnaceGUI::updateROMExportAvail() {
-  unsigned char sysReqCount[DIV_SYSTEM_MAX];
-  unsigned char defReqCount[DIV_SYSTEM_MAX];
-
-  memset(sysReqCount,0,DIV_SYSTEM_MAX);
-  for (int i=0; i<e->song.systemLen; i++) {
-    sysReqCount[e->song.system[i]]++;
-  }
-
   memset(romExportAvail,0,sizeof(bool)*DIV_ROM_MAX);
   romExportExists=false;
 
   for (int i=0; i<DIV_ROM_MAX; i++) {
-    const DivROMExportDef* newDef=e->getROMExportDef((DivROMExportOptions)i);
-    if (newDef!=NULL) {
-      // check for viability
-      bool viable=true;
-
-      memset(defReqCount,0,DIV_SYSTEM_MAX);
-      for (DivSystem j: newDef->requisites) {
-        defReqCount[j]++;
-      }
-
-      switch (newDef->requisitePolicy) {
-        case DIV_REQPOL_EXACT:
-          for (int j=0; j<DIV_SYSTEM_MAX; j++) {
-            if (defReqCount[j]!=sysReqCount[j]) {
-              viable=false;
-              break;
-            }
-          }
-          break;
-        case DIV_REQPOL_ANY:
-          for (int j=0; j<DIV_SYSTEM_MAX; j++) {
-            if (defReqCount[j]>sysReqCount[j]) {
-              viable=false;
-              break;
-            }
-          }
-          break;
-        case DIV_REQPOL_LAX:
-          viable=false;
-          for (DivSystem j: newDef->requisites) {
-            if (defReqCount[j]<=sysReqCount[j]) {
-              viable=true;
-              break;
-            }
-          }
-          break;
-      }
-      
-      if (viable) {
-        romExportAvail[i]=true;
-        romExportExists=true;
-      }
+    if (e->isROMExportViable((DivROMExportOptions)i)) {
+      romExportAvail[i]=true;
+      romExportExists=true;
     }
   }
 
@@ -1241,6 +1200,7 @@ void FurnaceGUI::play(int row) {
   curNibble=false;
   orderNibble=false;
   activeNotes.clear();
+  fullView=false;
 }
 
 void FurnaceGUI::setOrder(unsigned char order, bool forced) {
@@ -1259,12 +1219,21 @@ void FurnaceGUI::stop() {
   if (followPattern && wasPlaying) {
     nextScroll=-1.0f;
     nextAddScroll=0.0f;
-    cursor.y=oldRow;
+    e->getPlayPos(curOrder, cursor.y);
     if (selStart.xCoarse==selEnd.xCoarse && selStart.xFine==selEnd.xFine && selStart.y==selEnd.y && !selecting) {
       selStart=cursor;
       selEnd=cursor;
     }
     updateScroll(cursor.y);
+  }
+  if (curEngineState==9) {
+    if ((rand()%40)==0) {
+      fullView=true;
+    } else {
+      fullView=false;
+    }
+  } else {
+    fullView=false;
   }
 }
 
@@ -1295,84 +1264,119 @@ void FurnaceGUI::stopPreviewNote(SDL_Scancode scancode, bool autoNote) {
 }
 
 void FurnaceGUI::noteInput(int num, int key, int vol) {
-  DivPattern* pat=e->curPat[cursor.xCoarse].getPattern(e->curOrders->ord[cursor.xCoarse][curOrder],true);
+  int ch=cursor.xCoarse;
+  int ord=curOrder;
+  int y=cursor.y;
+  int tick=0;
+  int speed=0;
+
+  if (e->isPlaying() && !e->isStepping() && followPattern) {
+    e->getPlayPosTick(ord,y,tick,speed);
+    if (tick<=(speed/2)) { // round
+      // TODO: detect 0Dxx/0Bxx?
+      if (++y>=e->curSubSong->patLen) {
+        y=0;
+        if (++ord>=e->curSubSong->ordersLen) {
+          ord=0;
+        }
+      }
+    }
+  }
+
+  logV("chan %d, %d:%d %d/%d",ch,ord,y,tick,speed);
+
+  DivPattern* pat=e->curPat[ch].getPattern(e->curOrders->ord[ch][ord],true);
   bool removeIns=false;
 
   prepareUndo(GUI_UNDO_PATTERN_EDIT);
 
   if (key==GUI_NOTE_OFF) { // note off
-    pat->data[cursor.y][0]=100;
-    pat->data[cursor.y][1]=0;
+    pat->data[y][0]=100;
+    pat->data[y][1]=0;
     removeIns=true;
   } else if (key==GUI_NOTE_OFF_RELEASE) { // note off + env release
-    pat->data[cursor.y][0]=101;
-    pat->data[cursor.y][1]=0;
+    pat->data[y][0]=101;
+    pat->data[y][1]=0;
     removeIns=true;
   } else if (key==GUI_NOTE_RELEASE) { // env release only
-    pat->data[cursor.y][0]=102;
-    pat->data[cursor.y][1]=0;
+    pat->data[y][0]=102;
+    pat->data[y][1]=0;
     removeIns=true;
   } else {
-    pat->data[cursor.y][0]=num%12;
-    pat->data[cursor.y][1]=num/12;
-    if (pat->data[cursor.y][0]==0) {
-      pat->data[cursor.y][0]=12;
-      pat->data[cursor.y][1]--;
+    pat->data[y][0]=num%12;
+    pat->data[y][1]=num/12;
+    if (pat->data[y][0]==0) {
+      pat->data[y][0]=12;
+      pat->data[y][1]--;
     }
-    pat->data[cursor.y][1]=(unsigned char)pat->data[cursor.y][1];
+    pat->data[y][1]=(unsigned char)pat->data[y][1];
     if (latchIns==-2) {
       if (curIns>=(int)e->song.ins.size()) curIns=-1;
       if (curIns>=0) {
-        pat->data[cursor.y][2]=curIns;
+        pat->data[y][2]=curIns;
       }
     } else if (latchIns!=-1 && !e->song.ins.empty()) {
-      pat->data[cursor.y][2]=MIN(((int)e->song.ins.size())-1,latchIns);
+      pat->data[y][2]=MIN(((int)e->song.ins.size())-1,latchIns);
     }
-    int maxVol=e->getMaxVolumeChan(cursor.xCoarse);
+    int maxVol=e->getMaxVolumeChan(ch);
     if (latchVol!=-1) {
-      pat->data[cursor.y][3]=MIN(maxVol,latchVol);
+      pat->data[y][3]=MIN(maxVol,latchVol);
     } else if (vol!=-1) {
-      pat->data[cursor.y][3]=e->mapVelocity(cursor.xCoarse,pow((float)vol/127.0f,midiMap.volExp));
+      pat->data[y][3]=e->mapVelocity(ch,pow((float)vol/127.0f,midiMap.volExp));
     }
-    if (latchEffect!=-1) pat->data[cursor.y][4]=latchEffect;
-    if (latchEffectVal!=-1) pat->data[cursor.y][5]=latchEffectVal;
+    if (latchEffect!=-1) pat->data[y][4]=latchEffect;
+    if (latchEffectVal!=-1) pat->data[y][5]=latchEffectVal;
   }
   if (removeIns) {
     if (settings.removeInsOff) {
-      pat->data[cursor.y][2]=-1;
+      pat->data[y][2]=-1;
     }
     if (settings.removeVolOff) {
-      pat->data[cursor.y][3]=-1;
+      pat->data[y][3]=-1;
     }
   }
   makeUndo(GUI_UNDO_PATTERN_EDIT);
   editAdvance();
   curNibble=false;
+
+  if (curEngineState==19) {
+    if ((rand()%300)==0) {
+      displayRating=true;
+    }
+  }
 }
 
 void FurnaceGUI::valueInput(int num, bool direct, int target) {
-  DivPattern* pat=e->curPat[cursor.xCoarse].getPattern(e->curOrders->ord[cursor.xCoarse][curOrder],true);
+  int ch=cursor.xCoarse;
+  int ord=curOrder;
+  int y=cursor.y;
+
+  if (e->isPlaying() && !e->isStepping() && followPattern) {
+    e->getPlayPos(ord,y);
+  }
+
+  DivPattern* pat=e->curPat[ch].getPattern(e->curOrders->ord[ch][ord],true);
   prepareUndo(GUI_UNDO_PATTERN_EDIT);
   if (target==-1) target=cursor.xFine+1;
   if (direct) {
-    pat->data[cursor.y][target]=num&0xff;
+    pat->data[y][target]=num&0xff;
   } else {
-    if (pat->data[cursor.y][target]==-1) pat->data[cursor.y][target]=0;
+    if (pat->data[y][target]==-1) pat->data[y][target]=0;
     if (!settings.pushNibble && !curNibble) {
-      pat->data[cursor.y][target]=num;
+      pat->data[y][target]=num;
     } else {
-      pat->data[cursor.y][target]=((pat->data[cursor.y][target]<<4)|num)&0xff;
+      pat->data[y][target]=((pat->data[y][target]<<4)|num)&0xff;
     }
   }
   if (cursor.xFine==1) { // instrument
-    if (pat->data[cursor.y][target]>=(int)e->song.ins.size()) {
-      pat->data[cursor.y][target]&=0x0f;
-      if (pat->data[cursor.y][target]>=(int)e->song.ins.size()) {
-        pat->data[cursor.y][target]=(int)e->song.ins.size()-1;
+    if (pat->data[y][target]>=(int)e->song.ins.size()) {
+      pat->data[y][target]&=0x0f;
+      if (pat->data[y][target]>=(int)e->song.ins.size()) {
+        pat->data[y][target]=(int)e->song.ins.size()-1;
       }
     }
     if (settings.absorbInsInput) {
-      curIns=pat->data[cursor.y][target];
+      curIns=pat->data[y][target];
       wavePreviewInit=true;
       updateFMPreview=true;
     }
@@ -1390,17 +1394,17 @@ void FurnaceGUI::valueInput(int num, bool direct, int target) {
     }
   } else if (cursor.xFine==2) {
     if (curNibble) {
-      if (pat->data[cursor.y][target]>e->getMaxVolumeChan(cursor.xCoarse)) pat->data[cursor.y][target]=e->getMaxVolumeChan(cursor.xCoarse);
+      if (pat->data[y][target]>e->getMaxVolumeChan(ch)) pat->data[y][target]=e->getMaxVolumeChan(ch);
     } else {
-      pat->data[cursor.y][target]&=15;
+      pat->data[y][target]&=15;
     }
     makeUndo(GUI_UNDO_PATTERN_EDIT);
     if (direct) {
       curNibble=false;
     } else {
-      if (e->getMaxVolumeChan(cursor.xCoarse)<16) {
+      if (e->getMaxVolumeChan(ch)<16) {
         curNibble=false;
-        if (pat->data[cursor.y][target]>e->getMaxVolumeChan(cursor.xCoarse)) pat->data[cursor.y][target]=e->getMaxVolumeChan(cursor.xCoarse);
+        if (pat->data[y][target]>e->getMaxVolumeChan(ch)) pat->data[y][target]=e->getMaxVolumeChan(ch);
         editAdvance();
       } else {
         curNibble=!curNibble;
@@ -1418,7 +1422,7 @@ void FurnaceGUI::valueInput(int num, bool direct, int target) {
           editAdvance();
         } else {
           if (settings.effectCursorDir==2) {
-            if (++cursor.xFine>=(3+(e->curPat[cursor.xCoarse].effectCols*2))) {
+            if (++cursor.xFine>=(3+(e->curPat[ch].effectCols*2))) {
               cursor.xFine=3;
             }
           } else {
@@ -2385,6 +2389,210 @@ int FurnaceGUI::save(String path, int dmfVersion) {
   return 0;
 }
 
+static const signed char kickPos[]={
+  0, 6, 10, -1
+};
+
+static const signed char snarePos[]={
+  4, 12, -1
+};
+
+static const signed char timpaniPos[]={
+  8, 14, -1
+};
+
+static const signed char clapPos[]={
+  2, -1
+};
+
+static const signed char chatPos[]={
+  0, 1, 3, 8, 9, 11, -1
+};
+
+static const signed char ohatPos[]={
+  2, 10, -1
+};
+
+static const signed char bongoPos[]={
+  4, 5, 6, 7, 12, 13, 14, 15, -1
+};
+
+static const signed char bongoNotes[4]={
+  4, 1, 5, 1
+};
+
+static const signed char bongoOctaves[4]={
+  4, 4, 3, 4
+};
+
+static const char* kickNames[]={
+  "kick", "kikc", "kik", "bd", "bass d", "bassd", NULL
+};
+
+static const char* snareNames[]={
+  "snar", "snor", "snr", "sd", "sho", "gun", NULL
+};
+
+static const char* clapNames[]={
+  "clap", "clav", "hall", "click", "cow", NULL
+};
+
+static const char* timpaniNames[]={
+  "timp", "tom", "crash", "kettle", NULL
+};
+
+static const char* chatNames[]={
+  "close", "hat", "hhc", "chh", "hh", "short", NULL
+};
+
+static const char* ohatNames[]={
+  "open", "hop", "hho", "ohh", "hh", "ride", "long", "hat", NULL
+};
+
+static const char* bongoNames[]={
+  "bong", "rim", "cong", "tom", "pop", NULL
+};
+
+#define ASS_FIND_INS(names,id,ch,off) { \
+  bool nameFound=false; \
+  for (int _n=0; names[_n]; _n++) { \
+    const char* name=names[_n]; \
+    for (size_t _i=0; _i<e->song.ins.size(); _i++) { \
+      String insName=e->song.ins[_i]->name; \
+      for (char& i: insName) { \
+        if (i>='A' && i<='Z') i+='a'-'A'; \
+      } \
+      if (insName.find(name)!=String::npos) { \
+        id=_i; \
+        nameFound=true; \
+        break; \
+      } \
+    } \
+    if (nameFound) break; \
+  } \
+  if (!nameFound) { \
+    if (e->song.ins.size()>0) { \
+      id=rand()%e->song.ins.size(); \
+    } \
+  } \
+  if (id>=0) { \
+    bool skip=off; \
+    for (int _i=0; _i<e->getTotalChannelCount(); _i++) { \
+      DivInstrumentType pref1=e->getPreferInsType(_i); \
+      DivInstrumentType pref2=e->getPreferInsSecondType(_i); \
+      DivInstrumentType have=e->song.ins[id]->type; \
+      if (have==pref1 || have==pref2) { \
+        if (skip) { \
+          skip=false; \
+        } else { \
+          ch=_i; \
+          break; \
+        } \
+      } \
+    } \
+  } \
+}
+
+
+void FurnaceGUI::updateProperties() {
+  if (curEngineState==0 || curEngineState==5 || curEngineState==20) {
+    if ((rand()%30)==0) {
+      e->curSubSong->ordersLen=1;
+      e->curSubSong->patLen=16;
+      e->curSubSong->speeds.val[0]=6;
+      e->curSubSong->speeds.len=1;
+      e->curSubSong->virtualTempoD=150;
+      e->curSubSong->virtualTempoN=150;
+      int kickID=-1;
+      int clapID=-1;
+      int snareID=-1;
+      int timpaniID=-1;
+      int chatID=-1;
+      int ohatID=-1;
+      int bongoID=-1;
+      int kickCh=0;
+      int clapCh=0;
+      int snareCh=0;
+      int timpaniCh=0;
+      int chatCh=1;
+      int ohatCh=1;
+      int bongoCh=1;
+
+      // find instruments
+      ASS_FIND_INS(kickNames,kickID,kickCh,0);
+      ASS_FIND_INS(snareNames,snareID,snareCh,0);
+      ASS_FIND_INS(clapNames,clapID,clapCh,0);
+      ASS_FIND_INS(timpaniNames,timpaniID,timpaniCh,0);
+      ASS_FIND_INS(chatNames,chatID,chatCh,1);
+      ASS_FIND_INS(ohatNames,ohatID,ohatCh,1);
+      ASS_FIND_INS(bongoNames,bongoID,bongoCh,1);
+
+      // prepare song
+      for (int i=0; i<e->getTotalChannelCount(); i++) {
+        e->curSubSong->orders.ord[i][0]=0;
+        e->curSubSong->pat[i].getPattern(0,true)->clear();
+      }
+
+      // place kicks
+      for (int i=0; kickPos[i]>=0; i++) {
+        DivPattern* p=e->curSubSong->pat[kickCh].getPattern(0,true);
+        int kp=kickPos[i];
+        p->data[kp][0]=12;
+        p->data[kp][1]=3;
+        p->data[kp][2]=kickID;
+      }
+      // place claps
+      for (int i=0; clapPos[i]>=0; i++) {
+        DivPattern* p=e->curSubSong->pat[clapCh].getPattern(0,true);
+        int kp=clapPos[i];
+        p->data[kp][0]=12;
+        p->data[kp][1]=3;
+        p->data[kp][2]=clapID;
+      }
+      // place snares
+      for (int i=0; snarePos[i]>=0; i++) {
+        DivPattern* p=e->curSubSong->pat[snareCh].getPattern(0,true);
+        int kp=snarePos[i];
+        p->data[kp][0]=12;
+        p->data[kp][1]=3;
+        p->data[kp][2]=snareID;
+      }
+      // place timpani
+      for (int i=0; timpaniPos[i]>=0; i++) {
+        DivPattern* p=e->curSubSong->pat[timpaniCh].getPattern(0,true);
+        int kp=timpaniPos[i];
+        p->data[kp][0]=12;
+        p->data[kp][1]=3;
+        p->data[kp][2]=timpaniID;
+      }
+      // place chats
+      for (int i=0; chatPos[i]>=0; i++) {
+        DivPattern* p=e->curSubSong->pat[chatCh].getPattern(0,true);
+        int kp=chatPos[i];
+        p->data[kp][0]=12;
+        p->data[kp][1]=3;
+        p->data[kp][2]=chatID;
+      }
+      // place ohats
+      for (int i=0; ohatPos[i]>=0; i++) {
+        DivPattern* p=e->curSubSong->pat[ohatCh].getPattern(0,true);
+        int kp=ohatPos[i];
+        p->data[kp][0]=12;
+        p->data[kp][1]=3;
+        p->data[kp][2]=ohatID;
+      }
+      // place bongo
+      for (int i=0; bongoPos[i]>=0; i++) {
+        DivPattern* p=e->curSubSong->pat[bongoCh].getPattern(0,true);
+        int kp=bongoPos[i];
+        p->data[kp][0]=bongoNotes[kp&3];
+        p->data[kp][1]=bongoOctaves[kp&3];
+        p->data[kp][2]=bongoID;
+      }
+    }
+  }
+}
+
 int FurnaceGUI::load(String path) {
   bool wasPlaying=e->isPlaying();
   if (!path.empty()) {
@@ -2440,6 +2648,7 @@ int FurnaceGUI::load(String path) {
       return 1;
     }
   }
+  updateProperties();
   backupLock.lock();
   curFileName=path;
   backupLock.unlock();
@@ -3213,9 +3422,17 @@ void FurnaceGUI::editOptions(bool topMenu) {
         if (randomizeMax>255) randomizeMax=255;
       }
     }
-    // TODO: add an option to set effect to specific value?
+    if (selStart.xFine>2 || selEnd.xFine>2 || selStart.xCoarse!=selEnd.xCoarse) {
+      ImGui::Checkbox(_("Set effect"),&randomizeEffect);
+      if (randomizeEffect) {
+        if (ImGui::InputScalar(_("Effect"),ImGuiDataType_S32,&randomizeEffectVal,&_ONE,&_SIXTEEN,"%.2X",ImGuiInputTextFlags_CharsHexadecimal)) {
+          if (randomizeEffectVal<0) randomizeEffectVal=0;
+          if (randomizeEffectVal>255) randomizeEffectVal=255;
+        }
+      }
+    }
     if (ImGui::Button(_("Randomize"))) {
-      doRandomize(randomizeMin,randomizeMax,randomMode);
+      doRandomize(randomizeMin,randomizeMax,randomMode,randomizeEffect,randomizeEffectVal);
       ImGui::CloseCurrentPopup();
     }
     ImGui::EndMenu();
@@ -3610,13 +3827,19 @@ void FurnaceGUI::pointUp(int x, int y, int button) {
 }
 
 void FurnaceGUI::pointMotion(int x, int y, int xrel, int yrel) {
-  if (selecting) {
+  if (selecting && (!mobileUI || mobilePatSel)) {
     // detect whether we have to scroll
     if (y<patWindowPos.y+2.0f*dpiScale) {
       addScroll(-1);
     }
     if (y>patWindowPos.y+patWindowSize.y-2.0f*dpiScale) {
       addScroll(1);
+    }
+    if (x<patWindowPos.x+(mobileUI?40.0f:4.0f)*dpiScale) {
+      addScrollX(-1);
+    }
+    if (x>patWindowPos.x+patWindowSize.x-(mobileUI?40.0f:4.0f)*dpiScale) {
+      addScrollX(1);
     }
   }
   if (macroDragActive || macroLoopDragActive || waveDragActive || sampleDragActive || orderScrollLocked) {
@@ -3756,6 +3979,8 @@ bool FurnaceGUI::loop() {
       if (settings.powerSave) SDL_WaitEventTimeout(NULL,500);
     }
 
+    updateState();
+
     memcpy(perfMetricsLast,perfMetrics,64*sizeof(FurnaceGUIPerfMetric));
     perfMetricsLastLen=perfMetricsLen;
     perfMetricsLen=0;
@@ -3869,6 +4094,12 @@ bool FurnaceGUI::loop() {
           if (!ImGui::GetIO().WantCaptureKeyboard || (ImGuiFileDialog::Instance()->IsOpened() && !ImGui::GetIO().WantTextInput)) {
             keyDown(ev);
           }
+          if (introPos<11.0 && !shortIntro) {
+            if (ev.key.keysym.scancode==SDL_SCANCODE_SPACE || ev.key.keysym.scancode==SDL_SCANCODE_ESCAPE || ev.key.keysym.scancode==SDL_SCANCODE_RETURN) {
+              introSkip=0.5;
+            }
+            introSkipDo=true;
+          }
           insEditMayBeDirty=true;
 #ifdef IS_MOBILE
           injectBackUp=true;
@@ -3877,6 +4108,9 @@ bool FurnaceGUI::loop() {
         case SDL_KEYUP:
           // for now
           insEditMayBeDirty=true;
+          if (introPos<11.0 && introSkip<0.5 && !shortIntro) {
+            introSkipDo=false;
+          }
           break;
         case SDL_DROPFILE:
           if (ev.drop.file!=NULL) {
@@ -4199,8 +4433,9 @@ bool FurnaceGUI::loop() {
         for (int i=0; i<e->getTotalChannelCount(); i++) {
           DivDispatchOscBuffer* buf=e->getOscBuffer(i);
           if (buf!=NULL) {
-            buf->needle=0;
-            buf->readNeedle=0;
+            //buf->needle=0;
+            //buf->readNeedle=0;
+            // TODO: should we reset here?
           }
         }
       });
@@ -4448,6 +4683,16 @@ bool FurnaceGUI::loop() {
           openFileDialog(GUI_FILE_SAVE);
         }
         ImGui::Separator();
+        if (curEngineState==15) {
+          if (ImGui::MenuItem(_("import MIDI..."))) {
+            if ((rand()%5)==0) {
+              showError("what makes you think there is MIDI import?");
+            } else {
+              abort();
+            }
+          }
+          ImGui::Separator();
+        }
         if (settings.exportOptionsLayout==0) {
           if (ImGui::BeginMenu(_("export audio..."))) {
             drawExportAudio();
@@ -5834,6 +6079,11 @@ bool FurnaceGUI::loop() {
       ImGui::OpenPopup(_("ROM Export Progress"));
     }
 
+    if (displayRating) {
+      displayRating=false;
+      ImGui::OpenPopup(_("Furnace###BeatRating"));
+    }
+
     if (displayNew) {
       newSongQuery="";
       newSongFirstFrame=true;
@@ -6057,6 +6307,17 @@ bool FurnaceGUI::loop() {
     if (ImGui::BeginPopupModal(_("Export"),NULL,ImGuiWindowFlags_NoMove|ImGuiWindowFlags_NoScrollWithMouse|ImGuiWindowFlags_NoScrollbar|ImGuiWindowFlags_AlwaysAutoResize)) {
       ImGui::SetWindowPos(ImVec2(((canvasW)-ImGui::GetWindowSize().x)*0.5,((canvasH)-ImGui::GetWindowSize().y)*0.5));
       drawExport();
+      ImGui::EndPopup();
+    }
+
+    centerNextWindow(_("Furnace###BeatRating"),canvasW,canvasH);
+    if (ImGui::BeginPopupModal("Furnace###BeatRating",NULL,ImGuiWindowFlags_AlwaysAutoResize)) {
+      stop();
+      ImGui::TextUnformatted(_("This beat is ass. Session terminated."));
+      if (ImGui::Button(_("OK"))) {
+        quit=true;
+        ImGui::CloseCurrentPopup();
+      }
       ImGui::EndPopup();
     }
 
@@ -8064,6 +8325,7 @@ void FurnaceGUI::syncState() {
   chanOscAutoColsType=e->getConfInt("chanOscAutoColsType",0);
   chanOscColorX=e->getConfInt("chanOscColorX",GUI_OSCREF_CENTER);
   chanOscColorY=e->getConfInt("chanOscColorY",GUI_OSCREF_CENTER);
+  chanOscCenterStrat=e->getConfInt("chanOscCenterStrat",1);
   chanOscTextX=e->getConfFloat("chanOscTextX",0.0f);
   chanOscTextY=e->getConfFloat("chanOscTextY",0.0f);
   chanOscAmplify=e->getConfFloat("chanOscAmplify",0.95f);
@@ -8215,6 +8477,7 @@ void FurnaceGUI::commitState(DivConfig& conf) {
   conf.set("chanOscAutoColsType",chanOscAutoColsType);
   conf.set("chanOscColorX",chanOscColorX);
   conf.set("chanOscColorY",chanOscColorY);
+  conf.set("chanOscCenterStrat",chanOscCenterStrat);
   conf.set("chanOscTextX",chanOscTextX);
   conf.set("chanOscTextY",chanOscTextY);
   conf.set("chanOscAmplify",chanOscAmplify);
@@ -8318,6 +8581,9 @@ FurnaceGUI::FurnaceGUI():
   vibrator(NULL),
   vibratorAvailable(false),
   cv(NULL),
+  lastCVFrame(0),
+  cvFrameTime(100000),
+  cvFrameHold(0),
   sampleTex(NULL),
   sampleTexW(0),
   sampleTexH(0),
@@ -8362,12 +8628,14 @@ FurnaceGUI::FurnaceGUI():
   displayPendingSamples(false),
   replacePendingSample(false),
   displayExportingROM(false),
+  displayRating(false),
   changeCoarse(false),
   mobileEdit(false),
   killGraphics(false),
   safeMode(false),
   midiWakeUp(true),
   makeDrumkitMode(false),
+  fullView(false),
   audioEngineChanged(false),
   settingsChanged(false),
   debugFFT(false),
@@ -8576,6 +8844,7 @@ FurnaceGUI::FurnaceGUI():
   dragMobileMenu(false),
   dragMobileEditButton(false),
   wantGrooveListFocus(false),
+  mobilePatSel(false),
   lastAssetType(0),
   curWindow(GUI_WINDOW_NOTHING),
   nextWindow(GUI_WINDOW_NOTHING),
@@ -8585,6 +8854,7 @@ FurnaceGUI::FurnaceGUI():
   lastPatternWidth(0.0f),
   longThreshold(0.48f),
   buttonLongThreshold(0.20f),
+  lastAudioLoadsPos(0),
   latchNote(-1),
   latchIns(-2),
   latchVol(-1),
@@ -8700,17 +8970,22 @@ FurnaceGUI::FurnaceGUI():
   opToMove(-1),
   assetToMove(-1),
   dirToMove(-1),
+  insToMove(-1),
+  waveToMove(-1),
+  sampleToMove(-1),
   transposeAmount(0),
   randomizeMin(0),
   randomizeMax(255),
   fadeMin(0),
   fadeMax(255),
   collapseAmount(2),
+  randomizeEffectVal(0),
   playheadY(0.0f),
   scaleMax(100.0f),
   fadeMode(false),
   randomMode(false),
   haveHitBounds(false),
+  randomizeEffect(false),
   pendingStepUpdate(0),
   oldOrdersLen(0),
   sampleZoom(1.0),
@@ -8741,6 +9016,8 @@ FurnaceGUI::FurnaceGUI():
   sampleFilterRes(0.25f),
   sampleFilterCutStart(16000.0f),
   sampleFilterCutEnd(100.0f),
+  sampleFilterSweep(false),
+  sampleFilterFirstFrame(true),
   sampleCrossFadeLoopLength(0),
   sampleCrossFadeLoopLaw(50),
   sampleFilterPower(1),
@@ -8772,6 +9049,7 @@ FurnaceGUI::FurnaceGUI():
   chanOscAutoColsType(0),
   chanOscColorX(GUI_OSCREF_CENTER),
   chanOscColorY(GUI_OSCREF_CENTER),
+  chanOscCenterStrat(1),
   chanOscWindowSize(20.0f),
   chanOscTextX(0.0f),
   chanOscTextY(0.0f),
@@ -8947,6 +9225,8 @@ FurnaceGUI::FurnaceGUI():
 
   memset(keyHit,0,sizeof(float)*DIV_MAX_CHANS);
   memset(keyHit1,0,sizeof(float)*DIV_MAX_CHANS);
+
+  memset(lastAudioLoads,0,sizeof(float)*120);
 
   memset(pianoKeyHit,0,sizeof(float)*180);
   memset(pianoKeyPressed,0,sizeof(bool)*180);

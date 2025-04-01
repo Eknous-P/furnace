@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -758,6 +758,7 @@ const FurnaceGUIActionDef guiActions[GUI_ACTION_MAX]={
   D("WAVE_LIST_SAVE", _N("Save wavetable"), 0),
   D("WAVE_LIST_SAVE_DMW", _N("Save wavetable (.dmw)"), 0),
   D("WAVE_LIST_SAVE_RAW", _N("Save wavetable (raw)"), 0),
+  D("WAVE_LIST_CREATE_SAMPLE", _N("Create sample from wavetable"),0),
   D("WAVE_LIST_MOVE_UP", _N("Move wavetable up in list"), FURKMOD_SHIFT|SDLK_UP),
   D("WAVE_LIST_MOVE_DOWN", _N("Move wavetable down in list"), FURKMOD_SHIFT|SDLK_DOWN),
   D("WAVE_LIST_DELETE", _N("Delete wavetable"), 0),
@@ -1227,6 +1228,7 @@ const int availableSystems[]={
   DIV_SYSTEM_NES,
   DIV_SYSTEM_C64_8580,
   DIV_SYSTEM_C64_6581,
+  DIV_SYSTEM_C64_PCM,
   DIV_SYSTEM_YM2151,
   DIV_SYSTEM_SEGAPCM,
   DIV_SYSTEM_SEGAPCM_COMPAT,
@@ -1401,6 +1403,7 @@ const int chipsSpecial[]={
   DIV_SYSTEM_NES,
   DIV_SYSTEM_C64_8580,
   DIV_SYSTEM_C64_6581,
+  DIV_SYSTEM_C64_PCM,
   DIV_SYSTEM_SFX_BEEPER,
   DIV_SYSTEM_SFX_BEEPER_QUADTONE,
   DIV_SYSTEM_DUMMY,
