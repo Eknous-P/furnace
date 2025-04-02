@@ -17,8 +17,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "SDL_events.h"
-#include "SDL_joystick.h"
 #include "gui.h"
 #include "../ta-log.h"
 #include "IconsFontAwesome4.h"
@@ -1172,7 +1170,7 @@ void FurnaceGUI::drawTutorial() {
         if (cv->inGame && !cv->gameOver) cv->togglePause();
       }
     }
-    if ((ImGui::IsKeyPressed(ImGuiKey_Q) ) && cv->paused) {
+    if ((ImGui::IsKeyPressed(ImGuiKey_Q) || INPUT_HELD(cv->joyPressed, CV_INPUT_SELECT)) && cv->paused) {
       if (cv!=NULL) {
         cv->unload();
         delete cv;
@@ -1183,10 +1181,10 @@ void FurnaceGUI::drawTutorial() {
     if (cv!=NULL) {
       if (cv->gameOver) {
         cv->paused=false;
-        if (ImGui::IsKeyPressed(ImGuiKey_Y) || cv->joyInput&8) {
+        if (ImGui::IsKeyPressed(ImGuiKey_Y) || INPUT_HELD(cv->joyInput, CV_INPUT_START)) {
           cv->newStage();
         }
-        if (ImGui::IsKeyPressed(ImGuiKey_N) || cv->joyInput&4) {
+        if (ImGui::IsKeyPressed(ImGuiKey_N) || INPUT_HELD(cv->joyPressed, CV_INPUT_SELECT)) {
           if (cv!=NULL) {
             cv->unload();
             delete cv;
