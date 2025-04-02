@@ -1,5 +1,3 @@
-#include "SDL.h"
-#include "SDL_events.h"
 #define _USE_MATH_DEFINES
 // OK, sorry for inserting the define here but I'm so tired of this extension
 /**
@@ -4199,6 +4197,8 @@ bool FurnaceGUI::loop() {
           switch (ev.jbutton.button) {
             case 0: joyHWState&=(unsigned char)~1; break;
             case 1: joyHWState&=(unsigned char)~2; break;
+            case 10: joyHWState&=(unsigned char)~4; break;
+            case 11: joyHWState&=(unsigned char)~8; break;
             default: break;
           }
           break;
@@ -4207,6 +4207,8 @@ bool FurnaceGUI::loop() {
           switch (ev.jbutton.button) {
             case 0: joyHWState|=1; break;
             case 1: joyHWState|=2; break;
+            case 10: joyHWState|=4; break;
+            case 11: joyHWState|=8; break;
             default: break;
           }
           break;

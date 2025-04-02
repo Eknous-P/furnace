@@ -73,6 +73,17 @@ enum FurnaceCVObjectTypes {
   CV_EXTRA_LIFE
 };
 
+enum CVInputs : unsigned char{
+  CV_INPUT_A=1,
+  CV_INPUT_B=2,
+  CV_INPUT_SELECT=4,
+  CV_INPUT_START=8,
+  CV_INPUT_UP=16,
+  CV_INPUT_DOWN=32,
+  CV_INPUT_LEFT=64,
+  CV_INPUT_RIGHT=128
+};
+
 struct FurnaceCVObject {
   FurnaceCV* cv;
   unsigned short type;
@@ -134,6 +145,8 @@ void FurnaceCVObject::tick() {
 // - 3: "X" ripple shot
 // - 4: "W" bidirectional shots (until next round)
 // - 5: "S" stops all enemies for 10 seconds
+#define INPUT_HELD(j,x) j&x
+#define INPUT_PRESSED(j,jp,x) ((j&x)&(~(jp&x)))
 
 struct FurnaceCV {
   SDL_Surface* surface;
@@ -669,15 +682,17 @@ static const char* cvText[]={
 
   _N("GAME OVER!\n\n"
   "Try again?\n"
-  "(Y)es/(N)o"),
+  "START - Yes\n"
+  "SELECT -No"),
 
   _N("High Score!\n"
   "Try again?\n"
-  "(Y)es/(N)o"),
+  "START - Yes\n"
+  "SELECT -No"),
 
-  _N("   PAUSE\n\n"
-  "Esc- Resume\n"
-  " Q - Quit"),
+  _N("    PAUSE\n\n"
+  "START - Resume\n"
+  "SELECT - Quit"),
 };
 
 void FurnaceGUI::syncTutorial() {
@@ -1152,12 +1167,12 @@ void FurnaceGUI::drawTutorial() {
     }
     ImGui::End();
 
-    if (ImGui::IsKeyPressed(ImGuiKey_Escape)) {
+    if (ImGui::IsKeyPressed(ImGuiKey_Escape) || INPUT_PRESSED(cv->joyInput,cv->joyInputPrev,CV_INPUT_START)) {
       if (cv!=NULL) {
         if (cv->inGame && !cv->gameOver) cv->togglePause();
       }
     }
-    if (ImGui::IsKeyPressed(ImGuiKey_Q) && cv->paused) {
+    if ((ImGui::IsKeyPressed(ImGuiKey_Q) ) && cv->paused) {
       if (cv!=NULL) {
         cv->unload();
         delete cv;
@@ -1168,10 +1183,10 @@ void FurnaceGUI::drawTutorial() {
     if (cv!=NULL) {
       if (cv->gameOver) {
         cv->paused=false;
-        if (ImGui::IsKeyPressed(ImGuiKey_Y)) {
+        if (ImGui::IsKeyPressed(ImGuiKey_Y) || cv->joyInput&8) {
           cv->newStage();
         }
-        if (ImGui::IsKeyPressed(ImGuiKey_N)) {
+        if (ImGui::IsKeyPressed(ImGuiKey_N) || cv->joyInput&4) {
           if (cv!=NULL) {
             cv->unload();
             delete cv;
@@ -1548,7 +1563,7 @@ void FurnaceCV::togglePause() {
     stopSoundEffect(1);
     stopSoundEffect(2);
     stopSoundEffect(3);
-    putText(CV_FONTBASE_8x16, true, cvText[4], 15, 10);
+    putText(CV_FONTBASE_8x16, true, cvText[4], 14, 10);
   } else {
     memset(tile1,0,80*56*sizeof(short));
   }
@@ -3548,7 +3563,7 @@ void FurnaceCV::loadInstruments() {
     if (e->song.masterVol<0.1) {
       e->song.systemVol[sys]=12.0;
     } else {
-      e->song.systemVol[sys]=1.2/e->song.masterVol;
+      e->song.systemVol[sys]=.6/e->song.masterVol;
     }
   }
   
