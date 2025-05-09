@@ -2,7 +2,7 @@
 // OK, sorry for inserting the define here but I'm so tired of this extension
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -566,6 +566,12 @@ void FurnaceGUI::updateScroll(int amount) {
 void FurnaceGUI::addScroll(int amount) {
   float lineHeight=(patFont->FontSize+2*dpiScale);
   nextAddScroll=lineHeight*amount;
+  haveHitBounds=false;
+}
+
+void FurnaceGUI::addScrollX(int amount) {
+  float lineHeight=(patFont->FontSize+2*dpiScale);
+  nextAddScrollX=lineHeight*amount;
   haveHitBounds=false;
 }
 
@@ -1248,54 +1254,75 @@ void FurnaceGUI::stopPreviewNote(SDL_Scancode scancode, bool autoNote) {
 }
 
 void FurnaceGUI::noteInput(int num, int key, int vol) {
-  DivPattern* pat=e->curPat[cursor.xCoarse].getPattern(e->curOrders->ord[cursor.xCoarse][curOrder],true);
+  int ch=cursor.xCoarse;
+  int ord=curOrder;
+  int y=cursor.y;
+  int tick=0;
+  int speed=0;
+
+  if (e->isPlaying() && !e->isStepping() && followPattern) {
+    e->getPlayPosTick(ord,y,tick,speed);
+    if (tick<=(speed/2)) { // round
+      // TODO: detect 0Dxx/0Bxx?
+      if (++y>=e->curSubSong->patLen) {
+        y=0;
+        if (++ord>=e->curSubSong->ordersLen) {
+          ord=0;
+        }
+      }
+    }
+  }
+
+  logV("chan %d, %d:%d %d/%d",ch,ord,y,tick,speed);
+
+  DivPattern* pat=e->curPat[ch].getPattern(e->curOrders->ord[ch][ord],true);
   bool removeIns=false;
 
   prepareUndo(GUI_UNDO_PATTERN_EDIT);
 
   if (key==GUI_NOTE_OFF) { // note off
-    pat->data[cursor.y][0]=100;
-    pat->data[cursor.y][1]=0;
+    pat->data[y][0]=100;
+    pat->data[y][1]=0;
     removeIns=true;
   } else if (key==GUI_NOTE_OFF_RELEASE) { // note off + env release
-    pat->data[cursor.y][0]=101;
-    pat->data[cursor.y][1]=0;
+    pat->data[y][0]=101;
+    pat->data[y][1]=0;
     removeIns=true;
   } else if (key==GUI_NOTE_RELEASE) { // env release only
-    pat->data[cursor.y][0]=102;
-    pat->data[cursor.y][1]=0;
+    pat->data[y][0]=102;
+    pat->data[y][1]=0;
     removeIns=true;
   } else {
-    pat->data[cursor.y][0]=num%12;
-    pat->data[cursor.y][1]=num/12;
-    if (pat->data[cursor.y][0]==0) {
-      pat->data[cursor.y][0]=12;
-      pat->data[cursor.y][1]--;
+    pat->data[y][0]=num%12;
+    pat->data[y][1]=num/12;
+    if (pat->data[y][0]==0) {
+      pat->data[y][0]=12;
+      pat->data[y][1]--;
     }
-    pat->data[cursor.y][1]=(unsigned char)pat->data[cursor.y][1];
+    pat->data[y][1]=(unsigned char)pat->data[y][1];
     if (latchIns==-2) {
       if (curIns>=(int)e->song.ins.size()) curIns=-1;
       if (curIns>=0) {
-        pat->data[cursor.y][2]=curIns;
+        pat->data[y][2]=curIns;
       }
     } else if (latchIns!=-1 && !e->song.ins.empty()) {
-      pat->data[cursor.y][2]=MIN(((int)e->song.ins.size())-1,latchIns);
+      pat->data[y][2]=MIN(((int)e->song.ins.size())-1,latchIns);
     }
-    int maxVol=e->getMaxVolumeChan(cursor.xCoarse);
+    int maxVol=e->getMaxVolumeChan(ch);
     if (latchVol!=-1) {
-      pat->data[cursor.y][3]=MIN(maxVol,latchVol);
+      pat->data[y][3]=MIN(maxVol,latchVol);
     } else if (vol!=-1) {
-      pat->data[cursor.y][3]=e->mapVelocity(cursor.xCoarse,pow((float)vol/127.0f,midiMap.volExp));
+      pat->data[y][3]=e->mapVelocity(ch,pow((float)vol/127.0f,midiMap.volExp));
     }
-    if (latchEffect!=-1) pat->data[cursor.y][4]=latchEffect;
-    if (latchEffectVal!=-1) pat->data[cursor.y][5]=latchEffectVal;
+    if (latchEffect!=-1) pat->data[y][4]=latchEffect;
+    if (latchEffectVal!=-1) pat->data[y][5]=latchEffectVal;
   }
   if (removeIns) {
     if (settings.removeInsOff) {
-      pat->data[cursor.y][2]=-1;
+      pat->data[y][2]=-1;
     }
     if (settings.removeVolOff) {
-      pat->data[cursor.y][3]=-1;
+      pat->data[y][3]=-1;
     }
   }
   makeUndo(GUI_UNDO_PATTERN_EDIT);
@@ -1304,28 +1331,36 @@ void FurnaceGUI::noteInput(int num, int key, int vol) {
 }
 
 void FurnaceGUI::valueInput(int num, bool direct, int target) {
-  DivPattern* pat=e->curPat[cursor.xCoarse].getPattern(e->curOrders->ord[cursor.xCoarse][curOrder],true);
+  int ch=cursor.xCoarse;
+  int ord=curOrder;
+  int y=cursor.y;
+
+  if (e->isPlaying() && !e->isStepping() && followPattern) {
+    e->getPlayPos(ord,y);
+  }
+
+  DivPattern* pat=e->curPat[ch].getPattern(e->curOrders->ord[ch][ord],true);
   prepareUndo(GUI_UNDO_PATTERN_EDIT);
   if (target==-1) target=cursor.xFine+1;
   if (direct) {
-    pat->data[cursor.y][target]=num&0xff;
+    pat->data[y][target]=num&0xff;
   } else {
-    if (pat->data[cursor.y][target]==-1) pat->data[cursor.y][target]=0;
+    if (pat->data[y][target]==-1) pat->data[y][target]=0;
     if (!settings.pushNibble && !curNibble) {
-      pat->data[cursor.y][target]=num;
+      pat->data[y][target]=num;
     } else {
-      pat->data[cursor.y][target]=((pat->data[cursor.y][target]<<4)|num)&0xff;
+      pat->data[y][target]=((pat->data[y][target]<<4)|num)&0xff;
     }
   }
   if (cursor.xFine==1) { // instrument
-    if (pat->data[cursor.y][target]>=(int)e->song.ins.size()) {
-      pat->data[cursor.y][target]&=0x0f;
-      if (pat->data[cursor.y][target]>=(int)e->song.ins.size()) {
-        pat->data[cursor.y][target]=(int)e->song.ins.size()-1;
+    if (pat->data[y][target]>=(int)e->song.ins.size()) {
+      pat->data[y][target]&=0x0f;
+      if (pat->data[y][target]>=(int)e->song.ins.size()) {
+        pat->data[y][target]=(int)e->song.ins.size()-1;
       }
     }
     if (settings.absorbInsInput) {
-      curIns=pat->data[cursor.y][target];
+      curIns=pat->data[y][target];
       wavePreviewInit=true;
       updateFMPreview=true;
     }
@@ -1343,17 +1378,17 @@ void FurnaceGUI::valueInput(int num, bool direct, int target) {
     }
   } else if (cursor.xFine==2) {
     if (curNibble) {
-      if (pat->data[cursor.y][target]>e->getMaxVolumeChan(cursor.xCoarse)) pat->data[cursor.y][target]=e->getMaxVolumeChan(cursor.xCoarse);
+      if (pat->data[y][target]>e->getMaxVolumeChan(ch)) pat->data[y][target]=e->getMaxVolumeChan(ch);
     } else {
-      pat->data[cursor.y][target]&=15;
+      pat->data[y][target]&=15;
     }
     makeUndo(GUI_UNDO_PATTERN_EDIT);
     if (direct) {
       curNibble=false;
     } else {
-      if (e->getMaxVolumeChan(cursor.xCoarse)<16) {
+      if (e->getMaxVolumeChan(ch)<16) {
         curNibble=false;
-        if (pat->data[cursor.y][target]>e->getMaxVolumeChan(cursor.xCoarse)) pat->data[cursor.y][target]=e->getMaxVolumeChan(cursor.xCoarse);
+        if (pat->data[y][target]>e->getMaxVolumeChan(ch)) pat->data[y][target]=e->getMaxVolumeChan(ch);
         editAdvance();
       } else {
         curNibble=!curNibble;
@@ -1371,7 +1406,7 @@ void FurnaceGUI::valueInput(int num, bool direct, int target) {
           editAdvance();
         } else {
           if (settings.effectCursorDir==2) {
-            if (++cursor.xFine>=(3+(e->curPat[cursor.xCoarse].effectCols*2))) {
+            if (++cursor.xFine>=(3+(e->curPat[ch].effectCols*2))) {
               cursor.xFine=3;
             }
           } else {
@@ -2613,6 +2648,18 @@ void FurnaceGUI::exportAudio(String path, DivAudioExportModes mode) {
   displayExporting=true;
 }
 
+void FurnaceGUI::exportCmdStream(bool target, String path) {
+  csExportPath=path;
+  csExportTarget=target;
+  csExportDone=false;
+  csExportThread=new std::thread([this]() {
+    SafeWriter* w=e->saveCommand(&csProgress,csExportOptions);
+    csExportResult=w;
+    csExportDone=true;
+  });
+  displayExportingCS=true;
+}
+
 void FurnaceGUI::editStr(String* which) {
   editString=which;
   displayEditString=true;
@@ -3166,9 +3213,17 @@ void FurnaceGUI::editOptions(bool topMenu) {
         if (randomizeMax>255) randomizeMax=255;
       }
     }
-    // TODO: add an option to set effect to specific value?
+    if (selStart.xFine>2 || selEnd.xFine>2 || selStart.xCoarse!=selEnd.xCoarse) {
+      ImGui::Checkbox(_("Set effect"),&randomizeEffect);
+      if (randomizeEffect) {
+        if (ImGui::InputScalar(_("Effect"),ImGuiDataType_S32,&randomizeEffectVal,&_ONE,&_SIXTEEN,"%.2X",ImGuiInputTextFlags_CharsHexadecimal)) {
+          if (randomizeEffectVal<0) randomizeEffectVal=0;
+          if (randomizeEffectVal>255) randomizeEffectVal=255;
+        }
+      }
+    }
     if (ImGui::Button(_("Randomize"))) {
-      doRandomize(randomizeMin,randomizeMax,randomMode);
+      doRandomize(randomizeMin,randomizeMax,randomMode,randomizeEffect,randomizeEffectVal);
       ImGui::CloseCurrentPopup();
     }
     ImGui::EndMenu();
@@ -3563,13 +3618,19 @@ void FurnaceGUI::pointUp(int x, int y, int button) {
 }
 
 void FurnaceGUI::pointMotion(int x, int y, int xrel, int yrel) {
-  if (selecting) {
+  if (selecting && (!mobileUI || mobilePatSel)) {
     // detect whether we have to scroll
     if (y<patWindowPos.y+2.0f*dpiScale) {
       addScroll(-1);
     }
     if (y>patWindowPos.y+patWindowSize.y-2.0f*dpiScale) {
       addScroll(1);
+    }
+    if (x<patWindowPos.x+(mobileUI?40.0f:4.0f)*dpiScale) {
+      addScrollX(-1);
+    }
+    if (x>patWindowPos.x+patWindowSize.x-(mobileUI?40.0f:4.0f)*dpiScale) {
+      addScrollX(1);
     }
   }
   if (macroDragActive || macroLoopDragActive || waveDragActive || sampleDragActive || orderScrollLocked) {
@@ -3822,6 +3883,12 @@ bool FurnaceGUI::loop() {
           if (!ImGui::GetIO().WantCaptureKeyboard || (ImGuiFileDialog::Instance()->IsOpened() && !ImGui::GetIO().WantTextInput)) {
             keyDown(ev);
           }
+          if (introPos<11.0 && !shortIntro) {
+            if (ev.key.keysym.scancode==SDL_SCANCODE_SPACE || ev.key.keysym.scancode==SDL_SCANCODE_ESCAPE || ev.key.keysym.scancode==SDL_SCANCODE_RETURN) {
+              introSkip=0.5;
+            }
+            introSkipDo=true;
+          }
           insEditMayBeDirty=true;
 #ifdef IS_MOBILE
           injectBackUp=true;
@@ -3830,6 +3897,9 @@ bool FurnaceGUI::loop() {
         case SDL_KEYUP:
           // for now
           insEditMayBeDirty=true;
+          if (introPos<11.0 && introSkip<0.5 && !shortIntro) {
+            introSkipDo=false;
+          }
           break;
         case SDL_DROPFILE:
           if (ev.drop.file!=NULL) {
@@ -4152,8 +4222,9 @@ bool FurnaceGUI::loop() {
         for (int i=0; i<e->getTotalChannelCount(); i++) {
           DivDispatchOscBuffer* buf=e->getOscBuffer(i);
           if (buf!=NULL) {
-            buf->needle=0;
-            buf->readNeedle=0;
+            //buf->needle=0;
+            //buf->readNeedle=0;
+            // TODO: should we reset here?
           }
         }
       });
@@ -4649,6 +4720,7 @@ bool FurnaceGUI::loop() {
           if (ImGui::MenuItem(_("register view"),BIND_FOR(GUI_ACTION_WINDOW_REGISTER_VIEW),regViewOpen)) regViewOpen=!regViewOpen;
           if (ImGui::MenuItem(_("statistics"),BIND_FOR(GUI_ACTION_WINDOW_STATS),statsOpen)) statsOpen=!statsOpen;
           if (ImGui::MenuItem(_("memory composition"),BIND_FOR(GUI_ACTION_WINDOW_MEMORY),memoryOpen)) memoryOpen=!memoryOpen;
+          if (ImGui::MenuItem(_("command stream player"),BIND_FOR(GUI_ACTION_WINDOW_CS_PLAYER),csPlayerOpen)) csPlayerOpen=!csPlayerOpen;
           ImGui::EndMenu();
         }
         ImGui::Separator();
@@ -4956,6 +5028,7 @@ bool FurnaceGUI::loop() {
     }
 
 #ifndef NFD_NON_THREADED
+#ifndef FLATPAK_WORKAROUNDS
     if (fileDialog->isOpen() && settings.sysFileDialog) {
       ImGui::OpenPopup(_("System File Dialog Pending"));
     }
@@ -4968,6 +5041,7 @@ bool FurnaceGUI::loop() {
       dl->AddRectFilled(ImVec2(0.0f,0.0f),ImVec2(canvasW,canvasH),ImGui::ColorConvertFloat4ToU32(uiColors[GUI_COLOR_MODAL_BACKDROP]));
       ImGui::EndPopup();
     }
+#endif
 #endif
 
     if (fileDialog->render(mobileUI?ImVec2(canvasW-(portrait?0:(60.0*dpiScale)),canvasH-60.0*dpiScale):ImVec2(600.0f*dpiScale,400.0f*dpiScale),ImVec2(canvasW-((mobileUI && !portrait)?(60.0*dpiScale):0),canvasH-(mobileUI?(60.0*dpiScale):0)))) {
@@ -5088,13 +5162,7 @@ bool FurnaceGUI::loop() {
         } else {
           fileName=fileDialog->getFileName()[0];
         }
-#ifdef FLATPAK_WORKAROUNDS
-        // https://github.com/tildearrow/furnace/issues/2096
-        // Flatpak Portals mangling our path hinders us from adding extension
-        if (fileName!="" && !settings.sysFileDialog) {
-#else
         if (fileName!="") {
-#endif
           if (curFileDialog==GUI_FILE_SAVE) {
             checkExtension(".fur");
           }
@@ -5577,7 +5645,7 @@ bool FurnaceGUI::loop() {
               break;
             }
             case GUI_FILE_EXPORT_VGM: {
-              SafeWriter* w=e->saveVGM(willExport,vgmExportLoop,vgmExportVersion,vgmExportPatternHints,vgmExportDirectStream,vgmExportTrailingTicks);
+              SafeWriter* w=e->saveVGM(willExport,vgmExportLoop,vgmExportVersion,vgmExportPatternHints,vgmExportDirectStream,vgmExportTrailingTicks,vgmExportDPCM07);
               if (w!=NULL) {
                 FILE* f=ps_fopen(copyOfName.c_str(),"wb");
                 if (f!=NULL) {
@@ -5634,24 +5702,7 @@ bool FurnaceGUI::loop() {
               break;
             }
             case GUI_FILE_EXPORT_CMDSTREAM: {
-              SafeWriter* w=e->saveCommand();
-              if (w!=NULL) {
-                FILE* f=ps_fopen(copyOfName.c_str(),"wb");
-                if (f!=NULL) {
-                  fwrite(w->getFinalBuf(),1,w->size(),f);
-                  fclose(f);
-                  pushRecentSys(copyOfName.c_str());
-                } else {
-                  showError(_("could not open file!"));
-                }
-                w->finish();
-                delete w;
-                if (!e->getWarnings().empty()) {
-                  showWarning(e->getWarnings(),GUI_WARN_GENERIC);
-                }
-              } else {
-                showError(fmt::sprintf(_("could not write command stream! (%s)"),e->getLastError()));
-              }
+              exportCmdStream(false,copyOfName);
               break;
             }
             case GUI_FILE_LOAD_MAIN_FONT:
@@ -5785,6 +5836,11 @@ bool FurnaceGUI::loop() {
     if (displayExportingROM) {
       displayExportingROM=false;
       ImGui::OpenPopup(_("ROM Export Progress"));
+    }
+
+    if (displayExportingCS) {
+      displayExportingCS=false;
+      ImGui::OpenPopup(_("CmdStream Export Progress"));
     }
 
     if (displayNew) {
@@ -5980,6 +6036,79 @@ bool FurnaceGUI::loop() {
             pendingExport=NULL;
             ImGui::CloseCurrentPopup();
           }
+        }
+      }
+      ImGui::EndPopup();
+    }
+
+    centerNextWindow(_("CmdStream Export Progress"),canvasW,canvasH);
+    ImGui::SetNextWindowSizeConstraints(romExportMinSize,romExportMaxSize);
+    if (ImGui::BeginPopupModal(_("CmdStream Export Progress"),NULL)) {
+      if (csExportThread==NULL) {
+        ImGui::TextWrapped("%s",_("it appears your Furnace has too many bugs in it. any song you can export?"));
+        ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+        if (ImGui::Button(_("Talk With Devs"),ImVec2(ImGui::GetContentRegionAvail().x/3.0f,0.0f))) {
+          ImGui::CloseCurrentPopup();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button(_("Ask on Bug Report"),ImVec2(ImGui::GetContentRegionAvail().x/3.0f,0.0f))) {
+          ImGui::CloseCurrentPopup();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button(_("View Issues"),ImVec2(ImGui::GetContentRegionAvail().x/3.0f,0.0f))) {
+          ImGui::CloseCurrentPopup();
+        }
+      } else {
+        WAKE_UP;
+        ImGui::Text("Exporting...");
+        ImGui::Text("opt stage: %d",csProgress.optStage);
+        ImGui::Text("pass: %d/%d",csProgress.optCurrent,csProgress.optTotal);
+        ImGui::Text("find: %d/%d",csProgress.findCurrent,csProgress.findTotal);
+        ImGui::Text("expand: %d/%d",csProgress.expandCurrent,csProgress.optCurrent);
+        ImGui::Text("benefit: %d/%d",csProgress.origCurrent,csProgress.origCount);
+
+        // check whether we're done
+        if (csExportDone) {
+          csExportThread->join();
+          delete csExportThread;
+          csExportThread=NULL;
+
+          if (csExportTarget) { // command stream player
+            if (csExportResult!=NULL) {
+              if (!e->playStream(csExportResult->getFinalBuf(),csExportResult->size())) {
+                showError(e->getLastError());
+                csExportResult->finish();
+                delete csExportResult;
+              } else {
+                csExportResult->disown();
+                delete csExportResult;
+              }
+            } else {
+              showError(_("oh no! it broke!"));
+            }
+            csExportResult=NULL;
+          } else { // command stream export
+            if (csExportResult!=NULL) {
+              FILE* f=ps_fopen(csExportPath.c_str(),"wb");
+              if (f!=NULL) {
+                fwrite(csExportResult->getFinalBuf(),1,csExportResult->size(),f);
+                fclose(f);
+                pushRecentSys(csExportPath.c_str());
+              } else {
+                showError(_("could not open file!"));
+              }
+              csExportResult->finish();
+              delete csExportResult;
+              if (!e->getWarnings().empty()) {
+                showWarning(e->getWarnings(),GUI_WARN_GENERIC);
+              }
+            } else {
+              showError(fmt::sprintf(_("could not write command stream! (%s)"),e->getLastError()));
+            }
+            csExportResult=NULL;
+          }
+
+          ImGui::CloseCurrentPopup();
         }
       }
       ImGui::EndPopup();
@@ -6539,6 +6668,11 @@ bool FurnaceGUI::loop() {
                 e->song.ins[curIns]->fm.op[i].rr=15;
                 e->song.ins[curIns]->fm.op[i].tl=127;
                 e->song.ins[curIns]->fm.op[i].dt=3;
+
+            e->song.ins[curIns]->esfm.op[i].ct=0;
+            e->song.ins[curIns]->esfm.op[i].dt=0;
+            e->song.ins[curIns]->esfm.op[i].modIn=0;
+            e->song.ins[curIns]->esfm.op[i].outLvl=0;
               }
             }
 
@@ -7934,6 +8068,7 @@ void FurnaceGUI::syncState() {
   chanOscOpen=e->getConfBool("chanOscOpen",false);
   xyOscOpen=e->getConfBool("xyOscOpen",false);
   memoryOpen=e->getConfBool("memoryOpen",false);
+  csPlayerOpen=e->getConfBool("csPlayerOpen",false);
   volMeterOpen=e->getConfBool("volMeterOpen",true);
   statsOpen=e->getConfBool("statsOpen",false);
   compatFlagsOpen=e->getConfBool("compatFlagsOpen",false);
@@ -8017,6 +8152,7 @@ void FurnaceGUI::syncState() {
   chanOscAutoColsType=e->getConfInt("chanOscAutoColsType",0);
   chanOscColorX=e->getConfInt("chanOscColorX",GUI_OSCREF_CENTER);
   chanOscColorY=e->getConfInt("chanOscColorY",GUI_OSCREF_CENTER);
+  chanOscCenterStrat=e->getConfInt("chanOscCenterStrat",1);
   chanOscTextX=e->getConfFloat("chanOscTextX",0.0f);
   chanOscTextY=e->getConfFloat("chanOscTextY",0.0f);
   chanOscAmplify=e->getConfFloat("chanOscAmplify",0.95f);
@@ -8093,6 +8229,7 @@ void FurnaceGUI::commitState(DivConfig& conf) {
   conf.set("chanOscOpen",chanOscOpen);
   conf.set("xyOscOpen",xyOscOpen);
   conf.set("memoryOpen",memoryOpen);
+  conf.set("csPlayerOpen",csPlayerOpen);
   conf.set("volMeterOpen",volMeterOpen);
   conf.set("statsOpen",statsOpen);
   conf.set("compatFlagsOpen",compatFlagsOpen);
@@ -8168,6 +8305,7 @@ void FurnaceGUI::commitState(DivConfig& conf) {
   conf.set("chanOscAutoColsType",chanOscAutoColsType);
   conf.set("chanOscColorX",chanOscColorX);
   conf.set("chanOscColorY",chanOscColorY);
+  conf.set("chanOscCenterStrat",chanOscCenterStrat);
   conf.set("chanOscTextX",chanOscTextX);
   conf.set("chanOscTextY",chanOscTextY);
   conf.set("chanOscAmplify",chanOscAmplify);
@@ -8271,6 +8409,9 @@ FurnaceGUI::FurnaceGUI():
   vibrator(NULL),
   vibratorAvailable(false),
   cv(NULL),
+  lastCVFrame(0),
+  cvFrameTime(100000),
+  cvFrameHold(0),
   sampleTex(NULL),
   sampleTexW(0),
   sampleTexH(0),
@@ -8286,6 +8427,7 @@ FurnaceGUI::FurnaceGUI():
   displayExporting(false),
   vgmExportLoop(true),
   vgmExportPatternHints(false),
+  vgmExportDPCM07(false),
   vgmExportDirectStream(false),
   displayInsTypeList(false),
   portrait(false),
@@ -8315,6 +8457,7 @@ FurnaceGUI::FurnaceGUI():
   displayPendingSamples(false),
   replacePendingSample(false),
   displayExportingROM(false),
+  displayExportingCS(false),
   changeCoarse(false),
   mobileEdit(false),
   killGraphics(false),
@@ -8529,6 +8672,7 @@ FurnaceGUI::FurnaceGUI():
   dragMobileMenu(false),
   dragMobileEditButton(false),
   wantGrooveListFocus(false),
+  mobilePatSel(false),
   lastAssetType(0),
   curWindow(GUI_WINDOW_NOTHING),
   nextWindow(GUI_WINDOW_NOTHING),
@@ -8538,6 +8682,7 @@ FurnaceGUI::FurnaceGUI():
   lastPatternWidth(0.0f),
   longThreshold(0.48f),
   buttonLongThreshold(0.20f),
+  lastAudioLoadsPos(0),
   latchNote(-1),
   latchIns(-2),
   latchVol(-1),
@@ -8662,11 +8807,13 @@ FurnaceGUI::FurnaceGUI():
   fadeMin(0),
   fadeMax(255),
   collapseAmount(2),
+  randomizeEffectVal(0),
   playheadY(0.0f),
   scaleMax(100.0f),
   fadeMode(false),
   randomMode(false),
   haveHitBounds(false),
+  randomizeEffect(false),
   pendingStepUpdate(0),
   oldOrdersLen(0),
   sampleZoom(1.0),
@@ -8697,6 +8844,8 @@ FurnaceGUI::FurnaceGUI():
   sampleFilterRes(0.25f),
   sampleFilterCutStart(16000.0f),
   sampleFilterCutEnd(100.0f),
+  sampleFilterSweep(false),
+  sampleFilterFirstFrame(true),
   sampleCrossFadeLoopLength(0),
   sampleCrossFadeLoopLaw(50),
   sampleFilterPower(1),
@@ -8728,6 +8877,7 @@ FurnaceGUI::FurnaceGUI():
   chanOscAutoColsType(0),
   chanOscColorX(GUI_OSCREF_CENTER),
   chanOscColorY(GUI_OSCREF_CENTER),
+  chanOscCenterStrat(1),
   chanOscWindowSize(20.0f),
   chanOscTextX(0.0f),
   chanOscTextY(0.0f),
@@ -8801,6 +8951,11 @@ FurnaceGUI::FurnaceGUI():
   introStopped(false),
   curTutorial(-1),
   curTutorialStep(0),
+  csDisAsmAddr(0),
+  csExportThread(NULL),
+  csExportResult(NULL),
+  csExportTarget(false),
+  csExportDone(false),
   dmfExportVersion(0),
   curExportType(GUI_EXPORT_NONE),
   romTarget(DIV_ROM_ABSTRACT),
@@ -8903,6 +9058,8 @@ FurnaceGUI::FurnaceGUI():
 
   memset(keyHit,0,sizeof(float)*DIV_MAX_CHANS);
   memset(keyHit1,0,sizeof(float)*DIV_MAX_CHANS);
+
+  memset(lastAudioLoads,0,sizeof(float)*120);
 
   memset(pianoKeyHit,0,sizeof(float)*180);
   memset(pianoKeyPressed,0,sizeof(bool)*180);
