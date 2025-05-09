@@ -135,6 +135,11 @@ jobs:
           libjack-jackd2-dev \
           gettext
 
+    - name: Install Java [Android]
+      if: ${{ matrix.config.name == 'Android'}}
+      run: |
+        sudo apt install openjdk-17-jre
+
     - name: Install Dependencies [Linux armhf]
       if: ${{ runner.os == 'Linux' && matrix.config.compiler != 'mingw' && matrix.config.arch == 'armhf' }}
       run: |
