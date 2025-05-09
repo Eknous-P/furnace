@@ -212,9 +212,8 @@ jobs:
       if: ${{ matrix.config.name == 'Android' }}
       run: |
         cd ${PWD}/android/
-        ls /usr/lib/jvm
-        ./gradlew assembleDebug
-        ./gradlew --stop
+        JAVA_HOME=/usr/lib/jvm/temurin-17-jdk-amd64/ ./gradlew assembleDebug
+        JAVA_HOME=/usr/lib/jvm/temurin-17-jdk-amd64/ ./gradlew --stop
         cd ../..
 
     - name: Package [Windows]
