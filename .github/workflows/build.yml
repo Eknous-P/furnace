@@ -2,9 +2,9 @@ name: Build furnace
 
 on:
   push:
-    branches: [master, 0.6-fixes-real]
+    branches: [ android-actions ]
   pull_request:
-    branches: master
+    branches: [ android-actions ]
 
 defaults:
   run:
@@ -25,6 +25,7 @@ jobs:
           - { name: 'macOS x86_64', os: macos-13, arch: x86_64 }
           - { name: 'macOS ARM', os: macos-latest, arch: arm64 }
           - { name: 'Linux x86_64', os: ubuntu-22.04, arch: x86_64 }
+          - { name: 'Android', os: ubuntu-22.04, arch: x86_64 }
           #- { name: 'Linux ARM', os: ubuntu-18.04, arch: armhf }
       fail-fast: true
 
@@ -80,6 +81,9 @@ jobs:
         elif [ '${{ runner.os }}' == 'macOS' ]; then
           package_name="${package_name}-macOS-${{ matrix.config.arch }}"
           package_ext=".dmg"
+        elif [ '${{ matrix.config.name }}' == 'Android' ]; then
+          package_name="${package_name}-AndroidDEBUG"
+          package_ext=".tar.gz"
         else
           package_name="${package_name}-Linux-${{ matrix.config.arch }}"
           package_ext=".tar.gz"
@@ -118,7 +122,7 @@ jobs:
           mingw-w64 \
           mingw-w64-tools
 
-    - name: Install Dependencies [Linux x86_64]
+    - name: Install Dependencies [Linux x86_64 / Android]
       if: ${{ runner.os == 'Linux' && matrix.config.compiler != 'mingw' && matrix.config.arch == 'x86_64' }}
       run: |
         sudo apt update
@@ -197,11 +201,20 @@ jobs:
           "${CMAKE_EXTRA_ARGS[@]}"
 
     - name: Build
+      if: ${{ matrix.config.name != 'Android' }}
       run: |
         cmake \
           --build ${PWD}/build \
           --config ${{ env.BUILD_TYPE }} \
           --parallel ${{ steps.build-cores.outputs.amount }}
+
+    - name: Build [Android]
+      if: ${{ matrix.config.name == 'Android' }}
+      run: |
+        cd ${PWD}/android/
+        ./gradlew assembleDebug
+        ./gradlew --stop
+        cd ../..
 
     - name: Package [Windows]
       if: ${{ runner.os == 'Windows' || matrix.config.compiler == 'mingw' }}
@@ -287,7 +300,7 @@ jobs:
         popd
 
     - name: Package [Linux]
-      if: ${{ runner.os == 'Linux' && matrix.config.compiler != 'mingw' }}
+      if: ${{ runner.os == 'Linux' && matrix.config.compiler != 'mingw' &&  matrix.config.name != 'Android' }}
       run: |
         #if [ '${{ env.BUILD_TYPE }}' == 'Release' ]; then
         #  strip -s build/furnace
@@ -327,8 +340,26 @@ jobs:
 
         tar -zcv -f ../${{ steps.package-identify.outputs.filename }} furnace
 
+    - name: Package [Android]
+      if: ${{ matrix.config.name == 'Android' }}
+      run: |
+
+        mkdir -p target/furnace
+        mv ${PWD}/android/app/build/outputs/apk/debug/app-debug.apk target/furnace/${{ steps.package-identify.outputs.id }}.apk
+        pushd target/furnace
+
+        cp ../../LICENSE .
+        cp ../../res/releaseReadme/unstable-android.txt .
+        cp -r ../../papers papers
+
+        popd
+
+        cd target
+        tar -zcv -f ../${{ steps.package-identify.outputs.filename }} furnace
+
+
     - name: Upload artifact
-      if: ${{ github.repository == 'tildearrow/furnace' && github.ref_name == 'master' }}
+      if: ${{ github.repository == 'Eknous-P/furnace' && github.ref_name == 'android-actions' }}
       uses: actions/upload-artifact@v4.3.0
       with:
         name: ${{ steps.package-identify.outputs.id }}
