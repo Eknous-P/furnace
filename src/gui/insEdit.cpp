@@ -695,6 +695,12 @@ const int _SID3_SPECIAL_WAVES=SID3_NUM_SPECIAL_WAVES-1;
 const int _SID3_NUM_CHANNELS=SID3_NUM_CHANNELS;
 const int _SID3_NUM_CHANNELS_MINUS_ONE=SID3_NUM_CHANNELS-1;
 
+const char* blehControlBits[3]={
+  "Phase modulation",
+  "Waveform output",
+  "Noise output"
+};
+
 // do not change these!
 // anything other than a checkbox will look ugly!
 //
@@ -8685,6 +8691,13 @@ void FurnaceGUI::drawInsEdit() {
                 macroList.push_back(FurnaceGUIMacroDesc(_("Sample Mode"),&ins->std.opMacros[1].arMacro,0,1,32,uiColors[GUI_COLOR_MACRO_NOISE],false,NULL,NULL,true));
               }
               break;
+            case DIV_INS_BLEH:
+              macroList.push_back(FurnaceGUIMacroDesc(_("Volume"),&ins->std.volMacro,0,7,160,uiColors[GUI_COLOR_MACRO_VOLUME]));
+              macroList.push_back(FurnaceGUIMacroDesc(_("Arpeggio"),&ins->std.arpMacro,-120,120,160,uiColors[GUI_COLOR_MACRO_PITCH],true,NULL,macroHoverNote,false,NULL,true,ins->std.arpMacro.val));
+              macroList.push_back(FurnaceGUIMacroDesc(_("Waveform"),&ins->std.waveMacro,0,3,160,uiColors[GUI_COLOR_MACRO_OTHER]));
+              macroList.push_back(FurnaceGUIMacroDesc(_("Noise frequency"),&ins->std.dutyMacro,0,255,160,uiColors[GUI_COLOR_MACRO_OTHER]));
+              macroList.push_back(FurnaceGUIMacroDesc(_("Control"),&ins->std.ex1Macro,0,3,160,uiColors[GUI_COLOR_MACRO_OTHER],false,NULL,NULL,true,blehControlBits));
+              macroList.push_back(FurnaceGUIMacroDesc(_("Pitch"),&ins->std.pitchMacro,-2048,2047,160,uiColors[GUI_COLOR_MACRO_PITCH],true,macroRelativeMode));
             case DIV_INS_MAX:
             case DIV_INS_NULL:
               break;
