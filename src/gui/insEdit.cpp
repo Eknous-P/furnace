@@ -696,9 +696,9 @@ const int _SID3_NUM_CHANNELS=SID3_NUM_CHANNELS;
 const int _SID3_NUM_CHANNELS_MINUS_ONE=SID3_NUM_CHANNELS-1;
 
 const char* blehControlBits[3]={
-  "Phase modulation",
-  "Waveform output",
-  "Noise output"
+  "Phase Modulation",
+  "Waveform Output",
+  "Noise Output"
 };
 
 // do not change these!

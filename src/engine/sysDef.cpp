@@ -2333,6 +2333,22 @@ void DivEngine::registerSystems() {
     c64PostEffectHandlerMap
   );
 
+  sysDefs[DIV_SYSTEM_BLEH]=new DivSysDef(
+    "Bleh System", NULL, 0xfe, 0, 2, false, true, 0, false, 0, 0, 0,
+    _("a system made for a system adding tutorial"),
+    {_("Channel 1"), _("Channel 2")},
+    {"CH1", "CH2"},
+    {DIV_CH_NOISE, DIV_CH_NOISE},
+    {DIV_INS_BLEH, DIV_INS_BLEH},
+    {},
+    {},
+    {
+      {0x10, {DIV_CMD_BLEH_WAVE, _("10xx: Set waveform")}},
+      {0x11, {DIV_CMD_BLEH_NOISEFREQ, _("11xx: Set noise frequency")}},
+      {0x12, {DIV_CMD_BLEH_CONTROL, _("12xx: Set control (bit 0: phase modulation, bit 1: wave output, bit 2: noise output)")}}
+    }
+  );
+
   sysDefs[DIV_SYSTEM_DUMMY]=new DivSysDef(
     _("Dummy System"), NULL, 0xfd, 0, 8, false, true, 0, false, 0, 0, 0,
     _("this is a system designed for testing purposes."),

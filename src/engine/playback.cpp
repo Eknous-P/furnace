@@ -315,7 +315,11 @@ const char* cmdName[]={
   "FM_FMS",
   "FM_AMS",
   "FM_FMS2",
-  "FM_AMS2"
+  "FM_AMS2",
+
+  "BLEH_WAVE",
+  "BLEH_NOISEFREQ",
+  "BLEH_CONTROL"
 };
 
 static_assert((sizeof(cmdName)/sizeof(void*))==DIV_CMD_MAX,"update cmdName!");
