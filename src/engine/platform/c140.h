@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -74,6 +74,7 @@ class DivPlatformC140: public DivDispatch {
   FixedQueue<QueuedWrite,2048> writes;
   struct c140_t c140;
   struct c219_t c219;
+  DivMemoryComposition memCompo;
   unsigned char regPool[512];
   char bankLabel[4][4];
   friend void putDispatchChip(void*,int);
@@ -88,7 +89,7 @@ class DivPlatformC140: public DivDispatch {
     void* getChanState(int chan);
     DivMacroInt* getChanMacroInt(int ch);
     unsigned short getPan(int chan);
-    DivChannelPair getPaired(int chan);
+    void getPaired(int ch, std::vector<DivChannelPair>& ret);
     DivDispatchOscBuffer* getOscBuffer(int chan);
     unsigned char* getRegisterPool();
     int getRegisterPoolSize();
@@ -108,6 +109,7 @@ class DivPlatformC140: public DivDispatch {
     size_t getSampleMemCapacity(int index = 0);
     size_t getSampleMemUsage(int index = 0);
     bool isSampleLoaded(int index, int sample);
+    const DivMemoryComposition* getMemCompo(int index);
     void renderSamples(int chipID);
     int getClockRangeMin();
     int getClockRangeMax();

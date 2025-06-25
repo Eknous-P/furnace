@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,31 +28,23 @@ void FurnaceGUI::drawStats() {
     nextWindow=GUI_WINDOW_NOTHING;
   }
   if (!statsOpen) return;
-  if (ImGui::Begin("Statistics",&statsOpen,globalWinFlags)) {
+  if (ImGui::Begin("Statistics",&statsOpen,globalWinFlags,_("Statistics"))) {
     size_t lastProcTime=e->processTime;
     double maxGot=1000000000.0*(double)e->getAudioDescGot().bufsize/(double)e->getAudioDescGot().rate;
-    String procStr=fmt::sprintf("%.1f%%",100.0*((double)lastProcTime/(double)maxGot));
     ImGui::AlignTextToFramePadding();
-    ImGui::Text("Audio load");
+    ImGui::Text(_("Audio load"));
     ImGui::SameLine();
-    ImGui::ProgressBar((double)lastProcTime/maxGot,ImVec2(-FLT_MIN,0),procStr.c_str());
-    ImGui::Separator();
-    for (int i=0; i<e->song.systemLen; i++) {
-      DivDispatch* dispatch=e->getDispatch(i);
-      for (int j=0; dispatch!=NULL && dispatch->getSampleMemCapacity(j)>0; j++) {
-        size_t capacity=dispatch->getSampleMemCapacity(j);
-        size_t usage=dispatch->getSampleMemUsage(j);
-        String usageStr;
-        if (settings.memUsageUnit==1) {
-          usageStr=fmt::sprintf("%d/%dKB",usage/1024,capacity/1024);
-        } else {
-          usageStr=fmt::sprintf("%d/%d",usage,capacity);
-        }
-        ImGui::AlignTextToFramePadding();
-        ImGui::Text("%s [%d]", e->getSystemName(e->song.system[i]), j);
-        ImGui::SameLine();
-        ImGui::ProgressBar(((float)usage)/((float)capacity),ImVec2(-FLT_MIN,0),usageStr.c_str());
-      }
+    ImGui::ProgressBar((double)lastProcTime/maxGot,ImVec2(ImGui::GetContentRegionAvail().x-ImGui::CalcTextSize("100.0%").x,0),"");
+    ImGui::SameLine();
+    ImGui::Text("%.1f%%",100.0*((double)lastProcTime/(double)maxGot));
+    if (ImGui::GetContentRegionAvail().y>8.0f*dpiScale) {
+      // draw a chart
+      lastAudioLoads[lastAudioLoadsPos]=(double)lastProcTime/maxGot;
+      if (++lastAudioLoadsPos>=120) lastAudioLoadsPos=0;
+
+      ImGui::PushStyleColor(ImGuiCol_FrameBg,ImVec4(0,0,0,0));
+      ImGui::PlotLines("##ALChart",lastAudioLoads,120,lastAudioLoadsPos,NULL,0.0f,1.0f,ImGui::GetContentRegionAvail());
+      ImGui::PopStyleColor();
     }
   }
   if (ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows)) curWindow=GUI_WINDOW_STATS;

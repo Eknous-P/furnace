@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,7 +20,43 @@
 #include "../export.h"
 #include "../../ta-log.h"
 
-std::vector<DivROMExportOutput> DivROMExport::go(DivEngine* e) {
+bool DivROMExport::go(DivEngine* eng) {
   logW("what's this? the null ROM export?");
-  return std::vector<DivROMExportOutput>();
+  return false;
+}
+
+void DivROMExport::abort() {
+}
+
+std::vector<DivROMExportOutput>& DivROMExport::getResult() {
+  return output;
+}
+
+bool DivROMExport::hasFailed() {
+  return true;
+}
+
+DivROMExportProgress DivROMExport::getProgress(int index) {
+  DivROMExportProgress ret;
+  ret.name="";
+  ret.amount=0.0f;
+  return ret;
+}
+
+void DivROMExport::logAppend(String what) {
+  logLock.lock();
+  exportLog.push_back(what);
+  logLock.unlock();
+  logD("export: %s",what);
+}
+
+void DivROMExport::wait() {
+}
+
+bool DivROMExport::isRunning() {
+  return false;
+}
+
+void DivROMExport::setConf(DivConfig& c) {
+  conf=c;
 }

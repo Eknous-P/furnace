@@ -24,6 +24,7 @@ these apply to the instrument as a whole:
   - these are normally used for the drum channels in ESFM's OPL3 compatibility mode.
     - however, in ESFM, operator 4 can be modulated by operator 3, whereas in OPL3 drum mode the rhythm channels cannot be modulated.
   - __note__: usage of noise mode "Top" is discouraged for now as it is not properly emulated yet, and results may change when the emulation gets fixed in the future.
+- **Octave**: sets the "block" of the frequency register, which affects note range and precision.
 - **operator routing preview**: shows how operators are connected with each other and with the audio output (at the bottom).
   - left-click pops up a small "operators changes with volume?" dialog where each operator can be toggled to scale with volume level.
   - right-click switches to a preview display of the waveform generated on a new note:
@@ -49,7 +50,7 @@ these apply to each operator:
 ![FM ADSR chart](FM-ADSRchart.png)
 
 - **Key Scale Rate (KSR)**: also known as "Rate Scale". determines the degree to which the envelope execution speed increases according to the pitch.
-- **Frequency Multiplier (MULT)**: sets the coarse pitch offset in relation to the note (0 to 15). 0 is -1 octave, 1 is 0 octaves, 2 is 1 octave, 3 is 1 octave 7 semitones, and so on.
+- **Frequency Multiplier (MULT)**: sets the coarse pitch offset in relation to the note (0 to 15). the values follow the harmonic scale. for example, 0 is -1 octave, 1 is 0 octaves, 2 is 1 octave, 3 is 1 octave 7 semitones, and so on.
   - note that values 11, 13 and 14 behave as 10, 12 and 15 respectively.
 - **Tune (CT)**: sets the semitone offset in relation to the note (-24 to 24).
   - this is a software effect.

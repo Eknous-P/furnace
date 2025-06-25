@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -197,7 +197,7 @@ void FurnaceGUI::makeUndo(ActionType action, UndoRegion region) {
 
           auto it=oldPatMap.find(id);
           if (it==oldPatMap.end()) {
-            logW("no data in oldPatMap for channel %d!",i);
+            logW(_("no data in oldPatMap for channel %d!"),i);
             continue;
           } else {
             op=it->second;
@@ -273,9 +273,16 @@ void FurnaceGUI::doSelectAll() {
   } else {
     int selStartX=0;
     int selEndX=0;
+    int chanCount=e->getTotalChannelCount();
     // find row position
     for (SelectionPoint i; i.xCoarse!=selStart.xCoarse || i.xFine!=selStart.xFine; selStartX++) {
       i.xFine++;
+      if (i.xCoarse>=chanCount) {
+        logE("xCoarse of selStart iterator went too far!");
+        showError("you have found a bug. please report it now.");
+        i.xCoarse=chanCount-1;
+        break;
+      }
       if (i.xFine>=3+e->curPat[i.xCoarse].effectCols*2) {
         i.xFine=0;
         i.xCoarse++;
@@ -283,6 +290,12 @@ void FurnaceGUI::doSelectAll() {
     }
     for (SelectionPoint i; i.xCoarse!=selEnd.xCoarse || i.xFine!=selEnd.xFine; selEndX++) {
       i.xFine++;
+      if (i.xCoarse>=chanCount) {
+        logE("xCoarse of selEnd iterator went too far!");
+        showError("you have found a bug. please report it now.");
+        i.xCoarse=chanCount-1;
+        break;
+      }
       if (i.xFine>=3+e->curPat[i.xCoarse].effectCols*2) {
         i.xFine=0;
         i.xCoarse++;
@@ -661,7 +674,7 @@ void FurnaceGUI::doPasteFurnace(PasteMode mode, int arg, bool readClipboard, Str
     }
     
     if (invalidData) {
-      logW("invalid clipboard data! failed at line %d char %d",i,charPos);
+      logW(_("invalid clipboard data! failed at line %d char %d"),i,charPos);
       logW("%s",line.c_str());
       break;
     }
@@ -676,8 +689,13 @@ void FurnaceGUI::doPasteFurnace(PasteMode mode, int arg, bool readClipboard, Str
     }
   }
 
+  if (mode==GUI_PASTE_MODE_OVERFLOW && !e->isPlaying()) {
+    setOrder(curOrder);
+  }
+
   if (readClipboard) {
     if (settings.cursorPastePos) {
+      makeCursorUndo();
       cursor.y=j;
       if (cursor.y>=e->curSubSong->patLen) cursor.y=e->curSubSong->patLen-1;
       selStart=cursor;
@@ -901,9 +919,7 @@ unsigned int convertEffectMPT_MPTM(unsigned char symbol, unsigned int val) {
   return convertEffectMPT_IT(symbol,val);
 }
 
-// TODO: fix code style
-void FurnaceGUI::doPasteMPT(PasteMode mode, int arg, bool readClipboard, String clipb, std::vector<String> data, int mptFormat, UndoRegion ur)
-{
+void FurnaceGUI::doPasteMPT(PasteMode mode, int arg, bool readClipboard, String clipb, std::vector<String> data, int mptFormat, UndoRegion ur) {
   DETERMINE_LAST;
 
   int j=cursor.y;
@@ -912,35 +928,27 @@ void FurnaceGUI::doPasteMPT(PasteMode mode, int arg, bool readClipboard, String 
 
   memset(note,0,4);
 
-  for(size_t i=1; i<data.size() && j<e->curSubSong->patLen; i++)
-  {
+  for (size_t i=1; i<data.size() && j<e->curSubSong->patLen; i++) {
     size_t charPos=1;
     int iCoarse=cursor.xCoarse;
     int iFine=0;
-
     String& line=data[i];
-
-    while (charPos<line.size() && iCoarse<lastChannel)
-    {
+    while (charPos<line.size() && iCoarse<lastChannel) {
       DivPattern* pat=e->curPat[iCoarse].getPattern(e->curOrders->ord[iCoarse][curOrder],true);
-      if (line[charPos]=='|' && charPos != 0) // MPT format starts every pattern line with '|'
-      {
+      if (line[charPos]=='|' && charPos!=0) { // MPT format starts every pattern line with '|'
         iCoarse++;
-
-        if (iCoarse<lastChannel) while (!e->curSubSong->chanShow[iCoarse])
-        {
-          iCoarse++;
-          if (iCoarse>=lastChannel) break;
+        if (iCoarse<lastChannel) {
+          while (!e->curSubSong->chanShow[iCoarse]) {
+            iCoarse++;
+            if (iCoarse>=lastChannel) break;
+          }
         }
-
         iFine=0;
         charPos++;
         continue;
       }
-      if (iFine==0) // note
-      {
-        if (charPos>=line.size())
-        {
+      if (iFine==0) { // note
+        if (charPos>=line.size()) {
           invalidData=true;
           break;
         }
@@ -962,228 +970,167 @@ void FurnaceGUI::doPasteMPT(PasteMode mode, int arg, bool readClipboard, String 
           continue;
         }
 
-        if (strcmp(note,"...")==0 || strcmp(note,"   ")==0)
-        {
+        if (strcmp(note,"...")==0 || strcmp(note,"   ")==0) {
           // do nothing.
-        } 
-        
-        else 
-        {
-          if (!(mode==GUI_PASTE_MODE_MIX_BG || mode==GUI_PASTE_MODE_INS_BG) || (pat->data[j][0]==0 && pat->data[j][1]==0)) 
-          {
-            if (!decodeNote(note,pat->data[j][0],pat->data[j][1]))
-            {
-              if(strcmp(note, "^^^") == 0)
-              {
+        } else {
+          if (!(mode==GUI_PASTE_MODE_MIX_BG || mode==GUI_PASTE_MODE_INS_BG) || (pat->data[j][0]==0 && pat->data[j][1]==0)) {
+            if (!decodeNote(note,pat->data[j][0],pat->data[j][1])) {
+              if (strcmp(note, "^^^")==0) {
                 pat->data[j][0]=100;
                 pat->data[j][1]=0;
-              }
-              else if(strcmp(note, "~~~") == 0 || strcmp(note, "===") == 0)
-              {
+              } else if (strcmp(note, "~~~")==0 || strcmp(note,"===")==0) {
                 pat->data[j][0]=101;
                 pat->data[j][1]=0;
-              }
-              else
-              {
+              } else {
                 invalidData=true;
               }
-              
               break;
-            }
-            else
-            {
+            } else {
               pat->data[j][1]--; // MPT is one octave higher...
             }
-
             if (mode==GUI_PASTE_MODE_INS_BG || mode==GUI_PASTE_MODE_INS_FG) pat->data[j][2]=arg;
           }
         }
-      } 
-      else if (iFine==1) // instrument
-      {
-        if (charPos>=line.size())
-        {
+      } else if (iFine==1) { // instrument
+        if (charPos>=line.size()) {
           invalidData=true;
           break;
         }
         note[0]=line[charPos++];
-        if (charPos>=line.size())
-        {
+        if (charPos>=line.size()) {
           invalidData=true;
           break;
         }
         note[1]=line[charPos++];
         note[2]=0;
 
-        if (iFine==1)
-        {
-          if (!opMaskPaste.ins || mode==GUI_PASTE_MODE_INS_BG || mode==GUI_PASTE_MODE_INS_FG)
-          {
+        if (iFine==1) {
+          if (!opMaskPaste.ins || mode==GUI_PASTE_MODE_INS_BG || mode==GUI_PASTE_MODE_INS_FG) {
             iFine++;
             continue;
           }
         }
 
-        if (strcmp(note,"..")==0 || strcmp(note,"  ")==0)
-        {
+        if (strcmp(note,"..")==0 || strcmp(note,"  ")==0) {
           if (!(mode==GUI_PASTE_MODE_MIX_BG || mode==GUI_PASTE_MODE_MIX_FG ||
-                mode==GUI_PASTE_MODE_INS_BG || mode==GUI_PASTE_MODE_INS_FG))
-          {
+                mode==GUI_PASTE_MODE_INS_BG || mode==GUI_PASTE_MODE_INS_FG)) {
             pat->data[j][iFine+1]=-1;
           }
-        } 
-        else 
-        {
+        } else {
           unsigned int val=0;
-          if (sscanf(note,"%2d",&val)!=1) 
-          {
+          if (sscanf(note,"%2d",&val)!=1) {
             invalidData=true;
             break;
           }
 
-          if (!(mode==GUI_PASTE_MODE_MIX_BG || mode==GUI_PASTE_MODE_INS_BG) || pat->data[j][iFine+1]==-1) 
-          {
-            pat->data[j][iFine+1]=val - 1;
+          if (!(mode==GUI_PASTE_MODE_MIX_BG || mode==GUI_PASTE_MODE_INS_BG) || pat->data[j][iFine+1]==-1) {
+            pat->data[j][iFine+1]=val-1;
           }
         }
-      }
-      else
-      { // volume and effects
-        if (charPos>=line.size())
-        {
+      } else { // volume and effects
+        if (charPos>=line.size()) {
           invalidData=true;
           break;
         }
         note[0]=line[charPos++];
-        if (charPos>=line.size())
-        {
+        if (charPos>=line.size()) {
           invalidData=true;
           break;
         }
         note[1]=line[charPos++];
-        if (charPos>=line.size())
-        {
+        if (charPos>=line.size()) {
           invalidData=true;
           break;
         }
         note[2]=line[charPos++];
         note[3]=0;
 
-        if (iFine==2)
-        {
-          if (!opMaskPaste.vol)
-          {
-            iFine++;
-            continue;
-          }
-        } 
-        
-        else if ((iFine&1)==0) 
-        {
-          if (!opMaskPaste.effectVal) 
-          {
-            iFine++;
-            continue;
-          }
-        } 
-        else if ((iFine&1)==1) 
-        {
-          if (!opMaskPaste.effect) 
-          {
+        if (iFine==2) {
+          if (!opMaskPaste.vol) {
             iFine++;
             continue;
           }
         }
 
-        if (strcmp(note,"...")==0 || strcmp(note,"   ")==0)
-        {
+        else if ((iFine&1)==0) {
+          if (!opMaskPaste.effectVal) {
+            iFine++;
+            continue;
+          }
+        } else if ((iFine&1)==1) {
+          if (!opMaskPaste.effect) {
+            iFine++;
+            continue;
+          }
+        }
+
+        if (strcmp(note,"...")==0 || strcmp(note,"   ")==0) {
           if (!(mode==GUI_PASTE_MODE_MIX_BG || mode==GUI_PASTE_MODE_MIX_FG ||
                 mode==GUI_PASTE_MODE_INS_BG || mode==GUI_PASTE_MODE_INS_FG))
           {
             pat->data[j][iFine+1]=-1;
           }
-        } 
-        else 
-        {
+        } else {
           unsigned int val=0;
-          unsigned char symbol = '\0';
+          unsigned char symbol='\0';
 
-          symbol = note[0];
+          symbol=note[0];
 
-          if(iFine == 2)
-          {
+          if (iFine==2) {
             sscanf(&note[1],"%2d",&val);
-          }
-          else
-          {
+          } else {
             sscanf(&note[1],"%2X",&val);
           }
 
-          if (!(mode==GUI_PASTE_MODE_MIX_BG || mode==GUI_PASTE_MODE_INS_BG) || pat->data[j][iFine+1]==-1) 
-          {
+          if (!(mode==GUI_PASTE_MODE_MIX_BG || mode==GUI_PASTE_MODE_INS_BG) || pat->data[j][iFine+1]==-1) {
             // if (iFine<(3+e->curPat[iCoarse].effectCols*2)) pat->data[j][iFine+1]=val;
-            if(iFine == 2) // volume
-            {
-              switch(symbol)
-              {
+            if (iFine==2) { // volume
+              switch(symbol) {
                 case 'v':
                 {
                   pat->data[j][iFine+1]=val;
                   break;
                 }
-                
                 default:
                   break;
               }
-            }
-            else // effect
-            {
-              unsigned int eff = 0;
-              
-              if(mptFormat == 0)
-              {
-                eff = convertEffectMPT_MOD(symbol, val); // up to 4 effects stored in one variable
-
-                if(((eff & 0x0f00) >> 8) == 0x0C) // set volume
-                {
-                  pat->data[j][iFine]=eff & 0xff;
+            } else { // effect
+              unsigned int eff=0;
+              if (mptFormat==0) {
+                eff=convertEffectMPT_MOD(symbol, val); // up to 4 effects stored in one variable
+                if (((eff&0x0f00)>>8)==0x0C) { // set volume
+                  pat->data[j][iFine]=eff&0xff;
                 }
               }
 
-              if(mptFormat == 1)
-              {
-                eff = convertEffectMPT_S3M(symbol, val);
+              if (mptFormat==1) {
+                eff=convertEffectMPT_S3M(symbol, val);
               }
 
-              if(mptFormat == 2 || mptFormat == 3) // set volume
-              {
-                eff = convertEffectMPT_XM(symbol, val);
-                
-                if(((eff & 0x0f00) >> 8) == 0x0C)
+              if (mptFormat==2 || mptFormat==3) { // set volume
+                eff=convertEffectMPT_XM(symbol, val);
+
+                if (((eff&0x0f00)>>8)==0x0C)
                 {
-                  pat->data[j][iFine]=eff & 0xff;
+                  pat->data[j][iFine]=eff&0xff;
                 }
               }
 
-              if(mptFormat == 4 || mptFormat == 5)
-              {
-                eff = convertEffectMPT_IT(symbol, val);
+              if (mptFormat==4|| mptFormat==5) {
+                eff=convertEffectMPT_IT(symbol, val);
               }
 
-              if(mptFormat == 6)
-              {
-                eff = convertEffectMPT_MPTM(symbol, val);
+              if (mptFormat==6) {
+                eff=convertEffectMPT_MPTM(symbol, val);
               }
 
-              pat->data[j][iFine+1]=((eff & 0xff00) >> 8);
-              pat->data[j][iFine+2]=(eff & 0xff);
+              pat->data[j][iFine+1]=((eff&0xff00)>>8);
+              pat->data[j][iFine+2]=(eff&0xff);
 
-              if(eff > 0xffff)
-              {
-                pat->data[j][iFine+3]=((eff & 0xff000000) >> 24);
-                pat->data[j][iFine+4]=((eff & 0xff0000) >> 16);
+              if (eff>0xffff) {
+                pat->data[j][iFine+3]=((eff&0xff000000)>>24);
+                pat->data[j][iFine+4]=((eff&0xff0000)>>16);
               }
-              
             }
           }
         }
@@ -1191,35 +1138,32 @@ void FurnaceGUI::doPasteMPT(PasteMode mode, int arg, bool readClipboard, String 
 
       iFine++;
 
-      if(charPos >= line.size() - 1)
-      {
-        invalidData = false;
+      if (charPos>=line.size()-1) {
+        invalidData=false;
         break;
       }
     }
-    
-    if (invalidData)
-    {
-      logW("invalid clipboard data! failed at line %d char %d",i,charPos);
+
+    if (invalidData) {
+      logW(_("invalid clipboard data! failed at line %d char %d"),i,charPos);
       logW("%s",line.c_str());
       break;
     }
 
     j++;
-    if (mode==GUI_PASTE_MODE_OVERFLOW && j>=e->curSubSong->patLen && curOrder<e->curSubSong->ordersLen-1)
-    {
+    if (mode==GUI_PASTE_MODE_OVERFLOW && j>=e->curSubSong->patLen && curOrder<e->curSubSong->ordersLen-1) {
       j=0;
       curOrder++;
     }
 
-    if (mode==GUI_PASTE_MODE_FLOOD && i==data.size()-1)
-    {
+    if (mode==GUI_PASTE_MODE_FLOOD && i==data.size()-1) {
       i=1;
     }
   }
 
   if (readClipboard) {
     if (settings.cursorPastePos) {
+      makeCursorUndo();
       cursor.y=j;
       if (cursor.y>=e->curSubSong->patLen) cursor.y=e->curSubSong->patLen-1;
       selStart=cursor;
@@ -1483,7 +1427,7 @@ void FurnaceGUI::doScale(float top) {
   makeUndo(GUI_UNDO_PATTERN_SCALE);
 }
 
-void FurnaceGUI::doRandomize(int bottom, int top, bool mode) {
+void FurnaceGUI::doRandomize(int bottom, int top, bool mode, bool eff, int effVal) {
   finishSelection();
   prepareUndo(GUI_UNDO_PATTERN_RANDOMIZE);
 
@@ -1518,6 +1462,9 @@ void FurnaceGUI::doRandomize(int bottom, int top, bool mode) {
             pat->data[j][iFine+1]=value|(value2<<4);
           } else {
             pat->data[j][iFine+1]=value;
+          }
+          if (eff && iFine>2 && (iFine&1)) {
+            pat->data[j][iFine+1]=effVal;
           }
         }
       }
@@ -1562,7 +1509,7 @@ void FurnaceGUI::doFlip() {
 void FurnaceGUI::doCollapse(int divider, const SelectionPoint& sStart, const SelectionPoint& sEnd) {
   if (divider<2) return;
   if (e->curSubSong->patLen<divider) {
-    showError("can't collapse any further!");
+    showError(_("can't collapse any further!"));
     return;
   }
 
@@ -1666,7 +1613,7 @@ void FurnaceGUI::doExpand(int multiplier, const SelectionPoint& sStart, const Se
 void FurnaceGUI::doCollapseSong(int divider) {
   if (divider<2) return;
   if (e->curSubSong->patLen<divider) {
-    showError("can't collapse any further!");
+    showError(_("can't collapse any further!"));
     return;
   }
   finishSelection();
@@ -1720,6 +1667,9 @@ void FurnaceGUI::doCollapseSong(int divider) {
       }
     }
   }
+
+  MARK_MODIFIED;
+
   // magic
   unsigned char* subSongInfoCopy=new unsigned char[1024];
   memcpy(subSongInfoCopy,e->curSubSong,1024);
@@ -1746,7 +1696,7 @@ void FurnaceGUI::doCollapseSong(int divider) {
 void FurnaceGUI::doExpandSong(int multiplier) {
   if (multiplier<2) return;
   if (e->curSubSong->patLen>(256/multiplier)) {
-    showError("can't expand any further!");
+    showError(_("can't expand any further!"));
     return;
   }
   finishSelection();
@@ -1800,6 +1750,9 @@ void FurnaceGUI::doExpandSong(int multiplier) {
       }
     }
   }
+
+  MARK_MODIFIED;
+
   // magic
   unsigned char* subSongInfoCopy=new unsigned char[1024];
   memcpy(subSongInfoCopy,e->curSubSong,1024);
@@ -1823,17 +1776,152 @@ void FurnaceGUI::doExpandSong(int multiplier) {
   if (e->isPlaying()) e->play();
 }
 
-void FurnaceGUI::doDrag() {
+void FurnaceGUI::doAbsorbInstrument() {
+  bool foundIns=false;
+  bool foundOctave=false;
+  auto foundAll = [&]() { return foundIns && foundOctave; };
+
+  // search this order and all prior until we find all the data we need
+  int orderIdx=curOrder;
+  for (; orderIdx>=0 && !foundAll(); orderIdx--) {
+    DivPattern* pat=e->curPat[cursor.xCoarse].getPattern(e->curOrders->ord[cursor.xCoarse][orderIdx],false);
+    if (!pat) continue;
+
+    // start on current row when searching current order, but start from end when searching
+    // prior orders.
+    int searchStartRow=orderIdx==curOrder ? cursor.y : e->curSubSong->patLen-1;
+    for (int i=searchStartRow; i>=0 && !foundAll(); i--) {
+
+      // absorb most recent instrument
+      if (!foundIns && pat->data[i][2] >= 0) {
+        foundIns=true;
+        curIns=pat->data[i][2];
+      }
+
+      // absorb most recent octave (i.e. set curOctave such that the "main row" (QWERTY) of
+      // notes will result in an octave number equal to the previous note). make sure to
+      // skip "special note values" like OFF/REL/=== and "none", since there won't be valid
+      // octave values
+      unsigned char note=pat->data[i][0];
+      if (!foundOctave && note!=0 && note!=100 && note!=101 && note!=102) {
+        foundOctave=true;
+
+        // decode octave data (was signed cast to unsigned char)
+        int octave=pat->data[i][1];
+        if (octave>128) octave-=256;
+
+        // @NOTE the special handling when note==12, which is really an octave above what's
+        // stored in the octave data. without this handling, if you press Q, then
+        // "ABSORB_INSTRUMENT", then Q again, you'd get a different octave!
+        if (pat->data[i][0]==12) octave++;
+        curOctave=CLAMP(octave-1, GUI_EDIT_OCTAVE_MIN, GUI_EDIT_OCTAVE_MAX);
+      }
+    }
+  }
+
+  // if no instrument has been set at this point, the only way to match it is to use "none"
+  if (!foundIns) curIns=-1;
+
+  logD("doAbsorbInstrument -- searched %d orders", curOrder-orderIdx);
+}
+
+void FurnaceGUI::doDrag(bool copy) {
   int len=dragEnd.xCoarse-dragStart.xCoarse+1;
 
   if (len<1) return;
   
   prepareUndo(GUI_UNDO_PATTERN_DRAG);
 
-  // copy and clear
-  String c=doCopy(true,false,dragStart,dragEnd);
+  // copy and clear (if copy is false)
+  String c=doCopy(!copy,false,dragStart,dragEnd);
 
-  logV("copy: %s",c);
+  logV(_("copy: %s"),c);
+
+  // replace
+  cursor=selStart;
+  doPaste(GUI_PASTE_MODE_NORMAL,0,false,c);
+
+  makeUndo(GUI_UNDO_PATTERN_DRAG);
+}
+
+void FurnaceGUI::moveSelected(int x, int y) {
+  SelectionPoint selStartOld, selEndOld, selStartNew, selEndNew;
+  selStartOld=selStart;
+  selEndOld=selEnd;
+
+  // move selection
+  DETERMINE_FIRST_LAST;
+
+  bool outOfBounds=false;
+
+  if (x>0) {
+    for (int i=0; i<x; i++) {
+      do {
+        selStart.xCoarse++;
+        if (selStart.xCoarse>=lastChannel) {
+          outOfBounds=true;
+          break;
+        }
+      } while (!e->curSubSong->chanShow[selStart.xCoarse]);
+
+      do {
+        selEnd.xCoarse++;
+        if (selEnd.xCoarse>=lastChannel) {
+          outOfBounds=true;
+          break;
+        }
+      } while (!e->curSubSong->chanShow[selEnd.xCoarse]);
+
+      if (outOfBounds) break;
+    }
+  } else if (x<0) {
+    for (int i=0; i<-x; i++) {
+      do {
+        selStart.xCoarse--;
+        if (selStart.xCoarse<firstChannel) {
+          outOfBounds=true;
+          break;
+        }
+      } while (!e->curSubSong->chanShow[selStart.xCoarse]);
+
+      do {
+        selEnd.xCoarse--;
+        if (selEnd.xCoarse<firstChannel) {
+          outOfBounds=true;
+          break;
+        }
+      } while (!e->curSubSong->chanShow[selEnd.xCoarse]);
+
+      if (outOfBounds) break;
+    }
+  }
+
+  selStart.y+=y;
+  selEnd.y+=y;
+
+  if (selStart.y<0 || selStart.y>=e->curSubSong->patLen) outOfBounds=true;
+  if (selEnd.y<0 || selEnd.y>=e->curSubSong->patLen) outOfBounds=true;
+
+  selStartNew=selStart;
+  selEndNew=selEnd;
+
+  selStart=selStartOld;
+  selEnd=selEndOld;
+
+  if (outOfBounds) {
+    return;
+  }
+
+  prepareUndo(GUI_UNDO_PATTERN_DRAG);
+
+  // copy and clear
+  String c=doCopy(true,false,selStart,selEnd);
+
+  logV(_("copy: %s"),c);
+
+  // move
+  selStart=selStartNew;
+  selEnd=selEndNew;
 
   // replace
   cursor=selStart;
@@ -1992,4 +2080,53 @@ void FurnaceGUI::doRedo() {
   }
 
   redoHist.pop_back();
+}
+
+CursorJumpPoint FurnaceGUI::getCurrentCursorJumpPoint() {
+  return CursorJumpPoint(cursor, curOrder, e->getCurrentSubSong());
+}
+
+void FurnaceGUI::applyCursorJumpPoint(const CursorJumpPoint& spot) {
+  cursor=spot.point;
+  curOrder=MIN(e->curSubSong->ordersLen-1, spot.order);
+  e->setOrder(curOrder);
+  e->changeSongP(spot.subSong);
+  if (!settings.cursorMoveNoScroll) {
+    updateScroll(cursor.y);
+  }
+}
+
+void FurnaceGUI::makeCursorUndo() {
+  CursorJumpPoint spot = getCurrentCursorJumpPoint();
+  if (!cursorUndoHist.empty() && spot == cursorUndoHist.back()) return;
+  
+  if (cursorUndoHist.size()>=settings.maxUndoSteps) cursorUndoHist.pop_front();
+  cursorUndoHist.push_back(spot);
+
+  // redo history no longer relevant, we've changed timeline
+  cursorRedoHist.clear();
+}
+
+void FurnaceGUI::doCursorUndo() {
+  if (cursorUndoHist.empty()) return;
+
+  // allow returning to current spot
+  if (cursorRedoHist.size()>=settings.maxUndoSteps) cursorRedoHist.pop_front();
+  cursorRedoHist.push_back(getCurrentCursorJumpPoint());
+
+  // apply spot
+  applyCursorJumpPoint(cursorUndoHist.back());
+  cursorUndoHist.pop_back();
+}
+
+void FurnaceGUI::doCursorRedo() {
+if (cursorRedoHist.empty()) return;
+
+  // allow returning to current spot
+  if (cursorUndoHist.size()>=settings.maxUndoSteps) cursorUndoHist.pop_front();
+  cursorUndoHist.push_back(getCurrentCursorJumpPoint());
+
+  // apply spot
+  applyCursorJumpPoint(cursorRedoHist.back());
+  cursorRedoHist.pop_back();
 }

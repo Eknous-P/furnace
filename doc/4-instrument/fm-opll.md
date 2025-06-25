@@ -18,8 +18,10 @@ but don't worry! there also are 15 preset patches that you may select at any tim
 these apply to the instrument as a whole:
 - **Feedback (FB)**: determines how many times operator 1 returns its output to itself (0 to 7).
 - **Sustain (SUS)**: enables the sustain flag (sets the release rate to 5).
-- **DC (half-sine carrier)**: sets the waveform produced by carrier operator to half-sine.
-- **DM (half-sine modulator)**: sets the waveform produced by modulator operator to half-sine.
+
+- **Octave**: sets the "block" of the frequency register, which affects note range and precision.
+- **OP2 Half Sine (DC)**: sets the waveform produced by carrier operator to half-sine.
+- **OP1 Half Sine (DM)**: sets the waveform produced by modulator operator to half-sine.
 - **preset dropdown**: selects OPLL preset instrument.
   - this is the selector for the preset patches I mentioned before.
   - once a preset patch is selected, only the volume is configurable.
@@ -43,7 +45,7 @@ these apply to each operator:
 ![FM ADSR chart](FM-ADSRchart.png)
 
 - **Envelope Scale (KSR)**: also known as "Key Scale". determines the degree to which the envelope execution speed increases according to the pitch.
-- **Frequency Multiplier (MULT)**: sets the coarse pitch offset in relation to the note (0 to 15). 0 is -1 octave, 1 is 0 octaves, 2 is 1 octave, 3 is 1 octave 7 semitones, and so on.
+- **Frequency Multiplier (MULT)**: sets the coarse pitch offset in relation to the note (0 to 15). the values follow the harmonic scale. for example, 0 is -1 octave, 1 is 0 octaves, 2 is 1 octave, 3 is 1 octave 7 semitones, and so on.
   - note that values 11, 13 and 14 behave as 10, 12 and 12 respectively.
 - **Vibrato (VIB)**: makes the operator affected by LFO vibrato.
 

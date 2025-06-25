@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -63,6 +63,9 @@ const char** DivPlatformGB::getRegisterSheet() {
 }
 
 void DivPlatformGB::acquire(short** buf, size_t len) {
+  for (int i=0; i<4; i++) {
+    oscBuf[i]->begin(len);
+  }
   for (size_t i=0; i<len; i++) {
     if (!writes.empty()) {
       QueuedWrite& w=writes.front();
@@ -70,28 +73,55 @@ void DivPlatformGB::acquire(short** buf, size_t len) {
       writes.pop();
     }
 
-    GB_advance_cycles(gb,16);
+    GB_advance_cycles(gb,coreQuality);
     buf[0][i]=gb->apu_output.final_sample.left;
     buf[1][i]=gb->apu_output.final_sample.right;
 
-    for (int i=0; i<4; i++) {
-      oscBuf[i]->data[oscBuf[i]->needle++]=(gb->apu_output.current_sample[i].left+gb->apu_output.current_sample[i].right)<<6;
+    for (int j=0; j<4; j++) {
+      oscBuf[j]->putSample(i,(gb->apu_output.current_sample[j].left+gb->apu_output.current_sample[j].right)<<6);
     }
+  }
+  for (int i=0; i<4; i++) {
+    oscBuf[i]->end(len);
   }
 }
 
 void DivPlatformGB::updateWave() {
-  rWrite(0x1a,0);
-  for (int i=0; i<16; i++) {
-    int nibble1=ws.output[((i<<1)+antiClickWavePos)&31];
-    int nibble2=ws.output[((1+(i<<1))+antiClickWavePos)&31];
-    if (invertWave) {
-      nibble1^=15;
-      nibble2^=15;
+  if (doubleWave) {
+    rWrite(0x1a,0x40); // select 1 -> write to bank 0
+    for (int i=0; i<16; i++) {
+      int nibble1=ws.output[((i<<1)+antiClickWavePos)&63];
+      int nibble2=ws.output[((1+(i<<1))+antiClickWavePos)&63];
+      if (invertWave) {
+        nibble1^=15;
+        nibble2^=15;
+      }
+      rWrite(0x30+i,(nibble1<<4)|nibble2);
     }
-    rWrite(0x30+i,(nibble1<<4)|nibble2);
+    rWrite(0x1a,0); // select 0 -> write to bank 1
+    for (int i=0; i<16; i++) {
+      int nibble1=ws.output[((32+(i<<1))+antiClickWavePos)&63];
+      int nibble2=ws.output[((33+(i<<1))+antiClickWavePos)&63];
+      if (invertWave) {
+        nibble1^=15;
+        nibble2^=15;
+      }
+      rWrite(0x30+i,(nibble1<<4)|nibble2);
+    }
+    antiClickWavePos&=63;
+  } else {
+    rWrite(0x1a,model==GB_MODEL_AGB_NATIVE?0x40:0);
+    for (int i=0; i<16; i++) {
+      int nibble1=ws.output[((i<<1)+antiClickWavePos)&31];
+      int nibble2=ws.output[((1+(i<<1))+antiClickWavePos)&31];
+      if (invertWave) {
+        nibble1^=15;
+        nibble2^=15;
+      }
+      rWrite(0x30+i,(nibble1<<4)|nibble2);
+    }
+    antiClickWavePos&=31;
   }
-  antiClickWavePos&=31;
 }
 
 static unsigned char chanMuteMask[4]={
@@ -110,6 +140,13 @@ static unsigned char gbVolMap[16]={
   0x60, 0x60, 0x60, 0x60,
   0x40, 0x40, 0x40, 0x40,
   0x20, 0x20, 0x20, 0x20
+};
+
+static unsigned char gbVolMapEx[16]={
+  0x00, 0x00, 0x00, 0x00,
+  0x60, 0x60, 0x60, 0x60,
+  0x40, 0x40, 0x40, 0x40,
+  0xa0, 0xa0, 0x20, 0x20
 };
 
 static unsigned char noiseTable[256]={
@@ -156,7 +193,7 @@ void DivPlatformGB::tick(bool sysTick) {
         if (chan[i].outVol<0) chan[i].outVol=0;
 
         if (i==2) {
-          rWrite(16+i*5+2,gbVolMap[chan[i].outVol]);
+          rWrite(16+i*5+2,(model==GB_MODEL_AGB_NATIVE?gbVolMapEx:gbVolMap)[chan[i].outVol]);
           chan[i].soundLen=64;
         } else {
           chan[i].envLen=0;
@@ -188,7 +225,7 @@ void DivPlatformGB::tick(bool sysTick) {
         rWrite(16+i*5+1,((chan[i].duty&3)<<6)|(63-(chan[i].soundLen&63)));
       } else if (!chan[i].softEnv) {
         if (parent->song.waveDutyIsVol) {
-          rWrite(16+i*5+2,gbVolMap[(chan[i].std.duty.val&3)<<2]);
+          rWrite(16+i*5+2,(model==GB_MODEL_AGB_NATIVE?gbVolMapEx:gbVolMap)[(chan[i].std.duty.val&3)<<2]);
         }
       }
     }
@@ -301,8 +338,8 @@ void DivPlatformGB::tick(bool sysTick) {
       if (chan[i].keyOn) {
         if (i==2) { // wave
           rWrite(16+i*5,0x00);
-          rWrite(16+i*5,0x80);
-          rWrite(16+i*5+2,gbVolMap[chan[i].outVol]);
+          rWrite(16+i*5,doubleWave?0xa0:0x80);
+          rWrite(16+i*5+2,(model==GB_MODEL_AGB_NATIVE?gbVolMapEx:gbVolMap)[chan[i].outVol]);
         } else {
           rWrite(16+i*5+1,((chan[i].duty&3)<<6)|(63-(chan[i].soundLen&63)));
           rWrite(16+i*5+2,((chan[i].envVol<<4))|(chan[i].envLen&7)|((chan[i].envDir&1)<<3));
@@ -379,11 +416,16 @@ int DivPlatformGB::dispatch(DivCommand c) {
       chan[c.chan].softEnv=ins->gb.softEnv;
       chan[c.chan].macroInit(ins);
       if (c.chan==2) {
+        doubleWave=(model==GB_MODEL_AGB_NATIVE) && ins->gb.doubleWave;
         if (chan[c.chan].wave<0) {
           chan[c.chan].wave=0;
           ws.changeWave1(chan[c.chan].wave);
         }
-        ws.init(ins,32,15,chan[c.chan].insChanged);
+        ws.init(ins,doubleWave?64:32,15,chan[c.chan].insChanged);
+        if (doubleWave!=lastDoubleWave) {
+          ws.changeWave1(chan[c.chan].wave);
+          lastDoubleWave=doubleWave;
+        }
       }
       if ((chan[c.chan].insChanged || ins->gb.alwaysInit) && !chan[c.chan].softEnv) {
         if (!chan[c.chan].soManyHacksToMakeItDefleCompatible && c.chan!=2) {
@@ -447,7 +489,7 @@ int DivPlatformGB::dispatch(DivCommand c) {
       chan[c.chan].vol=c.value;
       chan[c.chan].outVol=c.value;
       if (c.chan==2) {
-        rWrite(16+c.chan*5+2,gbVolMap[chan[c.chan].outVol]);
+        rWrite(16+c.chan*5+2,(model==GB_MODEL_AGB_NATIVE?gbVolMapEx:gbVolMap)[chan[c.chan].outVol]);
       }
       if (!chan[c.chan].softEnv) {
         chan[c.chan].envVol=chan[c.chan].vol;
@@ -615,10 +657,12 @@ void DivPlatformGB::reset() {
   immWrite(0x26,0x8f);
   lastPan=0xff;
   immWrite(0x25,procMute());
-  immWrite(0x24,0x77);
+  immWrite(0x24,0xff);
 
   antiClickPeriodCount=0;
   antiClickWavePos=0;
+  doubleWave=false;
+  lastDoubleWave=false;
 }
 
 int DivPlatformGB::getPortaFloor(int ch) {
@@ -630,7 +674,7 @@ int DivPlatformGB::getOutputCount() {
 }
 
 bool DivPlatformGB::getDCOffRequired() {
-  return (model==GB_MODEL_AGB);
+  return (model==GB_MODEL_AGB_NATIVE);
 }
 
 void DivPlatformGB::notifyInsChange(int ins) {
@@ -676,7 +720,7 @@ void DivPlatformGB::setFlags(const DivConfig& flags) {
       model=GB_MODEL_CGB_E;
       break;
     case 3:
-      model=GB_MODEL_AGB;
+      model=GB_MODEL_AGB_NATIVE;
       break;
   }
   invertWave=flags.getBool("invertWave",true);
@@ -684,9 +728,36 @@ void DivPlatformGB::setFlags(const DivConfig& flags) {
 
   chipClock=4194304;
   CHECK_CUSTOM_CLOCK;
-  rate=chipClock/16;
+  rate=chipClock/coreQuality;
   for (int i=0; i<4; i++) {
-    oscBuf[i]->rate=rate;
+    oscBuf[i]->setRate(rate);
+  }
+}
+
+void DivPlatformGB::setCoreQuality(unsigned char q) {
+  switch (q) {
+    case 0:
+      // sorry...
+      coreQuality=64;
+      break;
+    case 1:
+      coreQuality=64;
+      break;
+    case 2:
+      coreQuality=32;
+      break;
+    case 3:
+      coreQuality=16;
+      break;
+    case 4:
+      coreQuality=4;
+      break;
+    case 5:
+      coreQuality=1;
+      break;
+    default:
+      coreQuality=16;
+      break;
   }
 }
 

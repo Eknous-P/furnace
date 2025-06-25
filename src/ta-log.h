@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -78,7 +78,8 @@ template<typename... T> int logE(const char* msg, const T&... args) {
   return writeLog(LOGLEVEL_ERROR,msg,fmt::make_printf_args(args...));
 }
 
-void initLog();
+void initLog(FILE* where);
+void changeLogOutput(FILE* where);
 bool startLogFile(const char* path);
 bool finishLogFile();
 #endif

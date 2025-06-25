@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -56,6 +56,7 @@ const char** DivPlatformFDS::getRegisterSheet() {
 }
 
 void DivPlatformFDS::acquire_puNES(short* buf, size_t len) {
+  oscBuf->begin(len);
   for (size_t i=0; i<len; i++) {
     extcl_apu_tick_FDS(fds);
     int sample=isMuted[0]?0:fds->snd.main.output;
@@ -64,25 +65,25 @@ void DivPlatformFDS::acquire_puNES(short* buf, size_t len) {
     buf[i]=sample;
     if (++writeOscBuf>=32) {
       writeOscBuf=0;
-      oscBuf->data[oscBuf->needle++]=sample*3;
+      oscBuf->putSample(i,sample*3);
     }
   }
+  oscBuf->end(len);
 }
 
 void DivPlatformFDS::acquire_NSFPlay(short* buf, size_t len) {
   int out[2];
+  oscBuf->begin(len);
   for (size_t i=0; i<len; i++) {
-    fds_NP->Tick(1);
+    fds_NP->Tick(16);
     fds_NP->Render(out);
     int sample=isMuted[0]?0:(out[0]<<1);
     if (sample>32767) sample=32767;
     if (sample<-32768) sample=-32768;
     buf[i]=sample;
-    if (++writeOscBuf>=32) {
-      writeOscBuf=0;
-      oscBuf->data[oscBuf->needle++]=sample*3;
-    }
+    oscBuf->putSample(i,sample*3);
   }
+  oscBuf->end(len);
 }
 
 void DivPlatformFDS::doWrite(unsigned short addr, unsigned char data) {
@@ -200,6 +201,15 @@ void DivPlatformFDS::tick(bool sysTick) {
       }
       rWrite(0x4082,chan[i].freq&0xff);
       rWrite(0x4083,(chan[i].freq>>8)&15);
+
+      if (chan[i].autoModNum>0 && chan[i].autoModDen>0) {
+        chan[i].modFreq=(chan[i].freq*chan[i].autoModNum)/chan[i].autoModDen;
+        if (chan[i].modFreq>4095) chan[i].modFreq=4095;
+        if (chan[i].modFreq<0) chan[i].modFreq=0;
+        rWrite(0x4086,chan[i].modFreq&0xff);
+        rWrite(0x4087,chan[i].modFreq>>8);
+      }
+
       if (chan[i].keyOn) chan[i].keyOn=false;
       if (chan[i].keyOff) chan[i].keyOff=false;
       chan[i].freqChanged=false;
@@ -342,6 +352,13 @@ int DivPlatformFDS::dispatch(DivCommand c) {
       rWrite(0x4087,chan[c.chan].modFreq>>8);
       break;
     }
+    case DIV_CMD_FDS_MOD_AUTO:
+      chan[c.chan].autoModNum=c.value>>4;
+      chan[c.chan].autoModDen=c.value&15;
+      chan[c.chan].freqChanged=true;
+      chan[c.chan].modOn=(chan[c.chan].autoModNum && chan[c.chan].autoModDen);
+      rWrite(0x4084,(chan[c.chan].modOn<<7)|0x40|chan[c.chan].modDepth);
+      break;
     case DIV_CMD_NOTE_PORTA: {
       int destFreq=NOTE_FREQUENCY(c.value2);
       bool return2=false;
@@ -469,11 +486,14 @@ void DivPlatformFDS::setFlags(const DivConfig& flags) {
     chipClock=COLOR_NTSC/2.0;
   }
   CHECK_CUSTOM_CLOCK;
-  rate=chipClock;
-  oscBuf->rate=rate/32;
   if (useNP) {
-    fds_NP->SetClock(rate);
+    rate=chipClock/16;
+    oscBuf->setRate(rate);
+    fds_NP->SetClock(chipClock);
     fds_NP->SetRate(rate);
+  } else {
+    rate=chipClock;
+    oscBuf->setRate(rate);
   }
 }
 

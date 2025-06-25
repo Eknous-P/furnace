@@ -3,8 +3,10 @@
 #include <functional>
 #include "../pch.h"
 
-#if defined(_WIN64) || defined(__APPLE__)
+#if defined(_WIN32) || defined(_WIN64) || defined(__APPLE__)
+#ifndef SUPPORT_XP
 #define USE_NFD
+#endif
 #endif
 
 #ifdef USE_NFD
@@ -17,11 +19,14 @@
 
 #elif defined(ANDROID)
 #include <jni.h>
-#else
+#elif (!defined(SUPPORT_XP) || !defined(_WIN32))
 namespace pfd {
   class open_file;
   class save_file;
+  class select_folder;
 }
+#else
+// nothing
 #endif
 
 typedef std::function<void(const char*)> FileDialogSelectCallback;
@@ -29,7 +34,7 @@ typedef std::function<void(const char*)> FileDialogSelectCallback;
 class FurnaceGUIFileDialog {
   bool sysDialog;
   bool opened;
-  bool saving;
+  unsigned char dialogType;
   bool hasError;
   char noSysFilter[4096];
   String curPath;
@@ -37,22 +42,30 @@ class FurnaceGUIFileDialog {
 #ifdef USE_NFD
   std::thread* dialogO;
   std::thread* dialogS;
+  std::thread* dialogF;
   std::atomic<bool> dialogOK;
   std::vector<String> nfdResult;
 #elif defined(ANDROID)
   JNIEnv* jniEnv;
   void* dialogO;
   void* dialogS;
-#else
+  void* dialogF;
+#elif (!defined(SUPPORT_XP) || !defined(_WIN32))
   pfd::open_file* dialogO;
   pfd::save_file* dialogS;
+  pfd::select_folder* dialogF;
+#else
+  unsigned char* dialogO;
+  unsigned char* dialogS;
+  unsigned char* dialogF;
 #endif
 
   void convertFilterList(std::vector<String>& filter);
   public:
     bool mobileUI;
-    bool openLoad(String header, std::vector<String> filter, String path, double dpiScale, FileDialogSelectCallback clickCallback=NULL, bool allowMultiple=false);
-    bool openSave(String header, std::vector<String> filter, String path, double dpiScale);
+    bool openLoad(String header, std::vector<String> filter, String path, double dpiScale, FileDialogSelectCallback clickCallback=NULL, bool allowMultiple=false, String hint="");
+    bool openSave(String header, std::vector<String> filter, String path, double dpiScale, String hint="");
+    bool openSelectDir(String header, String path, double dpiScale, String hint="");
     bool accepted();
     void close();
     bool render(const ImVec2& min, const ImVec2& max);
@@ -63,7 +76,7 @@ class FurnaceGUIFileDialog {
     explicit FurnaceGUIFileDialog(bool system):
       sysDialog(system),
       opened(false),
-      saving(false),
+      dialogType(0),
       hasError(false),
 #ifdef ANDROID
       jniEnv(NULL),

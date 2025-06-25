@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -67,7 +67,8 @@ class DivPlatformES5506: public DivDispatch, public es550x_intf {
     int nextFreq, nextNote, currNote, wave;
     int volMacroMax, panMacroMax;
     bool useWave, isReverseLoop;
-    unsigned int cr;
+    unsigned short cr, crWriteVal, crDirVal;
+    bool crChanged, crDirValChanged, crDirValInit;
 
     struct NoteChanged { // Note changed flags
       union { // pack flag bits in single byte
@@ -197,6 +198,10 @@ class DivPlatformES5506: public DivDispatch, public es550x_intf {
       useWave(false),
       isReverseLoop(false),
       cr(0),
+      crWriteVal(0),
+      crChanged(false),
+      crDirValChanged(false),
+      crDirValInit(true),
       noteChanged(NoteChanged()),
       volChanged(VolChanged()),
       filterChanged(FilterChanged()),
@@ -234,7 +239,6 @@ class DivPlatformES5506: public DivDispatch, public es550x_intf {
       unsigned char step;
       unsigned char addr;
       unsigned int val;
-      unsigned int mask;
       unsigned int* read;
       unsigned short delay;
       bool isRead;
@@ -243,25 +247,22 @@ class DivPlatformES5506: public DivDispatch, public es550x_intf {
         step(0),
         addr(0),
         val(0),
-        mask(0),
         read(NULL),
         delay(0),
         isRead(false) {}
-      QueuedHostIntf(unsigned char s, unsigned char a, unsigned int v, unsigned int m=(unsigned int)(~0), unsigned short d=0):
+      QueuedHostIntf(unsigned char s, unsigned char a, unsigned int v, unsigned short d=0):
         state(0),
         step(s),
         addr(a),
         val(v),
-        mask(m),
         read(NULL),
         delay(0),
         isRead(false) {}
-      QueuedHostIntf(unsigned char st, unsigned char s, unsigned char a, unsigned int* r, unsigned int m=(unsigned int)(~0), unsigned short d=0):
+      QueuedHostIntf(unsigned char st, unsigned char s, unsigned char a, unsigned int* r, unsigned short d=0):
         state(st),
         step(s),
         addr(a),
         val(0),
-        mask(m),
         read(r),
         delay(d),
         isRead(true) {}
@@ -269,16 +270,18 @@ class DivPlatformES5506: public DivDispatch, public es550x_intf {
   FixedQueue<QueuedHostIntf,2048> hostIntf32;
   FixedQueue<QueuedHostIntf,2048> hostIntf8;
   int cycle, curPage, volScale;
-  unsigned char maskedVal;
   unsigned int irqv;
-  bool isMasked, isReaded;
-  bool irqTrigger;
+  bool isReaded;
+  bool irqTrigger, amigaVol, amigaPitch;
   unsigned int curCR;
 
   unsigned char initChanMax, chanMax;
 
   es5506_core es5506;
+  DivMemoryComposition memCompo;
   unsigned char regPool[4*16*128]; // 7 bit page x 16 registers per page x 32 bit per registers
+
+  void updateNoteChangesAsNeeded(int ch);
 
   friend void putDispatchChip(void*,int);
   friend void putDispatchChan(void*,int,int);
@@ -315,6 +318,7 @@ class DivPlatformES5506: public DivDispatch, public es550x_intf {
     virtual size_t getSampleMemCapacity(int index = 0) override;
     virtual size_t getSampleMemUsage(int index = 0) override;
     virtual bool isSampleLoaded(int index, int sample) override;
+    virtual const DivMemoryComposition* getMemCompo(int index) override;
     virtual void renderSamples(int sysID) override;
     virtual const char** getRegisterSheet() override;
     virtual int init(DivEngine* parent, int channels, int sugRate, const DivConfig& flags) override;

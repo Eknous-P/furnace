@@ -2,7 +2,9 @@
 
 the console from Nintendo that plays Super Mario Bros. and helped revive the agonizing video game market in the US during mid-80s.
 
-also known as Famicom. it is a five-channel sound generator: first two channels play pulse wave with three different duty cycles, third is a fixed-volume triangle channel, fourth is a noise channel (can work in both pseudo-random and periodic modes) and fifth is a (D)PCM sample channel.
+also known as Family Computer (Famicom), especially in Japan.
+
+the console is powered by the Ricoh 2A03, a CPU with sound generator built-in. it has five channels: first two channels play pulse wave with three different duty cycles, third is a fixed-volume triangle channel, fourth is a noise channel (can work in both pseudo-random and periodic modes) and fifth is a (D)PCM sample channel.
 
 ## effects
 
@@ -18,6 +20,7 @@ also known as Famicom. it is a five-channel sound generator: first two channels 
   - may be `0` or `1` for the noise channel:
     - `0`: long (15-bit LFSR, 32767-step)
     - `1`: short (9-bit LFSR, 93-step)
+      - short noise may sound very different depending on its initial LFSR state. more info can be found at [NESdev](https://forums.nesdev.org/viewtopic.php?t=11535).
 - `13xy`: **setup sweep up.**
   - `x` is the time.
   - `y` is the shift.
@@ -48,7 +51,7 @@ also known as Famicom. it is a five-channel sound generator: first two channels 
 - `18xx`: **set PCM channel mode.**
   - `00`: PCM (software).
   - `01`: DPCM (hardware).
-  - when in DPCM mode, samples will sound muffled (due to its nature), availables pitches are limited, and loop point is ignored.
+  - when in DPCM mode, samples will sound muffled (due to its nature) and available pitches are limited. see "DPCM samples" below.
 - `19xx`: **set triangle linear counter.**
   - `00` to `7F` set the counter.
   - `80` and higher halt it.
@@ -56,10 +59,24 @@ also known as Famicom. it is a five-channel sound generator: first two channels 
   - only works in DPCM mode.
   - see table below for possible values.
 
-
 ## info
 
 this chip uses the [NES](../4-instrument/nes.md) instrument editor.
+
+## chip config
+
+the following options are available in the Chip Manager window:
+
+- **Clock rate**: sets the rate at which the chip will run.
+- **DPCM channel mode**: allows you to set which mode to use for the DPCM channel.
+  - DPCM: the default mode, playing 1-bit DPCM samples as supported by the hardware.
+  - PCM: this mode provides crisper 7-bit samples by writing to the delta counter directly. uses a lot of CPU time in console.
+
+## DPCM samples
+
+due to hardware limitations, a loop in a DPCM sample must start on a multiple of 512 samples (512, 1024, 1536...) and have a length that is a multiple of 128 plus 8 samples (136, 264, 392...)
+
+NES DPCM only has 16 preset sample rates, shown in a table below. for help adapting samples to work with this, see the [limited samples guide](../9-guides/limited-samples.md).
 
 ## short noise frequencies (NTSC)
 

@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,10 +19,10 @@
 
 #include "fileOpsCommon.h"
 
-bool DivEngine::load(unsigned char* f, size_t slen) {
+bool DivEngine::load(unsigned char* f, size_t slen, const char* nameHint) {
   unsigned char* file;
   size_t len;
-  if (slen<18) {
+  if (slen<21) {
     logE("too small!");
     lastError="file is too small";
     delete[] f;
@@ -30,6 +30,21 @@ bool DivEngine::load(unsigned char* f, size_t slen) {
   }
 
   if (!systemsRegistered) registerSystems();
+
+  // step 0: get extension of file
+  String extS;
+  if (nameHint!=NULL) {
+    const char* ext=strrchr(nameHint,'.');
+    if (ext!=NULL) {
+      for (; *ext; ext++) {
+        char i=*ext;
+        if (i>='A' && i<='Z') {
+          i+='a'-'A';
+        }
+        extS+=i;
+      }
+    }
+  }
 
   // step 1: try loading as a zlib-compressed file
   logD("trying zlib...");
@@ -124,19 +139,35 @@ bool DivEngine::load(unsigned char* f, size_t slen) {
     len=slen;
   }
 
-  // step 2: try loading as .fur or .dmf
+  // step 2: try loading as .fur, .dmf, or another magic-ful format
   if (memcmp(file,DIV_DMF_MAGIC,16)==0) {
     return loadDMF(file,len); 
   } else if (memcmp(file,DIV_FTM_MAGIC,18)==0) {
-    return loadFTM(file,len);
+    return loadFTM(file,len,(extS==".dnm"),false,(extS==".eft"));
+  } else if (memcmp(file,DIV_DNM_MAGIC,21)==0) {
+    return loadFTM(file,len,true,true,false);
   } else if (memcmp(file,DIV_FUR_MAGIC,16)==0) {
     return loadFur(file,len);
+  } else if (memcmp(file,DIV_FUR_MAGIC_DS0,16)==0) {
+    return loadFur(file,len,DIV_FUR_VARIANT_B);
   } else if (memcmp(file,DIV_FC13_MAGIC,4)==0 || memcmp(file,DIV_FC14_MAGIC,4)==0) {
     return loadFC(file,len);
+  } else if (memcmp(file,DIV_TFM_MAGIC,8)==0) {
+    return loadTFMv2(file,len);
+  } else if (memcmp(file,DIV_IT_MAGIC,4)==0) {
+    return loadIT(file,len);
+  } else if (len>=48) {
+    if (memcmp(&file[0x2c],DIV_S3M_MAGIC,4)==0) {
+      return loadS3M(file,len);
+    } else if (memcmp(file,DIV_XM_MAGIC,17)==0) {
+      return loadXM(file,len);
+    }
   }
 
-  // step 3: try loading as .mod
-  if (loadMod(file,len)) {
+  // step 3: try loading as .mod or TFEv1 (if the file extension matches)
+  if (extS==".tfe") {
+    return loadTFMv1(file,len);
+  } else if (loadMod(file,len)) {
     delete[] f;
     return true;
   }

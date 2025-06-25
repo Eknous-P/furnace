@@ -12,12 +12,17 @@
 
 **asset**: an instrument, wavetable or sample.
 
+**bit**: a single binary on-off value.
+
 **bitbang**: to achieve PCM sound by sending a rapid stream of volume commands to a non-PCM channel.
+
+**bit depth**: the number of bits used for each sample in a PCM stream. 16-bit is considered high quality; lower bit depths introduce more noise and distortion, especially for quieter samples.
+- the "1-bit DPCM" sample type has 7-bit values, but each sample is represented by only 1 bit indicating whether its value differs from the previous sample by one step up or down.
 
 **bitmask**: a set of bits which represent individual single-bit toggles or groups representing small numbers. these are explained fully in the [hexadecimal primer](hex.md).
 
 **BRR**: a lossy sample format used by the SNES. it has a fixed compression ratio; groups of 32 bytes (16 samples) are encoded in 9 bytes each.
-- usually stored in .brr files.
+- usually stored in `.brr` files.
 
 **clipping**: when a sample or playback stream exceeds the maximum or minimum values. this can cause audible distortion.
 - this often occurs when a sample is amplified too much.
@@ -27,19 +32,19 @@
 - changing this may change aspects of how some chips work, most notably pitch.
 - some chips cannot operate at anything other than their designed clock rate.
 
-**cursor (1)**: the marker of input focus. anything typed will happen at the cursor's location.
+**cursor** (1): the marker of input focus. anything typed will happen at the cursor's location.
 
-**cursor (2)**: the pointer controlled by a mouse or similar input. clicking when the cursor(2) is in a valid area will place the cursor(1) there.
+**cursor** (2): the pointer controlled by a mouse or similar input. clicking when the cursor(2) is in a valid area will place the cursor(1) there.
 
 **DAC**: digital analog converter. this converts a digital representation of sound into actual output.
 
-**.dmf**: DefleMask Module File.
-- _Furnace:_ .dmf files may be read, and compatibility flags will be set to make them play as accurately as possible, but there may still be glitches.
-- _Furnace:_ .dmf files may be saved, but full compatibility isn't guaranteed and many features will be missing. this isn't recommended unless absolutely necessary.
+**`.dmf`**: DefleMask Module File.
+- _Furnace:_ `.dmf` files may be read, and compatibility flags will be set to make them play as accurately as possible, but there may still be glitches.
+- _Furnace:_ `.dmf` files may be saved, but full compatibility isn't guaranteed and many features will be missing. this isn't recommended unless absolutely necessary.
 
-**.dmp**: DefleMask Preset. an instrument file.
+**`.dmp`**: DefleMask Preset. an instrument file.
 
-**.dmw**: DefleMask Wavetable. a wavetable file.
+**`.dmw`**: DefleMask Wavetable. a wavetable file.
 
 **DPCM**: differential/delta pulse code modulation. this is a variety of PCM that stores each amplitude as its difference from the previous.
 
@@ -51,22 +56,28 @@
 **FM**: frequency modulation. this is a method of generating sound that uses one operator's amplitude to modify another operator's frequency.
 - the FM in Yamaha chips is more accurately called _phase modulation,_ which uses a different method of computation to achieve similar results.
 
-**.fui**: a Furnace instrument file.
+**`.ftm`**: FamiTracker Module.
 
-**.fur**: a Furnace module file.
+**`.fui`**: a Furnace instrument file.
 
-**.fuw**: a Furnace wavetable file.
+**`.fur`**: a Furnace module file.
 
-**hard-pan**: sounds can only be panned all the way to one side or the other, not in-between.
+**`.fuw`**: a Furnace wavetable file.
+
+**hard-pan**: sounds can only be panned to the center, 100% left, or 100% right. this often appears in the instrument editor's panning macro as on/off toggles for the left and right channels.
 
 **Hz**: hertz. a unit representing divisions of one second. 1 Hz means once per second; 100 Hz means one hundred times per second. also, _kHz_ (kilohertz, one thousand per second) and _MHz_ (megahertz, one million per second).
 
 **interpolate**: to fill in the area between two values with a smooth ramp of values in between.
 - some sample-based chips can interpolate, filtering out unwanted harmonics.
 
+**`.it`**: Impulse Tracker module.
+
 **ladder effect**: an inaccurate yet common term for the DAC distortion that affects some Yamaha FM chips.
 
 **LFO**: low frequency oscillator. a wave with a slow period (often below hearing range) used to alter other sounds.
+
+**LFSR**: linear-feedback shift register. a method to generate pseudo-random noise that loops, also known as "periodic noise". within a sequence of on-off bits, it does math to combine the bits at specified locations called "taps", then shifts the whole sequence and adds the resulting bit on the end, guaranteeing a different state for the next pass. depending on the locations of the taps, different lengths of noise loops are generated; for short loops, this will affect their tone.
 
 **macro**: a sequence of values automatically applied while a note plays.
 
@@ -82,7 +93,7 @@
 
 **period**: the length of a repeating waveform. as frequency rises, the period shortens.
 
-**periodic noise**: an approximation of random noise generated algorithmically.
+**periodic noise**: an approximation of random noise generated algorithmically with an LFSR.
 - the period is the number of values generated until the algorithm repeats itself.
 
 **phase reset**: to restart a waveform at its initial value.
@@ -105,6 +116,8 @@
 
 **register**: a memory location within a sound chip. "register view" shows all the relevant memory of all chips in use.
 
+**`.s3m`**: ScreamTracker 3 Module.
+
 **sample** (1): a digitally recorded sound. usually stored as some variant of PCM.
 - these can take up a lot of room depending on length and sample rate, thus older systems tend to use short, lower quality samples.
 
@@ -122,14 +135,16 @@
 
 **supersaw**: a sound made up of multiple saw waves at slightly different frequencies to achieve a chorusing effect.
 
+**tap**: a specified bit location within an LFSR.
+
 **tick rate**: the number of times per second that the sound engine moves forward. all notes and effects are quantized to this rate.
 - this usually corresponds to the frame rate the system uses for video, approximately 60 for NTSC and 50 for PAL.
 
 **unsigned**: a digital representation of a number that can only be positive.
 - if an imported raw sample sounds recognizable but heavily distorted, it's likely to be signed interpreted as unsigned or vice-versa.
 
-**.vgm**: Video Game Music. a file containing the log of data sent to a sound chip during sound playback.
-- saving to a .vgm file may be compared to "converting text to outlines" or similar irreversible processes. the results cannot be loaded back into the tracker.
+**`.vgm`**: Video Game Music. a file containing the log of data sent to a sound chip during sound playback.
+- saving to a `.vgm` file may be compared to "converting text to outlines" or similar irreversible processes. the results cannot be loaded back into the tracker.
 - different versions of the VGM format have different capabilities, with trade-offs. older versions may lack chips or features; newer versions may not be compatible with some software.
 - samples are stored uncompressed. PCM streams (such as DualPCM) can quickly take up a huge amount of space.
 
@@ -140,4 +155,6 @@
 
 **wavetable** (2): an ordered group of wavetables(1) used in sequence within a single instrument.
 
-**.zsm**: ZSound Music. a VGM-like file meant specifically for the Commander X16 computer.
+**`.xm`**: eXtended Module. the file format of songs made with FastTracker 2.
+
+**`.zsm`**: ZSound Music. a VGM-like file meant specifically for the Commander X16 computer.

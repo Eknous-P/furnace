@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,11 +27,14 @@
 #include "sound/ymfm/ymfm.h"
 #include "sound/ymfm/ymfm_opn.h"
 #include <string.h>
+extern "C" {
+#include "../../../extern/YM2608-LLE/fmopna_2610.h"
+}
 
 #define CHIP_FREQBASE fmFreqBase
 #define CHIP_DIVIDER fmDivBase
 
-class DivYM2610Interface: public ymfm::ymfm_interface {
+class DivYM2610Interface: public DivOPNInterface {
   public:
     unsigned char* adpcmAMem;
     unsigned char* adpcmBMem;
@@ -46,14 +49,25 @@ class DivYM2610Interface: public ymfm::ymfm_interface {
 
 class DivPlatformYM2610Base: public DivPlatformOPN {
   protected:
-    OPNChannelStereo chan[16];
-    DivDispatchOscBuffer* oscBuf[16];
-    bool isMuted[16];
+    OPNChannelStereo chan[17];
+    DivDispatchOscBuffer* oscBuf[17];
+    bool isMuted[17];
 
     ym3438_t fm_nuked;
     ymfm::ym2610b* fm;
     ymfm::ym2610b::output_data fmout;
     DivPlatformAY8910* ay;
+    fmopna_2610_t fm_lle;
+    unsigned int dacVal;
+    unsigned int dacVal2;
+    int dacOut[2];
+    int rssOut[6];
+    bool lastSH;
+    bool lastSH2;
+    bool lastS;
+    unsigned char rmpx, pmpx, roe, poe, rssCycle, rssSubCycle;
+    unsigned int adMemAddrA;
+    unsigned int adMemAddrB;
   
     unsigned char* adpcmAMem;
     size_t adpcmAMemLen;
@@ -73,6 +87,9 @@ class DivPlatformYM2610Base: public DivPlatformOPN {
     unsigned char writeADPCMAOff, writeADPCMAOn;
     int globalADPCMAVolume;
 
+    DivMemoryComposition memCompoA;
+    DivMemoryComposition memCompoB;
+
     double NOTE_OPNB(int ch, int note) {
       if (ch>=adpcmBChanOffs) { // ADPCM
         return NOTE_ADPCMB(note);
@@ -80,17 +97,21 @@ class DivPlatformYM2610Base: public DivPlatformOPN {
         return NOTE_PERIODIC(note);
       }
       // FM
-      return NOTE_FNUM_BLOCK(note,11);
+      return NOTE_FNUM_BLOCK(note,11,chan[ch].state.block);
     }
     double NOTE_ADPCMB(int note) {
       if (chan[adpcmBChanOffs].sample>=0 && chan[adpcmBChanOffs].sample<parent->song.sampleLen) {
-        double off=65535.0*(double)(parent->getSample(chan[adpcmBChanOffs].sample)->centerRate)/8363.0;
+        double off=65535.0*(double)(parent->getSample(chan[adpcmBChanOffs].sample)->centerRate)/parent->getCenterRate();
         return parent->calcBaseFreq((double)chipClock/144,off,note,false);
       }
       return 0;
     }
   
   public:
+    void fillStream(std::vector<DivDelayedWrite>& stream, int sRate, size_t len) {
+      ay->fillStream(stream,sRate,len);
+    }
+
     void reset() {
       writeADPCMAOff=0;
       writeADPCMAOn=0;
@@ -98,6 +119,58 @@ class DivPlatformYM2610Base: public DivPlatformOPN {
 
       OPN2_Reset(&fm_nuked);
       OPN2_SetChipType(&fm_nuked,ym3438_mode_opn);
+
+      memset(&fm_lle,0,sizeof(fmopna_2610_t));
+
+      if (useCombo==2) {
+        fm_lle.input.cs=1;
+        fm_lle.input.rd=0;
+        fm_lle.input.wr=0;
+        fm_lle.input.a0=0;
+        fm_lle.input.a1=0;
+        fm_lle.input.data=0;
+        fm_lle.input.rad=0;
+        fm_lle.input.pad=0;
+        fm_lle.input.test=1;
+
+        fm_lle.input.ic=1;
+        for (size_t h=0; h<576; h++) {
+          FMOPNA_2610_Clock(&fm_lle,0);
+          FMOPNA_2610_Clock(&fm_lle,1);
+        }
+
+        fm_lle.input.ic=0;
+        for (size_t h=0; h<576; h++) {
+          FMOPNA_2610_Clock(&fm_lle,0);
+          FMOPNA_2610_Clock(&fm_lle,1);
+        }
+
+        fm_lle.input.ic=1;
+        for (size_t h=0; h<576; h++) {
+          FMOPNA_2610_Clock(&fm_lle,0);
+          FMOPNA_2610_Clock(&fm_lle,1);
+        }
+
+        for (int i=0; i<6; i++) {
+          rssOut[i]=0;
+        }
+
+        dacVal=0;
+        dacVal2=0;
+        dacOut[0]=0;
+        dacOut[1]=0;
+        lastSH=0;
+        lastSH2=0;
+        lastS=0;
+        rmpx=0;
+        pmpx=0;
+        roe=0;
+        poe=0;
+        rssCycle=0;
+        rssSubCycle=0;
+        adMemAddrA=0;
+        adMemAddrB=0;
+      }
 
       ay->reset();
       ay->getRegisterWrites().clear();
@@ -144,12 +217,24 @@ class DivPlatformYM2610Base: public DivPlatformOPN {
       if (sample<0 || sample>255) return false;
       return sampleLoaded[index][sample];
     }
+    
+    const DivMemoryComposition* getMemCompo(int index) {
+      if (index==0) return &memCompoA;
+      if (index==1) return &memCompoB;
+      return NULL;
+    }
 
     void renderSamples(int sysID) {
       memset(adpcmAMem,0,getSampleMemCapacity(0));
       memset(sampleOffA,0,256*sizeof(unsigned int));
       memset(sampleOffB,0,256*sizeof(unsigned int));
       memset(sampleLoaded,0,256*2*sizeof(bool));
+
+      memCompoA=DivMemoryComposition();
+      memCompoA.name="ADPCM-A";
+
+      memCompoB=DivMemoryComposition();
+      memCompoB.name="ADPCM-B";
 
       size_t memPos=0;
       for (int i=0; i<parent->song.sampleLen; i++) {
@@ -175,9 +260,13 @@ class DivPlatformYM2610Base: public DivPlatformOPN {
           sampleLoaded[0][i]=true;
         }
         sampleOffA[i]=memPos;
+        memCompoA.entries.push_back(DivMemoryEntry(DIV_MEMORY_SAMPLE,"Sample",i,memPos,memPos+paddedLen));
         memPos+=paddedLen;
       }
       adpcmAMemLen=memPos+256;
+
+      memCompoA.used=adpcmAMemLen;
+      memCompoA.capacity=getSampleMemCapacity(0);
 
       memset(adpcmBMem,0,getSampleMemCapacity(1));
 
@@ -205,9 +294,13 @@ class DivPlatformYM2610Base: public DivPlatformOPN {
           sampleLoaded[1][i]=true;
         }
         sampleOffB[i]=memPos;
+        memCompoB.entries.push_back(DivMemoryEntry(DIV_MEMORY_SAMPLE,"Sample",i,memPos,memPos+paddedLen));
         memPos+=paddedLen;
       }
       adpcmBMemLen=memPos+256;
+
+      memCompoB.used=adpcmBMemLen;
+      memCompoB.capacity=getSampleMemCapacity(1);
     }
 
     void setFlags(const DivConfig& flags) {
@@ -224,9 +317,13 @@ class DivPlatformYM2610Base: public DivPlatformOPN {
       fbAllOps=flags.getBool("fbAllOps",false);
       ssgVol=flags.getInt("ssgVol",128);
       fmVol=flags.getInt("fmVol",256);
-      rate=fm->sample_rate(chipClock);
-      for (int i=0; i<16; i++) {
-        oscBuf[i]->rate=rate;
+      if (useCombo==2) {
+        rate=chipClock/144;
+      } else {
+        rate=fm->sample_rate(chipClock);
+      }
+      for (int i=0; i<17; i++) {
+        oscBuf[i]->setRate(rate);
       }
     }
 
@@ -235,7 +332,7 @@ class DivPlatformYM2610Base: public DivPlatformOPN {
       ayFlags.set("chipType",1);
       dumpWrites=false;
       skipRegisterWrites=false;
-      for (int i=0; i<16; i++) {
+      for (int i=0; i<17; i++) {
         isMuted[i]=false;
         oscBuf[i]=new DivDispatchOscBuffer;
       }
@@ -251,13 +348,14 @@ class DivPlatformYM2610Base: public DivPlatformOPN {
       setFlags(flags);
       // YM2149, 2MHz
       ay=new DivPlatformAY8910(true,chipClock,32,144);
+      ay->setCore(0);
       ay->init(p,3,sugRate,ayFlags);
       ay->toggleRegisterDump(true);
       return 0;
     }
 
     void quit() {
-      for (int i=0; i<16; i++) {
+      for (int i=0; i<17; i++) {
         delete oscBuf[i];
       }
       ay->quit();
@@ -267,7 +365,7 @@ class DivPlatformYM2610Base: public DivPlatformOPN {
     }
 
     DivPlatformYM2610Base(int ext, int psg, int adpcmA, int adpcmB, int chanCount):
-      DivPlatformOPN(ext,psg,adpcmA,adpcmB,chanCount,9440540.0, 72, 32) {}
+      DivPlatformOPN(ext,psg,adpcmA,adpcmB,chanCount,9440540.0, 72, 32, false, 16) {}
 };
 
 #endif

@@ -1,5 +1,5 @@
 # statistics
 
-the Statistics dialog shows running stats such as overall audio processing load and per-chip sample memory.
+the Statistics window shows current audio load (CPU used by emulation/playback) and a chart of audio load over the last two seconds.
 
-![statistics dialog](stats.png)
+![statistics window](stats.png)

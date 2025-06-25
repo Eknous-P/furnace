@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,6 +35,7 @@ extern "C" {
 #include "../../extern/adpcm/ymb_codec.h"
 #include "../../extern/adpcm/ymz_codec.h"
 }
+#include "../../extern/adpcm-xq-s/adpcm-lib.h"
 #include "brrUtils.h"
 
 DivSampleHistory::~DivSampleHistory() {
@@ -55,7 +56,7 @@ void DivSample::putSampleData(SafeWriter* w) {
   w->writeC(depth);
   w->writeC(loopMode);
   w->writeC(brrEmphasis);
-  w->writeC(dither);
+  w->writeC((dither?1:0)|(brrNoFilter?2:0));
   w->writeI(loop?loopStart:-1);
   w->writeI(loop?loopEnd:-1);
 
@@ -133,7 +134,9 @@ DivDataErrors DivSample::readSampleData(SafeReader& reader, short version) {
       reader.readC();
     }
     if (version>=159) {
-      dither=reader.readC()&1;
+      signed char c=reader.readC();
+      dither=c&1;
+      if (version>=213) brrNoFilter=c&2;
     } else {
       reader.readC();
     }
@@ -279,6 +282,12 @@ int DivSample::getSampleOffset(int offset, int length, DivSampleDepth depth) {
       case DIV_SAMPLE_DEPTH_C219:
         off=offset;
         break;
+      case DIV_SAMPLE_DEPTH_IMA_ADPCM:
+        off=(offset+1)/2;
+        break;
+      case DIV_SAMPLE_DEPTH_12BIT:
+        off=((offset*3)+1)/2;
+        break;
       case DIV_SAMPLE_DEPTH_16BIT:
         off=offset*2;
         break;
@@ -338,6 +347,14 @@ int DivSample::getSampleOffset(int offset, int length, DivSampleDepth depth) {
         off=offset;
         len=length;
         break;
+      case DIV_SAMPLE_DEPTH_IMA_ADPCM:
+        off=(offset+1)/2;
+        len=(length+1)/2;
+        break;
+      case DIV_SAMPLE_DEPTH_12BIT:
+        off=((offset*3)+1)/2;
+        len=((length*3)+1)/2;
+        break;
       case DIV_SAMPLE_DEPTH_16BIT:
         off=offset*2;
         len=length*2;
@@ -395,6 +412,12 @@ int DivSample::getEndPosition(DivSampleDepth depth) {
       break;
     case DIV_SAMPLE_DEPTH_C219:
       off=lengthC219;
+      break;
+    case DIV_SAMPLE_DEPTH_IMA_ADPCM:
+      off=lengthIMA;
+      break;
+    case DIV_SAMPLE_DEPTH_12BIT:
+      off=length12;
       break;
     case DIV_SAMPLE_DEPTH_16BIT:
       off=length16;
@@ -542,13 +565,13 @@ bool DivSample::initInternal(DivSampleDepth d, int count) {
       if (dataA!=NULL) delete[] dataA;
       lengthA=(count+1)/2;
       dataA=new unsigned char[(lengthA+255)&(~0xff)];
-      memset(dataA,0,(lengthA+255)&(~0xff));
+      memset(dataA,0x80,(lengthA+255)&(~0xff));
       break;
     case DIV_SAMPLE_DEPTH_ADPCM_B: // ADPCM-B
       if (dataB!=NULL) delete[] dataB;
       lengthB=(count+1)/2;
       dataB=new unsigned char[(lengthB+255)&(~0xff)];
-      memset(dataB,0,(lengthB+255)&(~0xff));
+      memset(dataB,0x80,(lengthB+255)&(~0xff));
       break;
     case DIV_SAMPLE_DEPTH_ADPCM_K: // K05 ADPCM
       if (dataK!=NULL) delete[] dataK;
@@ -586,6 +609,18 @@ bool DivSample::initInternal(DivSampleDepth d, int count) {
       lengthC219=count;
       dataC219=new unsigned char[(count+4095)&(~0xfff)];
       memset(dataC219,0,(count+4095)&(~0xfff));
+      break;
+    case DIV_SAMPLE_DEPTH_IMA_ADPCM: // IMA ADPCM
+      if (dataIMA!=NULL) delete[] dataIMA;
+      lengthIMA=4+((count+1)/2);
+      dataIMA=new unsigned char[lengthIMA];
+      memset(dataIMA,0,lengthIMA);
+      break;
+    case DIV_SAMPLE_DEPTH_12BIT: // 12-bit PCM (MultiPCM)
+      if (data12!=NULL) delete[] data12;
+      length12=((count*3)+1)/2;
+      data12=new unsigned char[length12+8];
+      memset(data12,0,length12+8);
       break;
     case DIV_SAMPLE_DEPTH_16BIT: // 16-bit
       if (data16!=NULL) delete[] data16;
@@ -790,8 +825,8 @@ bool DivSample::insert(unsigned int pos, unsigned int length) {
   return false;
 }
 
-void DivSample::convert(DivSampleDepth newDepth) {
-  render();
+void DivSample::convert(DivSampleDepth newDepth, unsigned int formatMask) {
+  render(formatMask|(1U<<newDepth));
   depth=newDepth;
   switch (depth) {
     case DIV_SAMPLE_DEPTH_1BIT:
@@ -828,7 +863,7 @@ void DivSample::convert(DivSampleDepth newDepth) {
     default:
       break;
   }
-  render();
+  render(formatMask|(1U<<newDepth));
 }
 
 #define RESAMPLE_BEGIN \
@@ -1271,6 +1306,17 @@ void DivSample::render(unsigned int formatMask) {
           if (dataC219[i]&0x80) data16[i]=-data16[i];
         }
         break;
+      case DIV_SAMPLE_DEPTH_IMA_ADPCM: // IMA ADPCM
+        if (adpcm_decode_block(data16,dataIMA,lengthIMA,samples)==0) logE("oh crap!");
+        break;
+      case DIV_SAMPLE_DEPTH_12BIT: // 12-bit PCM (MultiPCM)
+        for (unsigned int i=0, j=0; i<samples; i+=2, j+=3) {
+          data16[i+0]=(data12[j+0]<<8)|(data12[j+1]&0xf0);
+          if (i+1<samples) {
+            data16[i+1]=(data12[j+2]<<8)|((data12[j+1]<<4)&0xf0);
+          }
+        }
+        break;
       default:
         return;
     }
@@ -1289,6 +1335,7 @@ void DivSample::render(unsigned int formatMask) {
     if (!initInternal(DIV_SAMPLE_DEPTH_1BIT_DPCM,samples)) return;
     int accum=63;
     int next=63;
+    
     for (unsigned int i=0; (i<samples && (i>>3)<lengthDPCM); i++) {
       next=((unsigned short)(data16[i]^0x8000))>>9;
       if (next>accum) {
@@ -1402,7 +1449,7 @@ void DivSample::render(unsigned int formatMask) {
   if (NOT_IN_FORMAT(DIV_SAMPLE_DEPTH_BRR)) { // BRR
     int sampleCount=loop?loopEnd:samples;
     if (!initInternal(DIV_SAMPLE_DEPTH_BRR,sampleCount)) return;
-    brrEncode(data16,dataBRR,sampleCount,loop?loopStart:-1,brrEmphasis);
+    brrEncode(data16,dataBRR,sampleCount,loop?loopStart:-1,brrEmphasis,brrNoFilter);
   }
   if (NOT_IN_FORMAT(DIV_SAMPLE_DEPTH_VOX)) { // VOX
     if (!initInternal(DIV_SAMPLE_DEPTH_VOX,samples)) return;
@@ -1442,6 +1489,35 @@ void DivSample::render(unsigned int formatMask) {
       dataC219[i]=x|(negate?0x80:0);
     }
   }
+  if (NOT_IN_FORMAT(DIV_SAMPLE_DEPTH_IMA_ADPCM)) { // IMA ADPCM
+    if (!initInternal(DIV_SAMPLE_DEPTH_IMA_ADPCM,samples)) return;
+    int delta[2];
+    delta[0]=0;
+    delta[1]=0;
+
+    void* codec=adpcm_create_context(1,1,NOISE_SHAPING_OFF,delta);
+    if (codec==NULL) {
+      logE("oh no IMA encoder could not be created!");
+    } else {
+      size_t whyPointer=0;
+      adpcm_encode_block(codec,dataIMA,&whyPointer,data16,samples);
+      if (whyPointer!=lengthIMA) logW("IMA length mismatch! %d -> %d!=%d",(int)samples,(int)whyPointer,(int)lengthIMA);
+
+      adpcm_free_context(codec);
+    }
+  }
+  if (NOT_IN_FORMAT(DIV_SAMPLE_DEPTH_12BIT)) { // 12-bit PCM (MultiPCM)
+    if (!initInternal(DIV_SAMPLE_DEPTH_12BIT,samples)) return;
+    for (unsigned int i=0, j=0; i<samples; i+=2, j+=3) {
+      data12[j+0]=data16[i+0]>>8;
+      data12[j+1]=((data16[i+0]>>4)&0xf)|(i+1<samples?(data16[i+1]>>4)&0xf:0);
+      if (i+1<samples) {
+        data12[j+2]=data16[i+1]>>8;
+      } else {
+        data12[j+2]=0;
+      }
+    }
+  }
 }
 
 void* DivSample::getCurBuf() {
@@ -1470,6 +1546,10 @@ void* DivSample::getCurBuf() {
       return dataMuLaw;
     case DIV_SAMPLE_DEPTH_C219:
       return dataC219;
+    case DIV_SAMPLE_DEPTH_IMA_ADPCM:
+      return dataIMA;
+    case DIV_SAMPLE_DEPTH_12BIT:
+      return data12;
     case DIV_SAMPLE_DEPTH_16BIT:
       return data16;
     default:
@@ -1504,6 +1584,10 @@ unsigned int DivSample::getCurBufLen() {
       return lengthMuLaw;
     case DIV_SAMPLE_DEPTH_C219:
       return lengthC219;
+    case DIV_SAMPLE_DEPTH_IMA_ADPCM:
+      return lengthIMA;
+    case DIV_SAMPLE_DEPTH_12BIT:
+      return length12;
     case DIV_SAMPLE_DEPTH_16BIT:
       return length16;
     default:
@@ -1522,9 +1606,9 @@ DivSampleHistory* DivSample::prepareUndo(bool data, bool doNotPush) {
       duplicate=new unsigned char[getCurBufLen()];
       memcpy(duplicate,getCurBuf(),getCurBufLen());
     }
-    h=new DivSampleHistory(duplicate,getCurBufLen(),samples,depth,rate,centerRate,loopStart,loopEnd,loop,brrEmphasis,dither,loopMode);
+    h=new DivSampleHistory(duplicate,getCurBufLen(),samples,depth,rate,centerRate,loopStart,loopEnd,loop,brrEmphasis,brrNoFilter,dither,loopMode);
   } else {
-    h=new DivSampleHistory(depth,rate,centerRate,loopStart,loopEnd,loop,brrEmphasis,dither,loopMode);
+    h=new DivSampleHistory(depth,rate,centerRate,loopStart,loopEnd,loop,brrEmphasis,brrNoFilter,dither,loopMode);
   }
   if (!doNotPush) {
     while (!redoHist.empty()) {
@@ -1558,6 +1642,7 @@ DivSampleHistory* DivSample::prepareUndo(bool data, bool doNotPush) {
   loopEnd=h->loopEnd; \
   loop=h->loop; \
   brrEmphasis=h->brrEmphasis; \
+  brrNoFilter=h->brrNoFilter; \
   dither=h->dither; \
   loopMode=h->loopMode;
 
@@ -1616,4 +1701,6 @@ DivSample::~DivSample() {
   if (dataVOX) delete[] dataVOX;
   if (dataMuLaw) delete[] dataMuLaw;
   if (dataC219) delete[] dataC219;
+  if (dataIMA) delete[] dataIMA;
+  if (data12) delete[] data12;
 }

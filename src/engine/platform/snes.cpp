@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,6 +27,8 @@
 
 #define rWrite(a,v) if (!skipRegisterWrites) {writes.push(QueuedWrite(a,v)); if (dumpWrites) {addWrite(a,v);} }
 #define chWrite(c,a,v) {rWrite((a)+(c)*16,v)}
+#define rWriteDelay(a,v,d) if (!skipRegisterWrites) {writes.push(QueuedWrite(a,v,d)); if (dumpWrites) {addWrite(a,v);} }
+#define chWriteDelay(c,a,v,d) {rWrite((a)+(c)*16,v,d)}
 #define sampleTableAddr(c) (sampleTableBase+(c)*4)
 #define waveTableAddr(c) (sampleTableBase+8*4+(c)*9*16)
 
@@ -69,6 +71,9 @@ const char** DivPlatformSNES::getRegisterSheet() {
 void DivPlatformSNES::acquire(short** buf, size_t len) {
   short out[2];
   short chOut[16];
+  for (int i=0; i<8; i++) {
+    oscBuf[i]->begin(len);
+  }
   for (size_t h=0; h<len; h++) {
     if (--delay<=0) {
       delay=0;
@@ -77,7 +82,7 @@ void DivPlatformSNES::acquire(short** buf, size_t len) {
         dsp.write(w.addr,w.val);
         regPool[w.addr&0x7f]=w.val;
         writes.pop();
-        delay=(w.addr==0x5c)?8:1;
+        delay=w.delay;
       }
     }
     dsp.set_output(out,1);
@@ -92,8 +97,11 @@ void DivPlatformSNES::acquire(short** buf, size_t len) {
       next=(next*254)/MAX(1,globalVolL+globalVolR);
       if (next<-32768) next=-32768;
       if (next>32767) next=32767;
-      oscBuf[i]->data[oscBuf[i]->needle++]=next>>1;
+      oscBuf[i]->putSample(h,next>>1);
     }
+  }
+  for (int i=0; i<8; i++) {
+    oscBuf[i]->end(len);
   }
 }
 
@@ -206,7 +214,7 @@ void DivPlatformSNES::tick(bool sysTick) {
     // TODO: if wavetable length is higher than 32, we lose precision!
     if (chan[i].freqChanged || chan[i].keyOn || chan[i].keyOff) {
       DivSample* s=parent->getSample(chan[i].sample);
-      double off=(s->centerRate>=1)?((double)s->centerRate/8363.0):1.0;
+      double off=(s->centerRate>=1)?((double)s->centerRate/parent->getCenterRate()):1.0;
       if (chan[i].useWave) off=(double)chan[i].wtLen/32.0;
       chan[i].freq=(unsigned int)(off*parent->calcFreq(chan[i].baseFreq,chan[i].pitch,chan[i].fixedArp?chan[i].baseNoteOverride:chan[i].arpOff,chan[i].fixedArp,false,2,chan[i].pitch2,chipClock,CHIP_FREQBASE));
       if (chan[i].freq>16383) chan[i].freq=16383;
@@ -221,7 +229,7 @@ void DivPlatformSNES::tick(bool sysTick) {
           end=MIN(start+MAX(s->lengthBRR+((s->loop && s->depth!=DIV_SAMPLE_DEPTH_BRR)?9:0),1),getSampleMemCapacity());
           loop=MAX(start,end-1);
           if (chan[i].audPos>0) {
-            start=start+MIN(chan[i].audPos,s->lengthBRR-1)/16*9;
+            start=start+MIN(chan[i].audPos/16*9,end-start);
           }
           if (s->isLoopable()) {
             loop=((s->depth!=DIV_SAMPLE_DEPTH_BRR)?9:0)+start+((s->loopStart/16)*9);
@@ -253,7 +261,18 @@ void DivPlatformSNES::tick(bool sysTick) {
     }
   }
   if (koff!=0) {
-    rWrite(0x5c,koff);
+    // TODO: improve
+    if (antiClick) {
+      for (int i=0; i<8; i++) {
+        if (koff&(1<<i)) {
+          chWrite(i,5,0);
+          chWrite(i,7,0x9f);
+          chan[i].shallWriteEnv=true;
+        }
+      }
+      rWriteDelay(0x7e,0,64);
+    }
+    rWriteDelay(0x5c,koff,8);
   }
   if (writeControl) {
     unsigned char control=(noiseFreq&0x1f)|(echoOn?0:0x20);
@@ -314,16 +333,16 @@ void DivPlatformSNES::tick(bool sysTick) {
     }
   }
   if (koff!=0) {
-    rWrite(0x5c,0);
-  }
-  if (kon!=0) {
-    rWrite(0x4c,kon);
+    rWriteDelay(0x5c,0,8);
   }
   for (int i=0; i<8; i++) {
     if (chan[i].shallWriteVol) {
       writeOutVol(i);
       chan[i].shallWriteVol=false;
     }
+  }
+  if (kon!=0) {
+    rWrite(0x4c,kon);
   }
 }
 
@@ -370,6 +389,11 @@ int DivPlatformSNES::dispatch(DivCommand c) {
       }
       chan[c.chan].keyOn=true;
       chan[c.chan].macroInit(ins);
+      // this is the fix. it needs testing.
+      if (!parent->song.brokenOutVol && !chan[c.chan].std.vol.will) {
+        if (chan[c.chan].outVol!=chan[c.chan].vol) chan[c.chan].shallWriteVol=true;
+        chan[c.chan].outVol=chan[c.chan].vol;
+      }
       chan[c.chan].insChanged=false;
       break;
     }
@@ -463,7 +487,6 @@ int DivPlatformSNES::dispatch(DivCommand c) {
       chan[c.chan].inPorta=c.value;
       break;
     case DIV_CMD_SAMPLE_POS:
-      // may have to remove this
       chan[c.chan].audPos=c.value;
       chan[c.chan].setPos=true;
       break;
@@ -711,11 +734,10 @@ unsigned short DivPlatformSNES::getPan(int ch) {
   return (chan[ch].panL<<8)|chan[ch].panR;
 }
 
-DivChannelPair DivPlatformSNES::getPaired(int ch) {
+void DivPlatformSNES::getPaired(int ch, std::vector<DivChannelPair>& ret) {
   if (chan[ch].pitchMod) {
-    return DivChannelPair("mod",(ch-1)&7);
+    ret.push_back(DivChannelPair(_("mod"),(ch-1)&7));
   }
-  return DivChannelPair();
 }
 
 DivChannelModeHints DivPlatformSNES::getModeHints(int ch) {
@@ -827,6 +849,13 @@ void DivPlatformSNES::initEcho() {
     rWrite(0x7d,0);
     rWrite(0x6d,0xff);
   }
+
+  for (DivMemoryEntry& i: memCompo.entries) {
+    if (i.type==DIV_MEMORY_ECHO) {
+      i.begin=(0xf800-echoDelay*2048);
+    }
+  }
+  memCompo.used=sampleMemLen+echoDelay*2048;
 }
 
 void DivPlatformSNES::reset() {
@@ -835,6 +864,8 @@ void DivPlatformSNES::reset() {
   memcpy(sampleMem,copyOfSampleMem,65536);
   dsp.init(sampleMem);
   dsp.set_output(NULL,0);
+  dsp.setupInterpolation(!interpolationOff);
+
   memset(regPool,0,128);
   // this can't be 0 or channel 1 won't play
   // this can't be 0x100 either as that's used by SPC700 page 1 and the stack
@@ -926,8 +957,7 @@ const void* DivPlatformSNES::getSampleMem(int index) {
 }
 
 size_t DivPlatformSNES::getSampleMemCapacity(int index) {
-  // TODO change it based on current echo buffer size
-  return index == 0 ? (65536-echoDelay*2048) : 0;
+  return index == 0 ? (0xf800-echoDelay*2048) : 0;
 }
 
 size_t DivPlatformSNES::getSampleMemUsage(int index) {
@@ -940,10 +970,22 @@ bool DivPlatformSNES::isSampleLoaded(int index, int sample) {
   return sampleLoaded[sample];
 }
 
+const DivMemoryComposition* DivPlatformSNES::getMemCompo(int index) {
+  if (index!=0) return NULL;
+  return &memCompo;
+}
+
 void DivPlatformSNES::renderSamples(int sysID) {
   memset(copyOfSampleMem,0,65536);
   memset(sampleOff,0,256*sizeof(unsigned int));
   memset(sampleLoaded,0,256*sizeof(bool));
+
+  memCompo=DivMemoryComposition();
+  memCompo.name="SPC/DSP Memory";
+
+  memCompo.entries.push_back(DivMemoryEntry(DIV_MEMORY_RESERVED,"State",-1,0,sampleTableBase));
+  memCompo.entries.push_back(DivMemoryEntry(DIV_MEMORY_RESERVED,"Sample Directory",-1,sampleTableBase,sampleTableBase+8*4));
+  memCompo.entries.push_back(DivMemoryEntry(DIV_MEMORY_WAVE_RAM,"Wave RAM",-1,sampleTableBase+8*4,sampleTableBase+8*4+8*9*16));
 
   // skip past sample table and wavetable buffer
   size_t memPos=sampleTableBase+8*4+8*9*16;
@@ -962,7 +1004,11 @@ void DivPlatformSNES::renderSamples(int sysID) {
       // inject loop if needed
       if (s->loop) {
         copyOfSampleMem[memPos+actualLength-9]|=3;
+      } else {
+        copyOfSampleMem[memPos+actualLength-9]&=~3;
+        copyOfSampleMem[memPos+actualLength-9]|=1;
       }
+      memCompo.entries.push_back(DivMemoryEntry(DIV_MEMORY_SAMPLE,"Sample",i,memPos,memPos+actualLength));
       memPos+=actualLength;
     }
     if (actualLength<length) {
@@ -974,6 +1020,13 @@ void DivPlatformSNES::renderSamples(int sysID) {
     sampleLoaded[i]=true;
   }
   sampleMemLen=memPos;
+
+  // even if the delay is 0, the DSP will still operate the first buffer sample
+  // so the ARAM buffer size becomes 4 bytes when the delay is 0
+  memCompo.entries.push_back(DivMemoryEntry(DIV_MEMORY_ECHO,"Echo Buffer",-1,(0xf800-echoDelay*2048),echoDelay==0?0xf804:0xf800));
+
+  memCompo.capacity=65536;
+  memCompo.used=sampleMemLen+echoDelay*2048;
   memcpy(sampleMem,copyOfSampleMem,65536);
 }
 
@@ -997,6 +1050,9 @@ void DivPlatformSNES::setFlags(const DivConfig& flags) {
   initEchoFIR[7]=flags.getInt("echoFilter7",0);
 
   initEchoMask=flags.getInt("echoMask",0);
+
+  interpolationOff=flags.getBool("interpolationOff",false);
+  antiClick=flags.getBool("antiClick",true);
 }
 
 int DivPlatformSNES::init(DivEngine* p, int channels, int sugRate, const DivConfig& flags) {
@@ -1008,7 +1064,7 @@ int DivPlatformSNES::init(DivEngine* p, int channels, int sugRate, const DivConf
   rate=chipClock/32;
   for (int i=0; i<8; i++) {
     oscBuf[i]=new DivDispatchOscBuffer;
-    oscBuf[i]->rate=rate;
+    oscBuf[i]->setRate(rate);
     isMuted[i]=false;
   }
   setFlags(flags);

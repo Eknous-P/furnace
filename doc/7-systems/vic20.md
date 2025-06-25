@@ -20,3 +20,10 @@ these channels are not referred as "square" wave channels since a technique to p
 ## info
 
 this chip uses the [VIC](../4-instrument/vic.md) instrument editor.
+
+## chip config
+
+the following options are available in the Chip Manager window:
+
+- **PAL**: 1.10MHz instead of 1.02MHz.
+- **Disable filtering**: bypasses the hardware's lowpass filter.

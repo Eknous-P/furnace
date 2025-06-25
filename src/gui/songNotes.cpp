@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,18 +22,23 @@
 
 // NOTE: please don't ask me to enable text wrap.
 //       Dear ImGui doesn't have that feature. D:
-void FurnaceGUI::drawNotes() {
+void FurnaceGUI::drawNotes(bool asChild) {
   if (nextWindow==GUI_WINDOW_NOTES) {
     notesOpen=true;
     ImGui::SetNextWindowFocus();
     nextWindow=GUI_WINDOW_NOTHING;
   }
-  if (!notesOpen) return;
-  if (ImGui::Begin("Song Comments",&notesOpen,globalWinFlags)) {
-    if (ImGui::InputTextMultiline("##SongNotes",&e->song.notes,ImGui::GetContentRegionAvail(),ImGuiInputTextFlags_UndoRedo)) {
+  if (!notesOpen && !asChild) return;
+  bool began=asChild?ImGui::BeginChild("Song Info##Song Information"):ImGui::Begin("Song Comments",&notesOpen,globalWinFlags,_("Song Comments"));
+  if (began) {
+    if (ImGui::InputTextMultiline("##SongNotes",&e->song.notes,ImGui::GetContentRegionAvail(),ImGuiInputTextFlags_UndoRedo|(settings.songNotesWrap?ImGuiInputTextFlags_WordWrapping:0))) {
       MARK_MODIFIED;
     }
   }
-  if (ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows)) curWindow=GUI_WINDOW_NOTES;
-  ImGui::End();
+  if (!asChild && ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows)) curWindow=GUI_WINDOW_NOTES;
+  if (asChild) {
+    ImGui::EndChild();
+  } else {
+    ImGui::End();
+  }
 }

@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1897,7 +1897,7 @@ std::vector<DivInstrument*> DivEngine::instrumentFromFile(const char* path, bool
   bool isOldFurnaceIns=false;
   try {
     reader.read(magic,4);
-    if (memcmp("FINS",magic,4)==0) {
+    if (memcmp("FINS",magic,4)==0 || memcmp("FINB",magic,4)==0) {
       isFurnaceInstr=true;
       logV("found a new Furnace ins");
     } else {

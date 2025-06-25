@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -70,7 +70,7 @@ class DivPlatformX1_010: public DivDispatch, public vgsound_emu_mem_intf {
     int fixedFreq;
     int wave, sample;
     unsigned char pan, autoEnvNum, autoEnvDen;
-    bool envChanged, furnacePCM, pcm;
+    bool envChanged, furnacePCM, pcm, setPos;
     int lvol, rvol;
     int macroVolMul;
     unsigned char waveBank;
@@ -84,7 +84,7 @@ class DivPlatformX1_010: public DivDispatch, public vgsound_emu_mem_intf {
         autoEnvNum=autoEnvDen=0;
         active=false;
         insChanged=envChanged=freqChanged=true;
-        keyOn=keyOff=inPorta=furnacePCM=pcm=false;
+        keyOn=keyOff=inPorta=furnacePCM=pcm=setPos=false;
         vol=outVol=lvol=rvol=15;
         waveBank=0;
     }
@@ -99,6 +99,7 @@ class DivPlatformX1_010: public DivDispatch, public vgsound_emu_mem_intf {
       envChanged(true),
       furnacePCM(false),
       pcm(false),
+      setPos(false),
       lvol(15),
       rvol(15),
       macroVolMul(15),
@@ -118,6 +119,8 @@ class DivPlatformX1_010: public DivDispatch, public vgsound_emu_mem_intf {
   unsigned int bankSlot[8];
   unsigned int sampleOffX1[256];
   bool sampleLoaded[256];
+
+  DivMemoryComposition memCompo;
 
   unsigned char regPool[0x2000];
   double NoteX1_010(int ch, int note);
@@ -151,6 +154,7 @@ class DivPlatformX1_010: public DivDispatch, public vgsound_emu_mem_intf {
     size_t getSampleMemCapacity(int index = 0);
     size_t getSampleMemUsage(int index = 0);
     bool isSampleLoaded(int index, int sample);
+    const DivMemoryComposition* getMemCompo(int index);
     void renderSamples(int chipID);
     const char** getRegisterSheet();
     int init(DivEngine* parent, int channels, int sugRate, const DivConfig& flags);

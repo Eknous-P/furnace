@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,7 +34,7 @@
     rWrite(a,v); \
   }
 
-#define CHIP_DIVIDER 32
+#define CHIP_DIVIDER 64
 
 const char* regCheatSheetPCE[]={
   "Select", "0",
@@ -55,14 +55,47 @@ const char** DivPlatformPCE::getRegisterSheet() {
 }
 
 void DivPlatformPCE::acquire(short** buf, size_t len) {
-  for (size_t h=0; h<len; h++) {
+}
+
+void DivPlatformPCE::acquireDirect(blip_buffer_t** bb, size_t len) {
+  for (int i=0; i<6; i++) {
+    oscBuf[i]->begin(len);
+    pce->channel[i].oscBuf=oscBuf[i];
+  }
+
+  pce->bb[0]=bb[0];
+  pce->bb[1]=bb[1];
+
+  size_t pos=0;
+  pce->ResetTS(pos);
+
+  while (!writes.empty()) {
+    QueuedWrite w=writes.front();
+    pce->Write(pos,w.addr,w.val);
+    regPool[w.addr&0x0f]=w.val;
+    writes.pop();
+  }
+
+  for (size_t h=0; h<len;) {
+    int advance=len-h;
+    // heuristic
+    int remainTime=0;
+    for (int i=0; i<6; i++) {
+      if (chan[i].pcm && chan[i].dacSample!=-1) {
+        if (chan[i].dacRate<=0) continue;
+        remainTime=(rate-chan[i].dacPeriod+chan[i].dacRate-1)/chan[i].dacRate;
+        if (remainTime<advance) advance=remainTime;
+        if (remainTime<1) advance=1;
+      }
+    }
+
     // PCM part
     for (int i=0; i<6; i++) {
       if (chan[i].pcm && chan[i].dacSample!=-1) {
-        chan[i].dacPeriod+=chan[i].dacRate;
-        if (chan[i].dacPeriod>rate) {
+        chan[i].dacPeriod+=chan[i].dacRate*advance;
+        if (chan[i].dacPeriod>=rate) {
           DivSample* s=parent->getSample(chan[i].dacSample);
-          if (s->samples<=0) {
+          if (s->samples<=0 || chan[i].dacPos>=s->samples) {
             chan[i].dacSample=-1;
             continue;
           }
@@ -88,34 +121,22 @@ void DivPlatformPCE::acquire(short** buf, size_t len) {
     }
   
     // PCE part
-    cycles=0;
-    while (!writes.empty() && cycles<24) {
+    // WHAT?????????
+    pos+=advance;
+
+    while (!writes.empty()) {
       QueuedWrite w=writes.front();
-      pce->Write(cycles,w.addr,w.val);
+      pce->Write(pos,w.addr,w.val);
       regPool[w.addr&0x0f]=w.val;
-      //cycles+=2;
       writes.pop();
     }
-    memset(tempL,0,24*sizeof(int));
-    memset(tempR,0,24*sizeof(int));
-    pce->Update(24);
-    pce->ResetTS(0);
 
-    for (int i=0; i<6; i++) {
-      oscBuf[i]->data[oscBuf[i]->needle++]=CLAMP(pce->channel[i].blip_prev_samp[0]+pce->channel[i].blip_prev_samp[1],-32768,32767);
-    }
+    h+=advance;
+  }
+  pce->Update(pos);
 
-    tempL[0]=(tempL[0]>>1)+(tempL[0]>>2);
-    tempR[0]=(tempR[0]>>1)+(tempR[0]>>2);
-
-    if (tempL[0]<-32768) tempL[0]=-32768;
-    if (tempL[0]>32767) tempL[0]=32767;
-    if (tempR[0]<-32768) tempR[0]=-32768;
-    if (tempR[0]>32767) tempR[0]=32767;
-    
-    //printf("tempL: %d tempR: %d\n",tempL,tempR);
-    buf[0][h]=tempL[0];
-    buf[1][h]=tempR[0];
+  for (int i=0; i<6; i++) {
+    oscBuf[i]->end(len);
   }
 }
 
@@ -147,7 +168,7 @@ void DivPlatformPCE::tick(bool sysTick) {
   for (int i=0; i<6; i++) {
     // anti-click
     if (antiClickEnabled && sysTick && chan[i].freq>0) {
-      chan[i].antiClickPeriodCount+=(chipClock/MAX(parent->getCurHz(),1.0f));
+      chan[i].antiClickPeriodCount+=((chipClock>>1)/MAX(parent->getCurHz(),1.0f));
       chan[i].antiClickWavePos+=chan[i].antiClickPeriodCount/chan[i].freq;
       chan[i].antiClickPeriodCount%=chan[i].freq;
     }
@@ -155,8 +176,8 @@ void DivPlatformPCE::tick(bool sysTick) {
     chan[i].std.next();
     if (chan[i].std.vol.had) {
       chan[i].outVol=VOL_SCALE_LOG_BROKEN(chan[i].vol&31,MIN(31,chan[i].std.vol.val),31);
-      if (chan[i].furnaceDac && chan[i].pcm) {
-        // ignore for now
+      if (chan[i].pcm) {
+        chWrite(i,0x04,0xc0|chan[i].outVol);
       } else {
         chWrite(i,0x04,0x80|chan[i].outVol);
       }
@@ -206,7 +227,11 @@ void DivPlatformPCE::tick(bool sysTick) {
     if (chan[i].std.phaseReset.had && chan[i].std.phaseReset.val==1) {
       if (chan[i].furnaceDac && chan[i].pcm) {
         if (chan[i].active && chan[i].dacSample>=0 && chan[i].dacSample<parent->song.sampleLen) {
-          chan[i].dacPos=0;
+          if (chan[i].setPos) {
+            chan[i].setPos=false;
+          } else {
+            chan[i].dacPos=0;
+          }
           chan[i].dacPeriod=0;
           chWrite(i,0x04,parent->song.disableSampleMacro?0xdf:(0xc0|chan[i].vol));
           addWrite(0xffff0000+(i<<8),chan[i].dacSample);
@@ -231,10 +256,10 @@ void DivPlatformPCE::tick(bool sysTick) {
           if (s->centerRate<1) {
             off=1.0;
           } else {
-            off=8363.0/(double)s->centerRate;
+            off=parent->getCenterRate()/(double)s->centerRate;
           }
         }
-        chan[i].dacRate=((double)chipClock/2)/MAX(1,off*chan[i].freq);
+        chan[i].dacRate=(double)chipClock/(4*MAX(1,off*chan[i].freq));
         if (dumpWrites) addWrite(0xffff0001+(i<<8),chan[i].dacRate);
       }
       if (chan[i].freq<1) chan[i].freq=1;
@@ -280,6 +305,7 @@ int DivPlatformPCE::dispatch(DivCommand c) {
         chan[c.chan].pcm=false;
         chan[c.chan].sampleNote=DIV_NOTE_NULL;
         chan[c.chan].sampleNoteDelta=0;
+        if (dumpWrites) addWrite(0xffff0002+(c.chan<<8),0);
       }
       if (chan[c.chan].pcm) {
         if (ins->type==DIV_INS_AMIGA || ins->amiga.useSample) {
@@ -304,7 +330,11 @@ int DivPlatformPCE::dispatch(DivCommand c) {
                addWrite(0xffff0000+(c.chan<<8),chan[c.chan].dacSample);
              }
           }
-          chan[c.chan].dacPos=0;
+          if (chan[c.chan].setPos) {
+            chan[c.chan].setPos=false;
+          } else {
+            chan[c.chan].dacPos=0;
+          }
           chan[c.chan].dacPeriod=0;
           if (c.value!=DIV_NOTE_NULL) {
             chan[c.chan].baseFreq=NOTE_PERIODIC(c.value);
@@ -333,7 +363,11 @@ int DivPlatformPCE::dispatch(DivCommand c) {
           } else {
             if (dumpWrites) addWrite(0xffff0000+(c.chan<<8),chan[c.chan].dacSample);
           }
-          chan[c.chan].dacPos=0;
+          if (chan[c.chan].setPos) {
+            chan[c.chan].setPos=false;
+          } else {
+            chan[c.chan].dacPos=0;
+          }
           chan[c.chan].dacPeriod=0;
           chan[c.chan].dacRate=parent->getSample(chan[c.chan].dacSample)->rate;
           if (dumpWrites) {
@@ -390,8 +424,12 @@ int DivPlatformPCE::dispatch(DivCommand c) {
         chan[c.chan].vol=c.value;
         if (!chan[c.chan].std.vol.has) {
           chan[c.chan].outVol=c.value;
-          if (chan[c.chan].active && !chan[c.chan].pcm) {
-            chWrite(c.chan,0x04,0x80|chan[c.chan].outVol);
+          if (chan[c.chan].active) {
+            if (chan[c.chan].pcm) {
+              chWrite(c.chan,0x04,0xc0|chan[c.chan].outVol);
+            } else {
+              chWrite(c.chan,0x04,0x80|chan[c.chan].outVol);
+            }
           }
         }
       }
@@ -459,6 +497,10 @@ int DivPlatformPCE::dispatch(DivCommand c) {
         sampleBank=parent->song.sample.size()/12;
       }
       break;
+    case DIV_CMD_SAMPLE_POS:
+      chan[c.chan].dacPos=c.value;
+      chan[c.chan].setPos=true;
+      break;
     case DIV_CMD_PANNING: {
       chan[c.chan].pan=(c.value&0xf0)|(c.value2>>4);
       chWrite(c.chan,0x05,isMuted[c.chan]?0:chan[c.chan].pan);
@@ -524,11 +566,10 @@ unsigned short DivPlatformPCE::getPan(int ch) {
   return ((chan[ch].pan&0xf0)<<4)|(chan[ch].pan&15);
 }
 
-DivChannelPair DivPlatformPCE::getPaired(int ch) {
+void DivPlatformPCE::getPaired(int ch, std::vector<DivChannelPair>& ret) {
   if (ch==1 && lfoMode>0) {
-    return DivChannelPair("mod",0);
+    ret.push_back(DivChannelPair(_("mod"),0));
   }
-  return DivChannelPair();
 }
 
 DivChannelModeHints DivPlatformPCE::getModeHints(int ch) {
@@ -561,6 +602,11 @@ int DivPlatformPCE::mapVelocity(int ch, float vel) {
   return round(31.0*pow(vel,0.22));
 }
 
+float DivPlatformPCE::getGain(int ch, int vol) {
+  if (vol==0) return 0;
+  return 1.0/pow(10.0,(float)(31-vol)*3.0/20.0);
+}
+
 unsigned char* DivPlatformPCE::getRegisterPool() {
   return regPool;
 }
@@ -583,9 +629,6 @@ void DivPlatformPCE::reset() {
   }
   pce->Power(0);
   lastPan=0xff;
-  memset(tempL,0,32*sizeof(int));
-  memset(tempR,0,32*sizeof(int));
-  cycles=0;
   curChan=-1;
   sampleBank=0;
   lfoMode=0;
@@ -599,7 +642,6 @@ void DivPlatformPCE::reset() {
   for (int i=0; i<6; i++) {
     chWrite(i,0x05,isMuted[i]?0:chan[i].pan);
   }
-  delay=500;
 }
 
 int DivPlatformPCE::getOutputCount() {
@@ -607,6 +649,10 @@ int DivPlatformPCE::getOutputCount() {
 }
 
 bool DivPlatformPCE::keyOffAffectsArp(int ch) {
+  return true;
+}
+
+bool DivPlatformPCE::hasAcquireDirect() {
   return true;
 }
 
@@ -627,22 +673,22 @@ void DivPlatformPCE::notifyInsDeletion(void* ins) {
 
 void DivPlatformPCE::setFlags(const DivConfig& flags) {
   if (flags.getInt("clockSel",0)) { // technically there is no PAL PC Engine but oh well...
-    chipClock=COLOR_PAL*4.0/5.0;
+    chipClock=COLOR_PAL*8.0/5.0;
   } else {
-    chipClock=COLOR_NTSC;
+    chipClock=COLOR_NTSC*2.0;
   }
   CHECK_CUSTOM_CLOCK;
   antiClickEnabled=!flags.getBool("noAntiClick",false);
-  rate=chipClock/12;
+  rate=chipClock;
   for (int i=0; i<6; i++) {
-    oscBuf[i]->rate=rate;
+    oscBuf[i]->setRate(rate);
   }
 
   if (pce!=NULL) {
     delete pce;
     pce=NULL;
   }
-  pce=new PCE_PSG(tempL,tempR,flags.getInt("chipType",0)?PCE_PSG::REVISION_HUC6280A:PCE_PSG::REVISION_HUC6280);
+  pce=new PCE_PSG(flags.getInt("chipType",0)?PCE_PSG::REVISION_HUC6280A:PCE_PSG::REVISION_HUC6280);
 }
 
 void DivPlatformPCE::poke(unsigned int addr, unsigned short val) {

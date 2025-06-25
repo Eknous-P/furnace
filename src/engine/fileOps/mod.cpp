@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -96,7 +96,7 @@ bool DivEngine::loadMod(unsigned char* file, size_t len) {
       logD("couldn't seek to 0");
       throw EndOfFileException(&reader,reader.tell());
     }
-    ds.name=reader.readString(20);
+    ds.name=reader.readStringLatin1(20);
     logI("%s",ds.name);
 
     // samples
@@ -105,7 +105,7 @@ bool DivEngine::loadMod(unsigned char* file, size_t len) {
     for (int i=0; i<insCount; i++) {
       DivSample* sample=new DivSample;
       sample->depth=DIV_SAMPLE_DEPTH_8BIT;
-      sample->name=reader.readString(22);
+      sample->name=reader.readStringLatin1(22);
       logD("%d: %s",i+1,sample->name);
       int slen=((unsigned short)reader.readS_BE())*2;
       sampLens[i]=slen;
@@ -198,7 +198,7 @@ bool DivEngine::loadMod(unsigned char* file, size_t len) {
           int period=data[1]+((data[0]&0x0f)<<8);
           if (period>0 && period<0x0fff) {
             short note=(short)round(log2(3424.0/period)*12);
-            dstrow[0]=((note-1)%12)+1;
+            dstrow[0]=((note+11)%12)+1;
             dstrow[1]=(note-1)/12+1;
             if (period<114) {
               bypassLimits=true;
@@ -322,7 +322,7 @@ bool DivEngine::loadMod(unsigned char* file, size_t len) {
               setEffectState[3]=fxVal;
               break;
             case 9: // set offset
-              writeFxCol(0x90,fxVal);
+              writeFxCol(0x91,fxVal);
               break;
             case 10: // vol slide
               effectState[4]=fxVal;
@@ -417,6 +417,9 @@ bool DivEngine::loadMod(unsigned char* file, size_t len) {
       ds.ins.push_back(ins);
     }
     ds.insLen=ds.ins.size();
+
+    // find subsongs
+    ds.findSubSongs(chCount);
     
     if (active) quitDispatch();
     BUSY_BEGIN_SOFT;

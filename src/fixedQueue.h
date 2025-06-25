@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -42,6 +42,7 @@ template<typename T, size_t items> struct FixedQueue {
   void clear();
   bool empty();
   size_t size();
+  size_t capacity();
   FixedQueue():
     readPos(0),
     writePos(0) {}
@@ -175,6 +176,10 @@ template <typename T, size_t items> size_t FixedQueue<T,items>::size() {
     return items+writePos-readPos;
   }
   return writePos-readPos;
+}
+
+template <typename T, size_t items> size_t FixedQueue<T,items>::capacity() {
+  return items-1;
 }
 
 #endif

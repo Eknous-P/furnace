@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@
 class DivPlatformSegaPCM: public DivDispatch {
   protected:
     struct Channel: public SharedChannel<int> {
-      bool furnacePCM, isNewSegaPCM;
+      bool furnacePCM, isNewSegaPCM, setPos;
       unsigned char chVolL, chVolR;
       unsigned char chPanL, chPanR;
       int macroVolMul;
@@ -44,6 +44,7 @@ class DivPlatformSegaPCM: public DivDispatch {
         SharedChannel<int>(127),
         furnacePCM(false),
         isNewSegaPCM(false),
+        setPos(false),
         chVolL(127),
         chVolR(127),
         chPanL(127),
@@ -80,6 +81,8 @@ class DivPlatformSegaPCM: public DivDispatch {
     unsigned int sampleOffSegaPCM[256];
     unsigned char sampleEndSegaPCM[256];
     bool sampleLoaded[256];
+
+    DivMemoryComposition memCompo;
   
     friend void putDispatchChip(void*,int);
     friend void putDispatchChan(void*,int,int);
@@ -110,6 +113,7 @@ class DivPlatformSegaPCM: public DivDispatch {
     size_t getSampleMemCapacity(int index=0);
     size_t getSampleMemUsage(int index=0);
     bool isSampleLoaded(int index, int sample);
+    const DivMemoryComposition* getMemCompo(int index);
     int init(DivEngine* parent, int channels, int sugRate, const DivConfig& flags);
     void quit();
     ~DivPlatformSegaPCM();

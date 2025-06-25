@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,7 +33,7 @@ class DivPlatformDave: public DivDispatch {
     unsigned char panL;
     unsigned char panR;
     unsigned char wave;
-    bool writeVol, highPass, ringMod, swapCounters, lowPass, resetPhase;
+    bool writeVol, highPass, ringMod, swapCounters, lowPass, resetPhase, setPos;
     Channel():
       SharedChannel<signed char>(63),
       dacPeriod(0),
@@ -50,7 +50,8 @@ class DivPlatformDave: public DivDispatch {
       ringMod(false),
       swapCounters(false),
       lowPass(false),
-      resetPhase(false) {}
+      resetPhase(false),
+      setPos(false) {}
   };
   Channel chan[6];
   DivDispatchOscBuffer* oscBuf[6];
@@ -75,7 +76,7 @@ class DivPlatformDave: public DivDispatch {
     void* getChanState(int chan);
     DivMacroInt* getChanMacroInt(int ch);
     unsigned short getPan(int chan);
-    DivChannelPair getPaired(int chan);
+    void getPaired(int ch, std::vector<DivChannelPair>& ret);
     DivChannelModeHints getModeHints(int chan);
     DivSamplePos getSamplePos(int ch);
     DivDispatchOscBuffer* getOscBuffer(int chan);

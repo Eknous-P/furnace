@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,12 +38,12 @@ void FurnaceGUI::drawSysManager() {
   } else {
     //ImGui::SetNextWindowSizeConstraints(ImVec2(440.0f*dpiScale,400.0f*dpiScale),ImVec2(canvasW,canvasH));
   }
-  if (ImGui::Begin("Chip Manager",&sysManagerOpen,globalWinFlags)) {
-    ImGui::Checkbox("Preserve channel order",&preserveChanPos);
+  if (ImGui::Begin("Chip Manager",&sysManagerOpen,globalWinFlags,_("Chip Manager"))) {
+    ImGui::Checkbox(_("Preserve channel order"),&preserveChanPos);
     ImGui::SameLine();
-    ImGui::Checkbox("Clone channel data",&sysDupCloneChannels);
+    ImGui::Checkbox(_("Clone channel data"),&sysDupCloneChannels);
     ImGui::SameLine();
-    ImGui::Checkbox("Clone at end",&sysDupEnd);
+    ImGui::Checkbox(_("Clone at end"),&sysDupEnd);
     if (ImGui::BeginTable("SystemList",3)) {
       ImGui::TableSetupColumn("c1",ImGuiTableColumnFlags_WidthFixed);
       ImGui::TableSetupColumn("c2",ImGuiTableColumnFlags_WidthStretch);
@@ -51,9 +51,9 @@ void FurnaceGUI::drawSysManager() {
       ImGui::TableNextRow(ImGuiTableRowFlags_Headers);
       ImGui::TableNextColumn();
       ImGui::TableNextColumn();
-      ImGui::Text("Name");
+      ImGui::Text(_("Name"));
       ImGui::TableNextColumn();
-      ImGui::Text("Actions");
+      ImGui::Text(_("Actions"));
       for (unsigned char i=0; i<e->song.systemLen; i++) {
         ImGui::PushID(i);
         ImGui::TableNextRow();
@@ -66,7 +66,7 @@ void FurnaceGUI::drawSysManager() {
           ImGui::Button(ICON_FA_ARROWS "##SysDrag");
           ImGui::EndDragDropSource();
         } else if (ImGui::IsItemHovered()) {
-          ImGui::SetTooltip("(drag to swap chips)");
+          ImGui::SetTooltip(_("(drag to swap chips)"));
         }
         if (ImGui::BeginDragDropTarget()) {
           const ImGuiPayload* dragItem=ImGui::AcceptDragDropPayload("FUR_SYS");
@@ -82,22 +82,44 @@ void FurnaceGUI::drawSysManager() {
           ImGui::EndDragDropTarget();
         }
         ImGui::TableNextColumn();
+        bool isNotCollapsed=true;
         if (ImGui::TreeNode(fmt::sprintf("%d. %s##_SYSM%d",i+1,getSystemName(e->song.system[i]),i).c_str())) {
           drawSysConf(i,i,e->song.system[i],e->song.systemFlags[i],true);
+          isNotCollapsed=false;
           ImGui::TreePop();
         }
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_Stationary) && isNotCollapsed) {
+          if (e->song.system[i]!=DIV_SYSTEM_NULL) {
+            const DivSysDef* sysDef=e->getSystemDef(e->song.system[i]);
+            if (ImGui::BeginTooltip()) {
+              ImGui::Dummy(ImVec2(MIN(scrW*dpiScale,400.0f*dpiScale),0.0f));
+              ImGui::PushTextWrapPos(MIN(scrW*dpiScale,400.0f*dpiScale)); // arbitrary constant
+              ImGui::TextWrapped("%s",sysDef->description);
+              ImGui::Separator();
+              drawSystemChannelInfoText(sysDef);
+              drawSystemChannelInfo(sysDef);
+              ImGui::PopTextWrapPos();
+              ImGui::EndTooltip();
+            }
+          }
+        }
         ImGui::TableNextColumn();
-        if (ImGui::Button("Clone##SysDup")) {
+        if (ImGui::Button(_("Clone##SysDup"))) {
           if (!e->duplicateSystem(i,sysDupCloneChannels,sysDupEnd)) {
-            showError("cannot clone chip! ("+e->getLastError()+")");
+            showError(fmt::sprintf(_("cannot clone chip! (%s)"),e->getLastError()));
           } else {
+            if (e->song.autoSystem) {
+              autoDetectSystem();
+              updateWindowTitle();
+            }
+            updateROMExportAvail();
             MARK_MODIFIED;
           }
         }
         ImGui::SameLine();
-        ImGui::Button("Change##SysChange");
+        ImGui::Button(_("Change##SysChange"));
         if (ImGui::BeginPopupContextItem("SysPickerC",ImGuiPopupFlags_MouseButtonLeft)) {
-          DivSystem picked=systemPicker();
+          DivSystem picked=systemPicker(false);
           if (picked!=DIV_SYSTEM_NULL) {
             if (e->changeSystem(i,picked,preserveChanPos)) {
               MARK_MODIFIED;
@@ -105,9 +127,13 @@ void FurnaceGUI::drawSysManager() {
                 autoDetectSystem();
               }
               updateWindowTitle();
+              updateROMExportAvail();
             } else {
-              showError("cannot change chip! ("+e->getLastError()+")");
+              showError(fmt::sprintf(_("cannot change chip! (%s)"),e->getLastError()));
             }
+            ImGui::CloseCurrentPopup();
+          }
+          if (ImGui::IsKeyPressed(ImGuiKey_Escape)) {
             ImGui::CloseCurrentPopup();
           }
           ImGui::EndPopup();
@@ -117,11 +143,11 @@ void FurnaceGUI::drawSysManager() {
         pushDestColor();
         if (ImGui::Button(ICON_FA_TIMES "##SysRemove")) {
           sysToDelete=i;
-          showWarning("Are you sure you want to remove this chip?",GUI_WARN_SYSTEM_DEL);
+          showWarning(_("Are you sure you want to remove this chip?"),GUI_WARN_SYSTEM_DEL);
         }
         popDestColor();
         if (ImGui::IsItemHovered()) {
-          ImGui::SetTooltip("Remove");
+          ImGui::SetTooltip(_("Remove"));
         }
         ImGui::EndDisabled();
         ImGui::PopID();
@@ -132,10 +158,10 @@ void FurnaceGUI::drawSysManager() {
         ImGui::TableNextColumn();
         ImGui::Button(ICON_FA_PLUS "##SysAdd");
         if (ImGui::BeginPopupContextItem("SysPickerA",ImGuiPopupFlags_MouseButtonLeft)) {
-          DivSystem picked=systemPicker();
+          DivSystem picked=systemPicker(false);
           if (picked!=DIV_SYSTEM_NULL) {
             if (!e->addSystem(picked)) {
-              showError("cannot add chip! ("+e->getLastError()+")");
+              showError(fmt::sprintf(_("cannot add chip! (%s)"),e->getLastError()));
             } else {
               MARK_MODIFIED;
             }
@@ -143,6 +169,10 @@ void FurnaceGUI::drawSysManager() {
               autoDetectSystem();
             }
             updateWindowTitle();
+            updateROMExportAvail();
+            ImGui::CloseCurrentPopup();
+          }
+          if (ImGui::IsKeyPressed(ImGuiKey_Escape)) {
             ImGui::CloseCurrentPopup();
           }
           ImGui::EndPopup();

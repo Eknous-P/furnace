@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -43,7 +43,7 @@ void FurnaceGUI::startSelection(int xCoarse, int xFine, int y, bool fullRow) {
     }
   }
 
-  if ((settings.dragMovesSelection==1 || (settings.dragMovesSelection==2 && (ImGui::IsKeyDown(ImGuiKey_LeftCtrl) || ImGui::IsKeyDown(ImGuiKey_RightCtrl)))) && !fullRow) {
+  if (((settings.dragMovesSelection==1 || settings.dragMovesSelection==3 || settings.dragMovesSelection==5) || ((settings.dragMovesSelection==2 || settings.dragMovesSelection==4) && (ImGui::IsKeyDown(ImGuiKey_LeftCtrl) || ImGui::IsKeyDown(ImGuiKey_RightCtrl)))) && !fullRow) {
     if (xCoarse>=selStart.xCoarse && (xFine>=selStart.xFine || xCoarse>selStart.xCoarse) && y>=selStart.y &&
         xCoarse<=selEnd.xCoarse && (xFine<=selEnd.xFine || xCoarse<selEnd.xCoarse) && y<=selEnd.y) {
       dragging=true;
@@ -69,6 +69,9 @@ void FurnaceGUI::startSelection(int xCoarse, int xFine, int y, bool fullRow) {
     selStart.y=y;
     selEnd.y=y;
   } else {
+    if (xCoarse!=cursor.xCoarse || y!=cursor.y) {
+      makeCursorUndo();
+    }
     cursor.xCoarse=xCoarse;
     cursor.xFine=xFine;
     cursor.y=y;
@@ -166,6 +169,7 @@ void FurnaceGUI::finishSelection() {
   }
   selecting=false;
   selectingFull=false;
+  mobilePatSel=false;
 
   if (dragging) {
     if (dragSourceX==dragDestinationX && dragSourceY==dragDestinationY && dragSourceXFine==dragDestinationXFine) {
@@ -173,7 +177,7 @@ void FurnaceGUI::finishSelection() {
       selStart=cursorDrag;
       selEnd=cursorDrag;
     } else { // perform drag
-      doDrag();
+      doDrag(settings.dragMovesSelection==3 || settings.dragMovesSelection==4 || (settings.dragMovesSelection==5 && (ImGui::IsKeyDown(ImGuiKey_LeftCtrl) || ImGui::IsKeyDown(ImGuiKey_RightCtrl))));
     }
 
     dragging=false;
@@ -201,13 +205,28 @@ void FurnaceGUI::finishSelection() {
   if (e->curSubSong->chanCollapse[selEnd.xCoarse] && selEnd.xFine>=(3-e->curSubSong->chanCollapse[selEnd.xCoarse])) {
     selEnd.xFine=2+e->curPat[selEnd.xCoarse].effectCols*2;
   }
+  if (selStart.xFine<0) {
+    selStart.xFine=0;
+  }
+  if (selEnd.xFine<0) {
+    selEnd.xFine=0;
+  }
+  if (selStart.xFine>(2+e->curPat[selStart.xCoarse].effectCols*2)) {
+    selStart.xFine=2+e->curPat[selStart.xCoarse].effectCols*2;
+  }
+  if (selEnd.xFine>(2+e->curPat[selEnd.xCoarse].effectCols*2)) {
+    selEnd.xFine=2+e->curPat[selEnd.xCoarse].effectCols*2;
+  }
 
-  logV("finish selection: %d.%d,%d - %d.%d,%d",selStart.xCoarse,selStart.xFine,selStart.y,selEnd.xCoarse,selEnd.xFine,selEnd.y);
+  logV(_("finish selection: %d.%d,%d - %d.%d,%d"),selStart.xCoarse,selStart.xFine,selStart.y,selEnd.xCoarse,selEnd.xFine,selEnd.y);
 
   e->setMidiBaseChan(cursor.xCoarse);
 }
 
 void FurnaceGUI::moveCursor(int x, int y, bool select) {
+  if (y>=editStepCoarse || y<=-editStepCoarse || x<=-5 || x>=5) {
+    makeCursorUndo();
+  }
   if (!select) {
     finishSelection();
   }
@@ -326,6 +345,7 @@ void FurnaceGUI::moveCursor(int x, int y, bool select) {
 }
 
 void FurnaceGUI::moveCursorPrevChannel(bool overflow) {
+  makeCursorUndo();
   finishSelection();
   curNibble=false;
 
@@ -354,6 +374,7 @@ void FurnaceGUI::moveCursorPrevChannel(bool overflow) {
 }
 
 void FurnaceGUI::moveCursorNextChannel(bool overflow) {
+  makeCursorUndo();
   finishSelection();
   curNibble=false;
 
@@ -382,6 +403,7 @@ void FurnaceGUI::moveCursorNextChannel(bool overflow) {
 }
 
 void FurnaceGUI::moveCursorTop(bool select) {
+  makeCursorUndo();
   if (!select) {
     finishSelection();
   }
@@ -403,6 +425,7 @@ void FurnaceGUI::moveCursorTop(bool select) {
 }
 
 void FurnaceGUI::moveCursorBottom(bool select) {
+  makeCursorUndo();
   if (!select) {
     finishSelection();
   }
@@ -427,7 +450,37 @@ void FurnaceGUI::moveCursorBottom(bool select) {
 void FurnaceGUI::editAdvance() {
   finishSelection();
   cursor.y+=editStep;
-  if (cursor.y>=e->curSubSong->patLen) cursor.y=e->curSubSong->patLen-1;
+  int hangPrevention=0;
+  while (cursor.y>=e->curSubSong->patLen) {
+    if (++hangPrevention>500) {
+      showError("BUG: about to hang when advancing cursor.\nplease report this issue immediately!");
+      break;
+    }
+    switch (settings.wrapVertical) {
+      case 1: // wrap
+        cursor.y-=e->curSubSong->patLen;
+        break;
+      case 2: // wrap + next pattern
+        if (curOrder<(e->curSubSong->ordersLen-1)) {
+          cursor.y-=e->curSubSong->patLen;
+          setOrder(curOrder+1);
+        } else {
+          cursor.y=e->curSubSong->patLen-1;
+        }
+        break;
+      case 3: // wrap + next pattern (wrap around)
+        cursor.y-=e->curSubSong->patLen;
+        if (curOrder<(e->curSubSong->ordersLen-1)) {
+          setOrder(curOrder+1);
+        } else {
+          setOrder(0);
+        }
+        break;
+      default: // don't wrap
+        cursor.y=e->curSubSong->patLen-1;
+        break;
+    }
+  }
   selStart=cursor;
   selEnd=cursor;
   updateScroll(cursor.y);

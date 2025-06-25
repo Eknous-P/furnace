@@ -28,6 +28,8 @@ these apply to the instrument as a whole:
   - only applies to operators which have AM turned on.
   - does not apply to YM2203.
 
+- **Octave**: sets the "block" of the frequency register, which affects note range and precision.
+
 these apply to each operator:
 - the crossed-arrows button can be dragged to rearrange operators.
 - the **OP1**, **OP2**, **OP3**, and **OP4** buttons enable or disable those operators.
@@ -39,12 +41,12 @@ these apply to each operator:
 - **Decay Rate 2 (D2R) / Sustain Rate (SR)**: determines the diminishing time for the sound. the higher the value, the shorter the decay. this is the long "tail" of the sound that continues as long as the key is depressed (0 to 31).
 - **Release Rate (RR)**: determines the rate at which the sound disappears after note off. the higher the value, the shorter the release (0 to 15).
 - **Total Level (TL)**: represents the envelope’s highest amplitude, with 0 being the largest and 127 (decimal) the smallest. a change of one unit is about 0.75 dB.
-- **Hardware Envelope Generator (SSG-EG)**: executes the built-in envelope, inherited from AY-3-8910 PSG. speed of execution is controlled via Decay Rate.
+- **Hardware Envelope Generator (SSG-EG)**: executes the built-in envelope, inherited from AY-3-8910 PSG. speed of execution is controlled via envelope parameters.
 
 ![FM ADSR chart](FM-ADSRchart.png)
 
 - **Envelope Scale (RS/KS)**: also known as "Key Scale" or "Rate Scale". determines the degree to which the envelope execution speed increases according to the pitch (0 to 3).
-- **Frequency Multiplier (MULT)**: sets the coarse pitch offset in relation to the note (0 to 15). 0 is -1 octave, 1 is 0 octaves, 2 is 1 octave, 3 is 1 octave 7 semitones, and so on.
+- **Frequency Multiplier (MULT)**: sets the coarse pitch offset in relation to the note (0 to 15). the values follow the harmonic scale. for example, 0 is -1 octave, 1 is 0 octaves, 2 is 1 octave, 3 is 1 octave 7 semitones, and so on.
 - **Fine Detune (DT)**: shifts the pitch a little (0 to 7).
 
 
@@ -54,6 +56,10 @@ these macros allow you to control several parameters of FM per tick.
 
 ## FM Macros
 
+- **Algorithm**,
+  **Feedback**,
+  **LFO > Freq**,
+  **LFO > Amp**: as described above.
 - **LFO Speed**: LFO frequency.
 - **OpMask**: toggles each operator.
 

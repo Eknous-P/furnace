@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 #ifdef _WIN32
 #include <pa_win_wasapi.h>
 #endif
+#include <fmt/printf.h>
 
 int taPAProcess(const void* in, void* out, unsigned long nframes, const PaStreamCallbackTimeInfo* timeInfo, PaStreamCallbackFlags flags, void* inst) {
   TAAudioPA* instance=(TAAudioPA*)inst;

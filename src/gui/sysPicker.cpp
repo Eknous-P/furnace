@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@
 #include "guiConst.h"
 #include <imgui.h>
 
-DivSystem FurnaceGUI::systemPicker() {
+DivSystem FurnaceGUI::systemPicker(bool fullWidth) {
   DivSystem ret=DIV_SYSTEM_NULL;
   DivSystem hoveredSys=DIV_SYSTEM_NULL;
   bool reissueSearch=false;
@@ -32,10 +32,10 @@ DivSystem FurnaceGUI::systemPicker() {
   }
 
   ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-  if (ImGui::InputTextWithHint("##SysSearch","Search...",&sysSearchQuery)) reissueSearch=true;
+  if (ImGui::InputTextWithHint("##SysSearch",_("Search..."),&sysSearchQuery)) reissueSearch=true;
   if (ImGui::BeginTabBar("SysCats")) {
     for (int i=0; chipCategories[i]; i++) {
-      if (ImGui::BeginTabItem(chipCategoryNames[i])) {
+      if (ImGui::BeginTabItem(_(chipCategoryNames[i]))) {
         if (ImGui::IsItemActive()) {
           reissueSearch=true;
         }
@@ -61,35 +61,39 @@ DivSystem FurnaceGUI::systemPicker() {
       }
     }
   }
-  if (ImGui::BeginTable("SysList",1,ImGuiTableFlags_ScrollY,ImVec2(500.0f*dpiScale,200.0*dpiScale))) {
+ if (ImGui::BeginTable("SysList",1,ImGuiTableFlags_ScrollY|ImGuiTableFlags_BordersOuterH,ImVec2(fullWidth ? ImGui::GetContentRegionAvail().x : 500.0f*dpiScale,200.0f*dpiScale))) {
     if (sysSearchQuery.empty()) {
       // display chip list
       for (int j=0; curSysSection[j]; j++) {
+        if (!settings.hiddenSystems && CHECK_HIDDEN_SYSTEM(curSysSection[j])) continue;
         ImGui::TableNextRow();
         ImGui::TableNextColumn();
         if (ImGui::Selectable(e->getSystemName((DivSystem)curSysSection[j]),false,0,ImVec2(500.0f*dpiScale,0.0f))) ret=(DivSystem)curSysSection[j];
-        if (ImGui::IsItemHovered()) {
+        if (ImGui::IsItemHovered() && hoveredSys==DIV_SYSTEM_NULL) {
           hoveredSys=(DivSystem)curSysSection[j];
         }
       }
     } else {
       // display search results
       for (DivSystem i: sysSearchResults) {
+        if (!settings.hiddenSystems && CHECK_HIDDEN_SYSTEM(i)) continue;
         ImGui::TableNextRow();
         ImGui::TableNextColumn();
         if (ImGui::Selectable(e->getSystemName(i),false,0,ImVec2(500.0f*dpiScale,0.0f))) ret=i;
-        if (ImGui::IsItemHovered()) {
+        if (ImGui::IsItemHovered() && hoveredSys==DIV_SYSTEM_NULL) {
           hoveredSys=i;
         }
       }
     }
     ImGui::EndTable();
   }
-  ImGui::Separator();
   if (ImGui::BeginChild("SysDesc",ImVec2(0.0f,150.0f*dpiScale),false,ImGuiWindowFlags_NoScrollbar|ImGuiWindowFlags_NoScrollWithMouse)) {
     if (hoveredSys!=DIV_SYSTEM_NULL) {
       const DivSysDef* sysDef=e->getSystemDef(hoveredSys);
       ImGui::TextWrapped("%s",sysDef->description);
+      ImGui::Separator();
+      drawSystemChannelInfoText(sysDef);
+      drawSystemChannelInfo(sysDef);
     }
   }
   ImGui::EndChild();

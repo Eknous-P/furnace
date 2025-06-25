@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -95,7 +95,11 @@ bool DivWorkThread::busy() {
 void DivWorkThread::finish() {
   lock.lock();
   terminate=true;
-  notify.set_value();
+  try {
+    notify.set_value();
+  } catch (std::future_error& e) {
+    logE("future error! beware!");
+  }
   lock.unlock();
   thread->join();
 }
@@ -196,9 +200,11 @@ DivWorkPool::DivWorkPool(unsigned int threads):
 
 DivWorkPool::~DivWorkPool() {
   if (threaded) {
-    for (unsigned int i=0; i<count; i++) {
-      workThreads[i].finish();
+    if (workThreads!=NULL) {
+      for (unsigned int i=0; i<count; i++) {
+        workThreads[i].finish();
+      }
+      delete[] workThreads;
     }
-    delete[] workThreads;
   }
 }

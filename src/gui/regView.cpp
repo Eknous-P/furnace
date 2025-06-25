@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@ void FurnaceGUI::drawRegView() {
     nextWindow=GUI_WINDOW_NOTHING;
   }
   if (!regViewOpen) return;
-  if (ImGui::Begin("Register View",&regViewOpen,globalWinFlags)) {
+  if (ImGui::Begin("Register View",&regViewOpen,globalWinFlags,_("Register View"))) {
     for (int i=0; i<e->song.systemLen; i++) {
       ImGui::Text("%d. %s",i+1,getSystemName(e->song.system[i]));
       int size=0;
@@ -35,7 +35,7 @@ void FurnaceGUI::drawRegView() {
       unsigned char* regPool=e->getRegisterPool(i,size,depth);
       unsigned short* regPoolW=(unsigned short*)regPool;
       if (regPool==NULL) {
-        ImGui::Text("- no register pool available");
+        ImGui::Text(_("- no register pool available"));
       } else {
         ImGui::PushFont(patFont);
         if (ImGui::BeginTable("Memory",17)) {

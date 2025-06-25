@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,7 +32,7 @@ class DivPlatformPCE: public DivDispatch {
     unsigned int dacPos;
     int dacSample;
     unsigned char pan;
-    bool noise, pcm, furnaceDac, deferredWaveUpdate;
+    bool noise, pcm, furnaceDac, deferredWaveUpdate, setPos;
     signed short wave;
     int macroVolMul, noiseSeek;
     DivWaveSynth ws;
@@ -50,6 +50,7 @@ class DivPlatformPCE: public DivDispatch {
       pcm(false),
       furnaceDac(false),
       deferredWaveUpdate(false),
+      setPos(false),
       wave(-1),
       macroVolMul(31),
       noiseSeek(0) {}
@@ -68,9 +69,7 @@ class DivPlatformPCE: public DivDispatch {
   FixedQueue<QueuedWrite,512> writes;
   unsigned char lastPan;
 
-  int cycles, curChan, delay;
-  int tempL[32];
-  int tempR[32];
+  int curChan;
   unsigned char sampleBank, lfoMode, lfoSpeed;
   PCE_PSG* pce;
   unsigned char regPool[128];
@@ -79,15 +78,17 @@ class DivPlatformPCE: public DivDispatch {
   friend void putDispatchChan(void*,int,int);
   public:
     void acquire(short** buf, size_t len);
+    void acquireDirect(blip_buffer_t** bb, size_t len);
     int dispatch(DivCommand c);
     void* getChanState(int chan);
     DivMacroInt* getChanMacroInt(int ch);
     unsigned short getPan(int chan);
-    DivChannelPair getPaired(int chan);
+    void getPaired(int ch, std::vector<DivChannelPair>& ret);
     DivChannelModeHints getModeHints(int chan);
     DivSamplePos getSamplePos(int ch);
     DivDispatchOscBuffer* getOscBuffer(int chan);
     int mapVelocity(int ch, float vel);
+    float getGain(int ch, int vol);
     unsigned char* getRegisterPool();
     int getRegisterPoolSize();
     void reset();
@@ -96,6 +97,7 @@ class DivPlatformPCE: public DivDispatch {
     void muteChannel(int ch, bool mute);
     int getOutputCount();
     bool keyOffAffectsArp(int ch);
+    bool hasAcquireDirect();
     void setFlags(const DivConfig& flags);
     void notifyWaveChange(int wave);
     void notifyInsDeletion(void* ins);

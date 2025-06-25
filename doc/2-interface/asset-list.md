@@ -13,14 +13,18 @@ buttons from left to right:
   - right-clicking always brings up the menu.
 - **Duplicate**: duplicates the currently selected instrument.
 - **Open**: brings up a file dialog to load a file as a new instrument at the end of the list.
+  - if the file is an instrument bank, a dialog will appear to select which instruments to load.
 - **Save**: brings up a file dialog to save the currently selected instrument.
   - instruments are saved as Furnace instrument (.fui) files.
   - right-clicking brings up a menu with the following options:
     - **save instrument as .dmp...**: saves the selected instrument in DefleMask format.
+    - **save all instruments...**: saves all instruments to the selected folder as .fui files.
 - **Toggle folders/standard view**: enables (and disables) folder view, explained below.
 - **Move up**: moves the currently selected instrument up in the list. pattern data will automatically be adjusted to match.
 - **Move down**: same, but downward.
 - **Delete**: deletes the currently selected instrument. pattern data will be adjusted to use the next available instrument in the list.
+
+instruments may be dragged and dropped to reorder them. this will change instrument numbers throughout the module accordingly.
 
 ## folder view
 
@@ -37,13 +41,14 @@ right-clicking on a folder allows one to rename or delete it. deleting a folder 
 
 ![wavetables window](wavetables.png)
 
-everything from the instrument list applies here also, with one major difference: moving waves around with the buttons will change their associated numbers in the list but **not** in pattern or instrument data. be careful!
+everything from the instrument list applies here also, with one major difference: moving waves around with the buttons or dragging them will change their associated numbers in the list but **not** in pattern or instrument data. be careful!
 
 wavetables are saved as Furnace wavetable (.fuw) files. 
 
-- right-clicking the Save button brings up a menu with the following options:
-  - **save wavetable as .dmw...**: saves the selected wavetable in DefleMask format.
-  - **save raw wavetable...**: saves the selected wavetable as raw data.
+right-clicking the Save button brings up a menu with the following options:
+- **save wavetable as .dmw...**: saves the selected wavetable in DefleMask format.
+- **save raw wavetable...**: saves the selected wavetable as raw data.
+- **save all wavetables...**: saves all wavetables to the selected folder as .fuw files.
 
 ## sample list
 
@@ -57,6 +62,7 @@ samples are saved as standard wave (.wav) files.
 
 right-clicking the Save button brings up a menu with the following options:
 - **save raw sample...**: saves the selected sample as raw data.
+- **save all samples...**: saves all samples to the selected folder as .wav files.
 
 right-clicking a sample in the list brings up a menu:
 - **make instrument**: creates a new instrument which is set to use the selected sample.

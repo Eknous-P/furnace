@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -65,6 +65,7 @@ class DivPlatformN163: public DivDispatch {
 
   n163_core n163;
   unsigned char regPool[128];
+  DivMemoryComposition memCompo;
   void updateWave(int ch, int wave, int pos, int len);
   void updateWaveCh(int ch);
   friend void putDispatchChip(void*,int);
@@ -82,6 +83,7 @@ class DivPlatformN163: public DivDispatch {
     void forceIns();
     void tick(bool sysTick=true);
     void muteChannel(int ch, bool mute);
+    const DivMemoryComposition* getMemCompo(int index);
     void setFlags(const DivConfig& flags);
     void notifyWaveChange(int wave);
     void notifyInsChange(int ins);

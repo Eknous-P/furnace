@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,6 +35,9 @@ static float oscDebugMin=-1.0;
 static float oscDebugMax=1.0;
 static float oscDebugPower=1.0;
 static int oscDebugRepeat=1;
+static int numApples=1;
+static int getGainChan=0;
+static int getGainVol=0;
 
 static void _drawOsc(const ImDrawList* drawList, const ImDrawCmd* cmd) {
   if (cmd!=NULL) {
@@ -62,7 +65,7 @@ void FurnaceGUI::drawDebug() {
   }
   if (!debugOpen) return;
   ImGui::SetNextWindowSizeConstraints(ImVec2(100.0f*dpiScale,100.0f*dpiScale),ImVec2(canvasW,canvasH));
-  if (ImGui::Begin("Debug",&debugOpen,globalWinFlags|ImGuiWindowFlags_NoDocking)) {
+  if (ImGui::Begin("Debug",&debugOpen,globalWinFlags|ImGuiWindowFlags_NoDocking,_("Debug"))) {
     ImGui::Text("NOTE: use with caution.");
     if (ImGui::TreeNode("Debug Controls")) {
       if (e->isHalted()) {
@@ -77,7 +80,7 @@ void FurnaceGUI::drawDebug() {
       ImGui::SameLine();
       if (ImGui::Button("Pattern Advance")) e->haltWhen(DIV_HALT_PATTERN);
 
-      if (ImGui::Button("Play Command Stream")) openFileDialog(GUI_FILE_CMDSTREAM_OPEN);
+      if (ImGui::Button("Play Command Stream")) nextWindow=GUI_WINDOW_CS_PLAYER;
 
       if (ImGui::Button("Panic")) e->syncReset();
       ImGui::SameLine();
@@ -142,6 +145,7 @@ void FurnaceGUI::drawDebug() {
           ImGui::Text("- portaNote = %d",ch->portaNote);
           ImGui::Text("- volume = %.4x",ch->volume);
           ImGui::Text("- volSpeed = %d",ch->volSpeed);
+          ImGui::Text("- volSpeedTarget = %d",ch->volSpeedTarget);
           ImGui::Text("- cut = %d",ch->cut);
           ImGui::Text("- rowDelay = %d",ch->rowDelay);
           ImGui::Text("- volMax = %.4x",ch->volMax);
@@ -154,7 +158,7 @@ void FurnaceGUI::drawDebug() {
           ImGui::Text("- depth = %d",ch->vibratoDepth);
           ImGui::Text("- rate = %d",ch->vibratoRate);
           ImGui::Text("- pos = %d",ch->vibratoPos);
-          ImGui::Text("- dir = %d",ch->vibratoDir);
+          ImGui::Text("- shape = %d",ch->vibratoShape);
           ImGui::Text("- fine = %d",ch->vibratoFine);
           ImGui::PopStyleColor();
           ImGui::PushStyleColor(ImGuiCol_Text,(ch->tremoloDepth>0)?uiColors[GUI_COLOR_MACRO_VOLUME]:uiColors[GUI_COLOR_TEXT]);
@@ -236,11 +240,12 @@ void FurnaceGUI::drawDebug() {
         DivSystem system=e->song.system[i];
         if (e->getChannelCount(system)>0) {
           if (ImGui::TreeNode(fmt::sprintf("%d: %s",i,e->getSystemName(system)).c_str())) {
-            if (ImGui::BeginTable("OscilloscopeTable",4,ImGuiTableFlags_Borders|ImGuiTableFlags_SizingStretchSame)) {
+            if (ImGui::BeginTable("OscilloscopeTable",5,ImGuiTableFlags_Borders|ImGuiTableFlags_SizingStretchSame)) {
               ImGui::TableSetupColumn("c0",ImGuiTableColumnFlags_WidthFixed);
               ImGui::TableSetupColumn("c1",ImGuiTableColumnFlags_WidthFixed);
               ImGui::TableSetupColumn("c2",ImGuiTableColumnFlags_WidthStretch);
               ImGui::TableSetupColumn("c3",ImGuiTableColumnFlags_WidthStretch);
+              ImGui::TableSetupColumn("c4",ImGuiTableColumnFlags_WidthStretch);
 
               ImGui::TableNextRow();
               ImGui::TableNextColumn();
@@ -248,9 +253,11 @@ void FurnaceGUI::drawDebug() {
               ImGui::TableNextColumn();
               ImGui::Text("Follow");
               ImGui::TableNextColumn();
-              ImGui::Text("Address");
+              ImGui::Text("Needle");
               ImGui::TableNextColumn();
               ImGui::Text("Data");
+              ImGui::TableNextColumn();
+              ImGui::Text("I am so bored!");
 
               for (int j=0; j<e->getChannelCount(system); j++, c++) {
                 DivDispatchOscBuffer* oscBuf=e->getOscBuffer(c);
@@ -272,15 +279,25 @@ void FurnaceGUI::drawDebug() {
                 ImGui::Checkbox(fmt::sprintf("##%d_OSCFollow_%d",i,c).c_str(),&oscBuf->follow);
                 // address
                 ImGui::TableNextColumn();
-                int needle=oscBuf->follow?oscBuf->needle:oscBuf->followNeedle;
-                ImGui::BeginDisabled(oscBuf->follow);
-                if (ImGui::InputInt(fmt::sprintf("##%d_OSCFollowNeedle_%d",i,c).c_str(),&needle,1,100)) {
-                  oscBuf->followNeedle=MIN(MAX(needle,0),65535);
-                }
-                ImGui::EndDisabled();
+                unsigned int needle=oscBuf->needle;
+                ImGui::Text("%.8x",needle);
                 // data
                 ImGui::TableNextColumn();
-                ImGui::Text("%d",oscBuf->data[needle]);
+                ImGui::Text("%d",oscBuf->data[needle>>16]);
+                // save
+                ImGui::TableNextColumn();
+                if (ImGui::Button(fmt::sprintf("Help me!##%d_OSCSaveDamnIt",j).c_str())) {
+                  FILE* f=fopen("/tmp/oscbuf.bin","wb");
+                  if (f==NULL) {
+                    showError(fmt::sprintf("screw this bullshit! it FAILED! %s\nnow I am about to be consumed by the tsunami!\nCOME GET ME FAST, my location is [REDACTED] CQD SOS",strerror(errno)));
+                  } else {
+                    e->synchronized([f,oscBuf]() {
+                      fwrite(oscBuf->data,sizeof(short),65536,f);
+                    });
+                    fclose(f);
+                    showError(fmt::sprintf("DATA WRITTEN TO /tmp/oscbuf.bin\nthe needle was at %.8x during operation ((needle>>16)<<1 = %u for its actual position in the file).\n\nnow go inspect the file and find out who's biting on that stupid triangle before\nyou succumb to the tsunami, tildearrow is stabbed by Codename Redacted and the Furnace factory comes to a\nperennial halt. HURRY UP!!!",needle,needle>>16));
+                  }
+                }
               }
               ImGui::EndTable();
             }
@@ -341,6 +358,15 @@ void FurnaceGUI::drawDebug() {
           }
         }
       }
+      ImGui::TreePop();
+    }
+    if (ImGui::TreeNode("Scroll Text Test")) {
+      /*
+      ImGui::ScrollText(ImGui::GetID("scrolltest1"),"Lorem ipsum, quia dolor sit, amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt, ut labore et dolore magnam aliquam quaerat voluptatem. ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur?");
+      ImGui::ScrollText(ImGui::GetID("scrolltest2"),"quis autem vel eum iure reprehenderit");
+      ImGui::ScrollText(ImGui::GetID("scrolltest3"),"qui in ea voluptate velit esse",ImVec2(100.0f*dpiScale,0),true);
+      ImGui::ScrollText(ImGui::GetID("scrolltest4"),"quam nihil molestiae consequatur, vel illum, qui dolorem eum fugiat, quo voluptas nulla pariatur?",ImVec2(0,0),true);
+      */
       ImGui::TreePop();
     }
     if (ImGui::TreeNode("Pitch Table Calculator")) {
@@ -610,6 +636,59 @@ void FurnaceGUI::drawDebug() {
       ImGui::Unindent();
       ImGui::TreePop();
     }
+    if (ImGui::TreeNode("Texture Test")) {
+      ImGui::Text("Create and Destroy 128 Textures");
+      if (ImGui::Button("No Write")) {
+        for (int i=0; i<128; i++) {
+          FurnaceGUITexture* t=rend->createTexture(false,2048,2048,true,bestTexFormat);
+          if (t==NULL) {
+            showError(fmt::sprintf("Failure! %d",i));
+            break;
+          }
+          rend->destroyTexture(t);
+        }
+      }
+      if (ImGui::Button("Write (update)")) {
+        unsigned char* data=new unsigned char[2048*2048*4];
+        for (int i=0; i<2048*2048*4; i++) {
+          data[i]=rand();
+        }
+        for (int i=0; i<128; i++) {
+          FurnaceGUITexture* t=rend->createTexture(false,2048,2048,true,bestTexFormat);
+          if (t==NULL) {
+            showError(fmt::sprintf("Failure! %d",i));
+            break;
+          }
+          rend->updateTexture(t,data,2048*4);
+          rend->destroyTexture(t);
+        }
+        delete[] data;
+      }
+      if (ImGui::Button("Write (lock)")) {
+        unsigned char* data=NULL;
+        int pitch=0;
+        for (int i=0; i<128; i++) {
+          FurnaceGUITexture* t=rend->createTexture(false,2048,2048,true,bestTexFormat);
+          if (t==NULL) {
+            showError(fmt::sprintf("Failure! %d",i));
+            break;
+          }
+          if (rend->lockTexture(t,(void**)&data,&pitch)) {
+            for (int i=0; i<2048*2048*4; i++) {
+              data[i]=rand();
+            }
+            rend->unlockTexture(t);
+          }
+          rend->destroyTexture(t);
+        }
+      }
+      ImGui::TreePop();
+    }
+    if (ImGui::TreeNode("Locale Test")) {
+      ImGui::TextUnformatted(_("This is a language test."));
+      ImGui::TextUnformatted(_("This is another language test."));
+      ImGui::TreePop();
+    }
     if (ImGui::TreeNode("Osc Render Test")) {
       ImGui::InputInt("Length",&oscDebugLen);
       ImGui::InputInt("Height",&oscDebugHeight);
@@ -660,6 +739,39 @@ void FurnaceGUI::drawDebug() {
       }
       ImGui::TreePop();
     }
+#ifdef HAVE_LOCALE
+    if (ImGui::TreeNode("Plural Form Test")) {
+      ImGui::InputInt("Number",&numApples);
+      ImGui::Text(ngettext("%d apple","%d apples",numApples),numApples);
+      ImGui::TreePop();
+    }
+#endif
+    if (ImGui::TreeNode("Get Gain Test")) {
+      float realVol=e->getGain(getGainChan,getGainVol);
+      ImGui::InputInt("Chan",&getGainChan);
+      ImGui::InputInt("Vol",&getGainVol);
+      ImGui::Text("result: %.0f%%",realVol*100.0f);
+      ImGui::TreePop();
+    }
+    if (ImGui::TreeNode("Cursor Undo Debug")) {
+      auto DrawSpot=[&](const CursorJumpPoint& spot) {
+        ImGui::Text("[%d:%d] <%d:%d, %d>", spot.subSong, spot.order, spot.point.xCoarse, spot.point.xFine, spot.point.y);
+      };
+      if (ImGui::BeginChild("##CursorUndoDebugChild", ImVec2(0, 300), true)) {
+        if (ImGui::BeginTable("##CursorUndoDebug", 2, ImGuiTableFlags_Borders|ImGuiTableFlags_SizingStretchSame)) {
+          for (size_t row=0; row<MAX(cursorUndoHist.size(),cursorRedoHist.size()); ++row) {
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            if (row<cursorUndoHist.size()) DrawSpot(cursorUndoHist[cursorUndoHist.size()-row-1]);
+            ImGui::TableNextColumn();
+            if (row<cursorRedoHist.size()) DrawSpot(cursorRedoHist[cursorRedoHist.size()-row-1]);
+          }
+          ImGui::EndTable();
+        }
+      }
+      ImGui::EndChild();
+      ImGui::TreePop();
+    }
     if (ImGui::TreeNode("User Interface")) {
       if (ImGui::Button("Inspect")) {
         inspectorOpen=!inspectorOpen;
@@ -698,7 +810,7 @@ void FurnaceGUI::drawDebug() {
     if (ImGui::TreeNode("Settings")) {
       if (ImGui::Button("Sync")) syncSettings();
       ImGui::SameLine();
-      if (ImGui::Button("Commit")) commitSettings();
+      if (ImGui::Button("Commit")) willCommit=true;
       ImGui::SameLine();
       if (ImGui::Button("Force Load")) e->loadConf();
       ImGui::SameLine();

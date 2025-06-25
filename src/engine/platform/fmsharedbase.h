@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -76,11 +76,13 @@ class DivPlatformFMBase: public DivDispatch {
     };
 
     struct QueuedWrite {
-      unsigned short addr;
-      unsigned char val;
+      unsigned int addr;
+      unsigned short val;
       bool addrOrVal;
-      QueuedWrite(): addr(0), val(0), addrOrVal(false) {}
-      QueuedWrite(unsigned short a, unsigned char v): addr(a), val(v), addrOrVal(false) {}
+      bool urgent;
+      QueuedWrite(): addr(0), val(0), addrOrVal(false), urgent(false) {}
+      QueuedWrite(unsigned int a, unsigned char v): addr(a), val(v), addrOrVal(false), urgent(false) {}
+      QueuedWrite(unsigned int a, unsigned char v, bool u): addr(a), val(v), addrOrVal(false), urgent(u) {}
     };
     FixedQueue<QueuedWrite,2048> writes;
 
@@ -97,7 +99,7 @@ class DivPlatformFMBase: public DivDispatch {
         pendingWrites[a]=v;
       }
     }
-    inline void immWrite(unsigned short a, unsigned char v) {
+    inline void immWrite(unsigned int a, unsigned short v) {
       if (!skipRegisterWrites) {
         writes.push_back(QueuedWrite(a,v));
         if (dumpWrites) {
@@ -108,14 +110,7 @@ class DivPlatformFMBase: public DivDispatch {
     // only used by OPN2 for DAC writes
     inline void urgentWrite(unsigned short a, unsigned char v) {
       if (!skipRegisterWrites && !flushFirst) {
-        if (!writes.empty()) {
-          // check for hard reset
-          if (writes.front().addr==0xf0) {
-            // replace hard reset with DAC write
-            writes.pop_front();
-          }
-        }
-        writes.push_front(QueuedWrite(a,v));
+        writes.push_front(QueuedWrite(a,v,true));
         if (dumpWrites) {
           addWrite(a,v);
         }
@@ -134,6 +129,11 @@ class DivPlatformFMBase: public DivDispatch {
       if (vel==0) return 0;
       if (vel>=1.0) return 127;
       return CLAMP(round(128.0-(56.0-log2(vel*127.0)*8.0)),0,127);
+    }
+
+    virtual float getGain(int ch, int vol) {
+      if (vol==0) return 0;
+      return 1.0/pow(10.0,(float)(127-vol)*0.75/20.0);
     }
 
     bool getLegacyAlwaysSetVolume() {

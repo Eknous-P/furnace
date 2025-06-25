@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -59,6 +59,8 @@ class DivPlatformGB: public DivDispatch {
   bool antiClickEnabled;
   bool invertWave;
   bool enoughAlready;
+  bool doubleWave;
+  bool lastDoubleWave;
   unsigned char lastPan;
   DivWaveSynth ws;
   struct QueuedWrite {
@@ -71,6 +73,7 @@ class DivPlatformGB: public DivDispatch {
 
   int antiClickPeriodCount, antiClickWavePos;
 
+  int coreQuality;
   GB_gameboy_t* gb;
   GB_model_t model;
   unsigned char regPool[128];
@@ -102,6 +105,7 @@ class DivPlatformGB: public DivDispatch {
     void poke(std::vector<DivRegWrite>& wlist);
     const char** getRegisterSheet();
     void setFlags(const DivConfig& flags);
+    void setCoreQuality(unsigned char q);
     int init(DivEngine* parent, int channels, int sugRate, const DivConfig& flags);
     void quit();
     ~DivPlatformGB();

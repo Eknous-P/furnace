@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "../pch.h"
+#include "blip_buf.h"
 #include "config.h"
 #include "chipUtils.h"
 #include "defines.h"
@@ -69,6 +70,11 @@ enum DivDispatchCmds {
   DIV_CMD_HINT_VOL_SLIDE, // (amount, oneTick)
   DIV_CMD_HINT_PORTA, // (target, speed)
   DIV_CMD_HINT_LEGATO, // (note)
+  DIV_CMD_HINT_VOL_SLIDE_TARGET, // (amount, target)
+  DIV_CMD_HINT_TREMOLO, // (speed/depth as a byte)
+  DIV_CMD_HINT_PANBRELLO, // (speed/depth as a byte)
+  DIV_CMD_HINT_PAN_SLIDE, // (speed)
+  DIV_CMD_HINT_PANNING, // (left, right)
 
   DIV_CMD_SAMPLE_MODE, // (enabled)
   DIV_CMD_SAMPLE_FREQ, // (frequency)
@@ -169,8 +175,8 @@ enum DivDispatchCmds {
   DIV_CMD_X1_010_AUTO_ENVELOPE,
   DIV_CMD_X1_010_SAMPLE_BANK_SLOT,
 
-  DIV_CMD_WS_SWEEP_TIME,
-  DIV_CMD_WS_SWEEP_AMOUNT,
+  DIV_CMD_WS_SWEEP_TIME, // (time)
+  DIV_CMD_WS_SWEEP_AMOUNT, // (value)
 
   DIV_CMD_N163_WAVE_POSITION,
   DIV_CMD_N163_WAVE_LENGTH,
@@ -251,12 +257,69 @@ enum DivDispatchCmds {
 
   DIV_CMD_POWERNOISE_COUNTER_LOAD, // (which, val)
   DIV_CMD_POWERNOISE_IO_WRITE, // (port, value)
-
+  
   DIV_CMD_DAVE_HIGH_PASS,
   DIV_CMD_DAVE_RING_MOD,
   DIV_CMD_DAVE_SWAP_COUNTERS,
   DIV_CMD_DAVE_LOW_PASS,
   DIV_CMD_DAVE_CLOCK_DIV,
+
+  DIV_CMD_MINMOD_ECHO,
+
+  DIV_CMD_BIFURCATOR_STATE_LOAD,
+  DIV_CMD_BIFURCATOR_PARAMETER,
+
+  DIV_CMD_FDS_MOD_AUTO,
+
+  DIV_CMD_FM_OPMASK, // (mask)
+
+  DIV_CMD_MULTIPCM_MIX_FM, // (value)
+  DIV_CMD_MULTIPCM_MIX_PCM, // (value)
+  DIV_CMD_MULTIPCM_LFO, // (value)
+  DIV_CMD_MULTIPCM_VIB, // (value)
+  DIV_CMD_MULTIPCM_AM, // (value)
+  DIV_CMD_MULTIPCM_AR, // (value)
+  DIV_CMD_MULTIPCM_D1R, // (value)
+  DIV_CMD_MULTIPCM_DL, // (value)
+  DIV_CMD_MULTIPCM_D2R, // (value)
+  DIV_CMD_MULTIPCM_RC, // (value)
+  DIV_CMD_MULTIPCM_RR, // (value)
+  DIV_CMD_MULTIPCM_DAMP, // (value)
+  DIV_CMD_MULTIPCM_PSEUDO_REVERB, // (value)
+  DIV_CMD_MULTIPCM_LFO_RESET, // (value)
+  DIV_CMD_MULTIPCM_LEVEL_DIRECT, // (value)
+  
+  DIV_CMD_SID3_SPECIAL_WAVE,
+  DIV_CMD_SID3_RING_MOD_SRC,
+  DIV_CMD_SID3_HARD_SYNC_SRC,
+  DIV_CMD_SID3_PHASE_MOD_SRC,
+  DIV_CMD_SID3_WAVE_MIX,
+  DIV_CMD_SID3_LFSR_FEEDBACK_BITS,
+  DIV_CMD_SID3_1_BIT_NOISE,
+  DIV_CMD_SID3_FILTER_DISTORTION,
+  DIV_CMD_SID3_FILTER_OUTPUT_VOLUME,
+  DIV_CMD_SID3_CHANNEL_INVERSION,
+  DIV_CMD_SID3_FILTER_CONNECTION,
+  DIV_CMD_SID3_FILTER_MATRIX,
+  DIV_CMD_SID3_FILTER_ENABLE,
+
+  DIV_CMD_C64_PW_SLIDE,
+  DIV_CMD_C64_CUTOFF_SLIDE,
+
+  DIV_CMD_SID3_PHASE_RESET,
+  DIV_CMD_SID3_NOISE_PHASE_RESET,
+  DIV_CMD_SID3_ENVELOPE_RESET,
+
+  DIV_CMD_SID3_CUTOFF_SCALING,
+  DIV_CMD_SID3_RESONANCE_SCALING,
+
+  DIV_CMD_WS_GLOBAL_SPEAKER_VOLUME, // (multiplier)
+
+  DIV_CMD_FM_ALG,
+  DIV_CMD_FM_FMS,
+  DIV_CMD_FM_AMS,
+  DIV_CMD_FM_FMS2,
+  DIV_CMD_FM_AMS2,
 
   DIV_CMD_MAX
 };
@@ -333,6 +396,8 @@ struct DivRegWrite {
    *   - xx is the instance ID
    *   - data is the sample position
    * - 0xffffffff: reset
+   * - 0xfffffffe: add delay
+   *   - data is the delay
    */
   unsigned int addr;
   unsigned int val;
@@ -344,9 +409,18 @@ struct DivRegWrite {
 
 struct DivDelayedWrite {
   int time;
+  // this variable is internal.
+  // it is used by VGM export to make sure these writes are in order.
+  // do not change.
+  int order;
   DivRegWrite write;
+  DivDelayedWrite(int t, int o, unsigned int a, unsigned int v):
+    time(t),
+    order(o),
+    write(a,v) {}
   DivDelayedWrite(int t, unsigned int a, unsigned int v):
     time(t),
+    order(0),
     write(a,v) {}
 };
 
@@ -362,21 +436,91 @@ struct DivSamplePos {
     freq(0) {}
 };
 
+constexpr size_t OSCBUF_PREC=(sizeof(size_t)>=8)?16:16;
+constexpr size_t OSCBUF_MASK=(UINTMAX_C(1)<<OSCBUF_PREC)-1;
+
+#define putSampleIKnowWhatIAmDoing(_ob,_pos,_val) \
+  _ob->data[_pos]=_val;
+
+// the actual output of all DivDispatchOscBuffer instanced runs at 65536Hz.
 struct DivDispatchOscBuffer {
-  bool follow;
-  unsigned int rate;
-  unsigned short needle;
+  size_t rate;
+  size_t rateMul;
+  unsigned int needle;
   unsigned short readNeedle;
-  unsigned short followNeedle;
+  //unsigned short lastSample;
+  bool follow, mustNotKillNeedle;
   short data[65536];
 
+  inline void putSample(const size_t pos, const short val) {
+    unsigned short realPos=((needle+pos*rateMul)>>OSCBUF_PREC);
+    if (val==-1) {
+      data[realPos]=0xfffe;
+      return;
+    }
+    //lastSample=val;
+    data[realPos]=val;
+  }
+  /*
+  inline void putSampleIKnowWhatIAmDoing(const unsigned short pos, const short val) {
+    //unsigned short realPos=((needle+pos*rateMul)>>OSCBUF_PREC);
+    if (val==-1) {
+      data[pos]=0xfffe;
+      return;
+    }
+    //lastSample=val;
+    data[pos]=val;
+  }*/
+  inline void begin(size_t len) {
+    size_t calc=(len*rateMul);
+    unsigned short start=needle>>16;
+    unsigned short end=(needle+calc)>>16;
+
+    if (mustNotKillNeedle && start!=end) {
+      start++;
+      end++;
+    }
+
+    //logD("C %d %d %d",len,calc,rate);
+
+    if (end<start) {
+      //logE("ELS %d %d %d",end,start,calc);
+      memset(&data[start],-1,(0x10000-start)*sizeof(short));
+      memset(data,-1,end*sizeof(short));
+      //data[needle>>16]=lastSample;
+      return;
+    }
+    memset(&data[start],-1,(end-start)*sizeof(short));
+    //data[needle>>16]=lastSample;
+  }
+  inline void end(size_t len) {
+    size_t calc=len*rateMul;
+    needle+=calc;
+    mustNotKillNeedle=needle&0xffff;//(data[needle>>16]!=-1);
+    //data[needle>>16]=lastSample;
+  }
+  void reset() {
+    memset(data,-1,65536*sizeof(short));
+    needle=0;
+    readNeedle=0;
+    mustNotKillNeedle=false;
+    //lastSample=0;
+  }
+  void setRate(unsigned int r) {
+    double rateMulD=65536.0/(double)r;
+    rateMulD*=(double)(UINTMAX_C(1)<<OSCBUF_PREC);
+    rate=r;
+    rateMul=(size_t)rateMulD;
+  }
   DivDispatchOscBuffer():
-    follow(true),
     rate(65536),
+    rateMul(UINTMAX_C(1)<<OSCBUF_PREC),
     needle(0),
     readNeedle(0),
-    followNeedle(0) {
-    memset(data,0,65536*sizeof(short));
+    //lastSample(0),
+    follow(true),
+    mustNotKillNeedle(false) {
+    memset(data,-1,65536*sizeof(short));
   }
 };
 
@@ -420,6 +564,8 @@ struct DivChannelModeHints {
   // - 18: inc linear
   // - 19: inc bent
   // - 20: direct
+  // - 21: warning
+  // - 22: error
   unsigned char type[4];
   // up to 4
   unsigned char count;
@@ -441,6 +587,8 @@ enum DivMemoryEntryType {
   DIV_MEMORY_WAVE_RAM,
   DIV_MEMORY_WAVE_STATIC,
   DIV_MEMORY_ECHO,
+  DIV_MEMORY_N163_LOAD,
+  DIV_MEMORY_N163_PLAY,
   DIV_MEMORY_BANK0,
   DIV_MEMORY_BANK1,
   DIV_MEMORY_BANK2,
@@ -456,12 +604,40 @@ struct DivMemoryEntry {
   String name;
   int asset;
   size_t begin, end;
+  DivMemoryEntry(DivMemoryEntryType t, String n, int a, size_t b, size_t e):
+    type(t),
+    name(n),
+    asset(a),
+    begin(b),
+    end(e) {}
+  DivMemoryEntry():
+    type(DIV_MEMORY_FREE),
+    name(""),
+    asset(-1),
+    begin(0),
+    end(0) {}
+};
+
+enum DivMemoryWaveView: unsigned char {
+  DIV_MEMORY_WAVE_NONE=0,
+  DIV_MEMORY_WAVE_4BIT, // Namco 163
+  DIV_MEMORY_WAVE_6BIT, // Virtual Boy
+  DIV_MEMORY_WAVE_8BIT_SIGNED, // SCC
 };
 
 struct DivMemoryComposition {
   std::vector<DivMemoryEntry> entries;
+  String name;
   size_t capacity;
   size_t used;
+  const unsigned char* memory;
+  DivMemoryWaveView waveformView;
+  DivMemoryComposition():
+    name(""),
+    capacity(0),
+    used(0),
+    memory(NULL),
+    waveformView(DIV_MEMORY_WAVE_NONE) {}
 };
 
 class DivEngine;
@@ -495,6 +671,22 @@ class DivDispatch {
      * @param len the amount of samples to fill.
      */
     virtual void acquire(short** buf, size_t len);
+
+    /**
+     * fill a buffer with sound data (direct access to blip_buf).
+     * @param bb pointers to blip_buf instances.
+     * @param len the amount of samples to fill.
+     */
+    virtual void acquireDirect(blip_buffer_t** bb, size_t len);
+
+    /**
+     * post-process a rendered sound buffer.
+     * @param buf pointers to output buffers.
+     * @param outIndex the output index.
+     * @param len the number of samples in the buffer.
+     * @param sampleRate the current audio output rate (usually 44100 or 48000).
+     */
+    virtual void postProcess(short* buf, int outIndex, size_t len, int sampleRate);
 
     /**
      * fill a write stream with data (e.g. for software-mixed PCM).
@@ -545,10 +737,10 @@ class DivDispatch {
 
     /**
      * get "paired" channels.
-     * @param chan the channel to query.
-     * @return a DivChannelPair.
+     * @param ch the channel to query.
+     * @param ret the DivChannelPair vector of pairs.
      */
-    virtual DivChannelPair getPaired(int chan);
+    virtual void getPaired(int ch, std::vector<DivChannelPair>& ret);
 
     /**
      * get channel mode hints.
@@ -647,6 +839,14 @@ class DivDispatch {
     virtual int mapVelocity(int ch, float vel);
 
     /**
+     * map chip volume to gain.
+     * @param ch the chip channel. -1 means N/A.
+     * @param vol input volume.
+     * @return output gain fron 0.0 to 1.0.
+     */
+    virtual float getGain(int ch, int vol);
+
+    /**
      * get the lowest note in a portamento.
      * @param ch the channel in question.
      * @return the lowest note.
@@ -677,6 +877,12 @@ class DivDispatch {
      * @return truth.
      */
     virtual bool getWantPreNote();
+
+    /**
+     * check whether acquireDirect is available.
+     * @return whether it is.
+     */
+    virtual bool hasAcquireDirect();
 
     /**
      * get minimum chip clock.
@@ -785,12 +991,18 @@ class DivDispatch {
 
     /**
      * check whether sample has been loaded in memory.
-     * @param memory index.
+     * @param index index.
      * @param sample the sample in question.
      * @return whether it did.
      */
     virtual bool isSampleLoaded(int index, int sample);
     
+    /**
+     * get memory composition.
+     * @param index the memory index.
+     * @return a pointer to DivMemoryComposition, or NULL.
+     */
+    virtual const DivMemoryComposition* getMemCompo(int index);
 
     /**
      * Render samples into sample memory.
@@ -843,7 +1055,7 @@ class DivDispatch {
 #define NOTE_FREQUENCY(x) parent->calcBaseFreq(chipClock,CHIP_FREQBASE,x,false)
 
 // this is a special case definition. only use it for f-num/block-based chips.
-#define NOTE_FNUM_BLOCK(x,bits) parent->calcBaseFreqFNumBlock(chipClock,CHIP_FREQBASE,x,bits)
+#define NOTE_FNUM_BLOCK(x,bits,blk) parent->calcBaseFreqFNumBlock(chipClock,CHIP_FREQBASE,x,bits,blk)
 
 // this is for volume scaling calculation.
 #define VOL_SCALE_LINEAR(x,y,range) ((parent->song.ceilVolumeScaling)?((((x)*(y))+(range-1))/(range)):(((x)*(y))/(range)))

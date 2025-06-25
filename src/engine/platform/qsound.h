@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,7 +29,8 @@ class DivPlatformQSound: public DivDispatch {
     int sample, wave;
     int panning;
     int echo;
-    bool useWave, surround, isNewQSound;
+    int audPos;
+    bool useWave, surround, isNewQSound, setPos;
     Channel():
       SharedChannel<int>(255),
       resVol(4095),
@@ -37,9 +38,11 @@ class DivPlatformQSound: public DivDispatch {
       wave(-1),
       panning(0x10),
       echo(0),
+      audPos(0),
       useWave(false),
       surround(true),
-      isNewQSound(false) {}
+      isNewQSound(false),
+      setPos(false) {}
   };
   Channel chan[19];
   DivDispatchOscBuffer* oscBuf[19];
@@ -57,6 +60,8 @@ class DivPlatformQSound: public DivDispatch {
 
   unsigned int offPCM[256];
   unsigned int offBS[256];
+
+  DivMemoryComposition memCompo;
 
   friend void putDispatchChip(void*,int);
   friend void putDispatchChan(void*,int,int);
@@ -89,6 +94,7 @@ class DivPlatformQSound: public DivDispatch {
     size_t getSampleMemCapacity(int index = 0);
     size_t getSampleMemUsage(int index = 0);
     bool isSampleLoaded(int index, int sample);
+    const DivMemoryComposition* getMemCompo(int index);
     void renderSamples(int chipID);
     int init(DivEngine* parent, int channels, int sugRate, const DivConfig& flags);
     void quit();

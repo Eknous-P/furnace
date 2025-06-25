@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,6 +32,7 @@ int logLevel=LOGLEVEL_TRACE;
 int logLevel=LOGLEVEL_TRACE; // until done
 #endif
 
+FILE* logOut;
 FILE* logFile;
 char* logFileBuf;
 char* logFileWriteBuf;
@@ -98,7 +99,19 @@ int writeLog(int level, const char* msg, fmt::printf_args args) {
   int pos=(logPosition.fetch_add(1))&TA_LOG_MASK;
 
 #if FMT_VERSION >= 100100
+#ifdef _MSVC_LANG
+#if _MSVC_LANG >= 201703L
+  logEntries[pos].text.assign(fmt::vsprintf(std::basic_string_view(msg),args));
+#else
   logEntries[pos].text.assign(fmt::vsprintf(fmt::basic_string_view<char>(msg),args));
+#endif
+#else
+#if __cplusplus >= 201703L
+  logEntries[pos].text.assign(fmt::vsprintf(std::basic_string_view(msg),args));
+#else
+  logEntries[pos].text.assign(fmt::vsprintf(fmt::basic_string_view<char>(msg),args));
+#endif
+#endif
 #else
   logEntries[pos].text.assign(fmt::vsprintf(msg,args));
 #endif
@@ -128,20 +141,22 @@ int writeLog(int level, const char* msg, fmt::printf_args args) {
   if (logLevel<level) return 0;
   switch (level) {
     case LOGLEVEL_ERROR:
-      return fmt::printf("\x1b[1;31m[ERROR]\x1b[m %s\n",logEntries[pos].text);
+      return fmt::fprintf(logOut,"\x1b[1;31m[ERROR]\x1b[m %s\n",logEntries[pos].text);
     case LOGLEVEL_WARN:
-      return fmt::printf("\x1b[1;33m[warning]\x1b[m %s\n",logEntries[pos].text);
+      return fmt::fprintf(logOut,"\x1b[1;33m[warning]\x1b[m %s\n",logEntries[pos].text);
     case LOGLEVEL_INFO:
-      return fmt::printf("\x1b[1;32m[info]\x1b[m %s\n",logEntries[pos].text);
+      return fmt::fprintf(logOut,"\x1b[1;32m[info]\x1b[m %s\n",logEntries[pos].text);
     case LOGLEVEL_DEBUG:
-      return fmt::printf("\x1b[1;34m[debug]\x1b[m %s\n",logEntries[pos].text);
+      return fmt::fprintf(logOut,"\x1b[1;34m[debug]\x1b[m %s\n",logEntries[pos].text);
     case LOGLEVEL_TRACE:
-      return fmt::printf("\x1b[1;37m[trace]\x1b[m %s\n",logEntries[pos].text);
+      return fmt::fprintf(logOut,"\x1b[1;37m[trace]\x1b[m %s\n",logEntries[pos].text);
   }
   return -1;
 }
 
-void initLog() {
+void initLog(FILE* where) {
+  logOut=where;
+
   // initialize coloring on Windows
 #ifdef _WIN32
   HANDLE winout=GetStdHandle(STD_OUTPUT_HANDLE);
@@ -159,6 +174,10 @@ void initLog() {
 
   // initialize log to file thread
   logFileAvail=false;
+}
+
+void changeLogOutput(FILE* where) {
+  logOut=where;
 }
 
 void _logFileThread() {

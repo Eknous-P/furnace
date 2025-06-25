@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,11 +33,88 @@ bool DivEngine::isExporting() {
   return exporting;
 }
 
+void DivEngine::getLoopsLeft(int &loops) {
+  if (totalLoops<0 || exportLoopCount==0) {
+    loops=0;
+    return;
+  }
+  loops=exportLoopCount-1-totalLoops;
+}
+
+void DivEngine::getTotalLoops(int &loops) {
+  loops=exportLoopCount-1;
+}
+
+void DivEngine::getCurSongPos(int &row, int &order) {
+  row=curRow;
+  order=curOrder;
+}
+
+void DivEngine::getTotalAudioFiles(int &files) {
+  files=0;
+
+  switch (exportMode) {
+    case DIV_EXPORT_MODE_ONE: {
+      files=1;
+      break;
+    }
+    case DIV_EXPORT_MODE_MANY_SYS: {
+      files=1; // there actually are several files but they are processed in the same loop, so to correctly draw progress we think of them as one file
+      break;
+    }
+    case DIV_EXPORT_MODE_MANY_CHAN: {
+      for (int i=0; i<chans; i++) {
+        if (!exportChannelMask[i]) continue;
+
+        files++;
+
+        if (getChannelType(i)==5) {
+          i++;
+          while (true) {
+            if (i>=chans) break;
+            if (getChannelType(i)!=5) break;
+            i++;
+          }
+          i--;
+        }
+      }
+      break;
+    }
+    default:
+      break;
+  }
+}
+
+void DivEngine::getCurFileIndex(int &file) {
+  file=0;
+
+  switch (exportMode) {
+    case DIV_EXPORT_MODE_ONE: {
+      file=0;
+      break;
+    }
+    case DIV_EXPORT_MODE_MANY_SYS: {
+      file=0; // there actually are several files but they are processed in the same loop, so to correctly draw progress we think of them as one file
+      break;
+    }
+    case DIV_EXPORT_MODE_MANY_CHAN: {
+      file=curExportChan;
+      break;
+    }
+    default:
+      break;
+  }
+}
+
+bool DivEngine::getIsFadingOut() {
+  return isFadingOut;
+}
+
 #ifdef HAVE_SNDFILE
 void DivEngine::runExportThread() {
   size_t fadeOutSamples=got.rate*exportFadeOut;
   size_t curFadeOutSample=0;
-  bool isFadingOut=false;
+  isFadingOut=false;
 
   switch (exportMode) {
     case DIV_EXPORT_MODE_ONE: {
@@ -45,8 +122,12 @@ void DivEngine::runExportThread() {
       SF_INFO si;
       SFWrapper sfWrap;
       si.samplerate=got.rate;
-      si.channels=2;
-      si.format=SF_FORMAT_WAV|SF_FORMAT_PCM_16;
+      si.channels=exportOutputs;
+      if (exportFormat==DIV_EXPORT_FORMAT_S16) {
+        si.format=SF_FORMAT_WAV|SF_FORMAT_PCM_16;
+      } else {
+        si.format=SF_FORMAT_WAV|SF_FORMAT_FLOAT;
+      }
 
       sf=sfWrap.doOpen(exportPath.c_str(),SFM_WRITE,&si);
       if (sf==NULL) {
@@ -55,37 +136,44 @@ void DivEngine::runExportThread() {
         return;
       }
 
-      float* outBuf[3];
-      outBuf[0]=new float[EXPORT_BUFSIZE];
-      outBuf[1]=new float[EXPORT_BUFSIZE];
-      outBuf[2]=new float[EXPORT_BUFSIZE*2];
+      float* outBuf[DIV_MAX_OUTPUTS];
+      float* outBufFinal;
+      for (int i=0; i<exportOutputs; i++) {
+        outBuf[i]=new float[EXPORT_BUFSIZE];
+      }
+      outBufFinal=new float[EXPORT_BUFSIZE*exportOutputs];
 
       // take control of audio output
       deinitAudioBackend();
+      freelance=false;
       playSub(false);
+      freelance=false;
 
       logI("rendering to file...");
 
       while (playing) {
         size_t total=0;
-        nextBuf(NULL,outBuf,0,2,EXPORT_BUFSIZE);
+        nextBuf(NULL,outBuf,0,exportOutputs,EXPORT_BUFSIZE);
         if (totalProcessed>EXPORT_BUFSIZE) {
           logE("error: total processed is bigger than export bufsize! %d>%d",totalProcessed,EXPORT_BUFSIZE);
           totalProcessed=EXPORT_BUFSIZE;
         }
+        int fi=0;
         for (int i=0; i<(int)totalProcessed; i++) {
           total++;
           if (isFadingOut) {
             double mul=(1.0-((double)curFadeOutSample/(double)fadeOutSamples));
-            outBuf[2][i<<1]=MAX(-1.0f,MIN(1.0f,outBuf[0][i]))*mul;
-            outBuf[2][1+(i<<1)]=MAX(-1.0f,MIN(1.0f,outBuf[1][i]))*mul;
+            for (int j=0; j<exportOutputs; j++) {
+              outBufFinal[fi++]=MAX(-1.0f,MIN(1.0f,outBuf[j][i]))*mul;
+            }
             if (++curFadeOutSample>=fadeOutSamples) {
               playing=false;
               break;
             }
           } else {
-            outBuf[2][i<<1]=MAX(-1.0f,MIN(1.0f,outBuf[0][i]));
-            outBuf[2][1+(i<<1)]=MAX(-1.0f,MIN(1.0f,outBuf[1][i]));
+            for (int j=0; j<exportOutputs; j++) {
+              outBufFinal[fi++]=MAX(-1.0f,MIN(1.0f,outBuf[j][i]));
+            }
             if (lastLoopPos>-1 && i>=lastLoopPos && totalLoops>=exportLoopCount) {
               logD("start fading out...");
               isFadingOut=true;
@@ -94,15 +182,16 @@ void DivEngine::runExportThread() {
           }
         }
         
-        if (sf_writef_float(sf,outBuf[2],total)!=(int)total) {
+        if (sf_writef_float(sf,outBufFinal,total)!=(int)total) {
           logE("error: failed to write entire buffer!");
           break;
         }
       }
 
-      delete[] outBuf[0];
-      delete[] outBuf[1];
-      delete[] outBuf[2];
+      delete[] outBufFinal;
+      for (int i=0; i<exportOutputs; i++) {
+        delete[] outBuf[i];
+      }
 
       if (sfWrap.doClose()!=0) {
         logE("could not close audio file!");
@@ -157,7 +246,9 @@ void DivEngine::runExportThread() {
 
       // take control of audio output
       deinitAudioBackend();
+      freelance=false;
       playSub(false);
+      freelance=false;
 
       logI("rendering to files...");
 
@@ -237,22 +328,32 @@ void DivEngine::runExportThread() {
       // take control of audio output
       deinitAudioBackend();
 
-      float* outBuf[3];
-      outBuf[0]=new float[EXPORT_BUFSIZE];
-      outBuf[1]=new float[EXPORT_BUFSIZE];
-      outBuf[2]=new float[EXPORT_BUFSIZE*2];
+      curExportChan=0;
+
+      float* outBuf[DIV_MAX_OUTPUTS];
+      float* outBufFinal;
+      for (int i=0; i<exportOutputs; i++) {
+        outBuf[i]=new float[EXPORT_BUFSIZE];
+      }
+      outBufFinal=new float[EXPORT_BUFSIZE*exportOutputs];
 
       logI("rendering to files...");
       
       for (int i=0; i<chans; i++) {
+        if (!exportChannelMask[i]) continue;
+
         SNDFILE* sf;
         SF_INFO si;
         SFWrapper sfWrap;
         String fname=fmt::sprintf("%s_c%02d.wav",exportPath,i+1);
         logI("- %s",fname.c_str());
         si.samplerate=got.rate;
-        si.channels=2;
-        si.format=SF_FORMAT_WAV|SF_FORMAT_PCM_16;
+        si.channels=exportOutputs;
+        if (exportFormat==DIV_EXPORT_FORMAT_S16) {
+          si.format=SF_FORMAT_WAV|SF_FORMAT_PCM_16;
+        } else {
+          si.format=SF_FORMAT_WAV|SF_FORMAT_FLOAT;
+        }
 
         sf=sfWrap.doOpen(fname.c_str(),SFM_WRITE,&si);
         if (sf==NULL) {
@@ -283,28 +384,33 @@ void DivEngine::runExportThread() {
         totalLoops=0;
         isFadingOut=false;
         remainingLoops=-1;
+        freelance=false;
         playSub(false);
+        freelance=false;
 
         while (playing) {
           size_t total=0;
-          nextBuf(NULL,outBuf,0,2,EXPORT_BUFSIZE);
+          nextBuf(NULL,outBuf,0,exportOutputs,EXPORT_BUFSIZE);
           if (totalProcessed>EXPORT_BUFSIZE) {
             logE("error: total processed is bigger than export bufsize! %d>%d",totalProcessed,EXPORT_BUFSIZE);
             totalProcessed=EXPORT_BUFSIZE;
           }
+          int fi=0;
           for (int j=0; j<(int)totalProcessed; j++) {
             total++;
             if (isFadingOut) {
               double mul=(1.0-((double)curFadeOutSample/(double)fadeOutSamples));
-              outBuf[2][j<<1]=MAX(-1.0f,MIN(1.0f,outBuf[0][j]))*mul;
-              outBuf[2][1+(j<<1)]=MAX(-1.0f,MIN(1.0f,outBuf[1][j]))*mul;
+              for (int k=0; k<exportOutputs; k++) {
+                outBufFinal[fi++]=MAX(-1.0f,MIN(1.0f,outBuf[k][j]))*mul;
+              }
               if (++curFadeOutSample>=fadeOutSamples) {
                 playing=false;
                 break;
               }
             } else {
-              outBuf[2][j<<1]=MAX(-1.0f,MIN(1.0f,outBuf[0][j]));
-              outBuf[2][1+(j<<1)]=MAX(-1.0f,MIN(1.0f,outBuf[1][j]));
+              for (int k=0; k<exportOutputs; k++) {
+                outBufFinal[fi++]=MAX(-1.0f,MIN(1.0f,outBuf[k][j]));
+              }
               if (lastLoopPos>-1 && j>=lastLoopPos && totalLoops>=exportLoopCount) {
                 logD("start fading out...");
                 isFadingOut=true;
@@ -312,11 +418,13 @@ void DivEngine::runExportThread() {
               }
             }
           }
-          if (sf_writef_float(sf,outBuf[2],total)!=(int)total) {
+          if (sf_writef_float(sf,outBufFinal,total)!=(int)total) {
             logE("error: failed to write entire buffer!");
             break;
           }
         }
+
+        curExportChan++;
 
         if (sfWrap.doClose()!=0) {
           logE("could not close audio file!");
@@ -335,9 +443,10 @@ void DivEngine::runExportThread() {
         if (stopExport) break;
       }
 
-      delete[] outBuf[0];
-      delete[] outBuf[1];
-      delete[] outBuf[2];
+      delete[] outBufFinal;
+      for (int i=0; i<exportOutputs; i++) {
+        delete[] outBuf[i];
+      }
 
       for (int i=0; i<chans; i++) {
         isMuted[i]=false;
@@ -357,6 +466,7 @@ void DivEngine::runExportThread() {
       }
       logI("done!");
       exporting=false;
+      curExportChan=0;
       break;
     }
   }
@@ -369,18 +479,19 @@ void DivEngine::runExportThread() {
 #endif
 
 bool DivEngine::shallSwitchCores() {
-  // TODO: detect whether we should
   return true;
 }
 
-bool DivEngine::saveAudio(const char* path, int loops, DivAudioExportModes mode, double fadeOutTime) {
+bool DivEngine::saveAudio(const char* path, DivAudioExportOptions options) {
 #ifndef HAVE_SNDFILE
   logE("Furnace was not compiled with libsndfile. cannot export!");
   return false;
 #else
   exportPath=path;
-  exportMode=mode;
-  exportFadeOut=fadeOutTime;
+  exportMode=options.mode;
+  exportFormat=options.format;
+  exportFadeOut=options.fadeOut;
+  memcpy(exportChannelMask,options.channelMask,DIV_MAX_CHANS*sizeof(bool));
   if (exportMode!=DIV_EXPORT_MODE_ONE) {
     // remove extension
     String lowerCase=exportPath;
@@ -398,6 +509,7 @@ bool DivEngine::saveAudio(const char* path, int loops, DivAudioExportModes mode,
   repeatPattern=false;
   setOrder(0);
   remainingLoops=-1;
+  got.rate=options.sampleRate;
 
   if (shallSwitchCores()) {
     bool isMutedBefore[DIV_MAX_CHANS];
@@ -412,7 +524,11 @@ bool DivEngine::saveAudio(const char* path, int loops, DivAudioExportModes mode,
     }
   }
 
-  exportLoopCount=loops;
+  exportOutputs=options.chans;
+  if (exportOutputs<1) exportOutputs=1;
+  if (exportOutputs>DIV_MAX_OUTPUTS) exportOutputs=DIV_MAX_OUTPUTS;
+
+  exportLoopCount=options.loops+1;
   exportThread=new std::thread(_runExportThread,this);
   return true;
 #endif

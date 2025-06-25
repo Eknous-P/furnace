@@ -113,7 +113,19 @@ no plans have been made for TX81Z MIDI passthrough, because:
 - `5Dxx`: **set D2R/SR of operator 2.**
 - `5Exx`: **set D2R/SR of operator 3.**
 - `5Fxx`: **set D2R/SR of operator 4.**
+- `61xx`: **set algorithm** (0 to 7).
+- `62xx`: **set LFO FM depth** (0 to 7).
+- `63xx`: **set LFO AM depth** (0 to 3).
+- `64xx`: **set LFO2 FM depth** (0 to 7).
+- `65xx`: **set LFO2 AM depth** (0 to 3).
 
 ## info
 
 this chip uses the [FM (OPZ)](../4-instrument/fm-opz.md) instrument editor.
+
+## chip config
+
+the following options are available in the Chip Manager window:
+
+- **Pseudo-PAL**: run the chip on a PAL clock. such a configuration has never been used in hardware.
+- **Broken pitch macro/slides**: due to an oversight, pitch slides were twice as fast in older versions of Furnace. this option exists for compatibility.

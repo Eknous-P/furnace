@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -65,7 +65,7 @@ class DivPlatformAY8930: public DivDispatch {
 
       struct DAC {
         int sample, rate, period, pos, out;
-        bool furnaceDAC;
+        bool furnaceDAC, setPos;
 
         DAC():
           sample(-1),
@@ -73,11 +73,13 @@ class DivPlatformAY8930: public DivDispatch {
           period(0),
           pos(0),
           out(0),
-          furnaceDAC(false) {}
+          furnaceDAC(false),
+          setPos(false) {}
       } dac;
 
-      unsigned char autoEnvNum, autoEnvDen, duty;
-      signed char konCycles;
+      unsigned char autoEnvNum, autoEnvDen, duty, autoNoiseMode;
+      signed char konCycles, autoNoiseOff;
+      unsigned short fixedFreq;
       Channel():
         SharedChannel<int>(31),
         envelope(Envelope()),
@@ -87,7 +89,10 @@ class DivPlatformAY8930: public DivDispatch {
         autoEnvNum(0),
         autoEnvDen(0),
         duty(4),
-        konCycles(0) {}
+        autoNoiseMode(0),
+        konCycles(0),
+        autoNoiseOff(0),
+        fixedFreq(0) {}
     };
     Channel chan[3];
     bool isMuted[3];
@@ -109,6 +114,7 @@ class DivPlatformAY8930: public DivDispatch {
     unsigned char sampleBank;
 
     int delay;
+    int lastOut[2];
 
     bool extMode, stereo, clockSel;
     bool ioPortA, ioPortB;
@@ -116,10 +122,8 @@ class DivPlatformAY8930: public DivDispatch {
   
     short oldWrites[32];
     short pendingWrites[32];
-    short* ayBuf[3];
-    size_t ayBufLen;
 
-    void runDAC();
+    void runDAC(int advance);
     void checkWrites();
     void updateOutSel(bool immediate=false);
     void immWrite(unsigned char a, unsigned char v);
@@ -128,11 +132,12 @@ class DivPlatformAY8930: public DivDispatch {
     friend void putDispatchChan(void*,int,int);
   
   public:
-    void acquire(short** buf, size_t len);
+    void acquireDirect(blip_buffer_t** bb, size_t len);
     int dispatch(DivCommand c);
     void* getChanState(int chan);
     DivDispatchOscBuffer* getOscBuffer(int chan);
     int mapVelocity(int ch, float vel);
+    float getGain(int ch, int vol);
     unsigned char* getRegisterPool();
     int getRegisterPoolSize();
     void reset();
@@ -142,6 +147,7 @@ class DivPlatformAY8930: public DivDispatch {
     void setFlags(const DivConfig& flags);
     int getOutputCount();
     bool keyOffAffectsArp(int ch);
+    bool hasAcquireDirect();
     DivMacroInt* getChanMacroInt(int ch);
     DivSamplePos getSamplePos(int ch);
     bool getLegacyAlwaysSetVolume();

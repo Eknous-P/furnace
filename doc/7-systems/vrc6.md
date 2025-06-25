@@ -16,8 +16,14 @@ these effects only are effective in the pulse channels.
 
 - `12xx`: **set duty cycle.** range is `0` to `7`.
 - `17xx`: **toggle LEGACY sample mode.**
-  - **this effect exists only for compatibility reasons! its use is NOT recommented. use Sample type instruments instead.**
+  - **this effect exists only for compatibility reasons! its use is NOT recommended. use Sample type instruments instead.**
 
 ## info
 
 this chip uses the [VRC6](../4-instrument/vrc6.md) and [VRC6 (saw)](../4-instrument/vrc6.md) instrument editors.
+
+## chip config
+
+the following options are available in the Chip Manager window:
+
+- **Clock rate**: sets the rate at which the chip will run.

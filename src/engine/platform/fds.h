@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@ class DivPlatformFDS: public DivDispatch {
   struct Channel: public SharedChannel<signed char> {
     int prevFreq, modFreq;
     unsigned char duty, sweep, modDepth, modPos;
+    unsigned char autoModNum, autoModDen;
     bool sweepChanged, modOn;
     signed short wave;
     signed char modTable[32];
@@ -40,6 +41,8 @@ class DivPlatformFDS: public DivDispatch {
       sweep(8),
       modDepth(0),
       modPos(0),
+      autoModNum(0),
+      autoModDen(0),
       sweepChanged(false),
       modOn(false),
       wave(-1) {

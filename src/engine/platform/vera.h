@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,8 +38,8 @@ class DivPlatformVERA: public DivDispatch {
         unsigned int pos;
         unsigned int len;
         unsigned char freq;
-        bool depth16;
-        PCMChannel(): sample(-1), pos(0), len(0), freq(0), depth16(false) {}
+        bool depth16, setPos;
+        PCMChannel(): sample(-1), pos(0), len(0), freq(0), depth16(false), setPos(false) {}
       } pcm;
       Channel():
         SharedChannel<int>(0),

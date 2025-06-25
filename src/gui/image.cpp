@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,22 +28,32 @@
 
 const unsigned char* imageData[GUI_IMAGE_MAX]={
   image_icon_data,
+#ifdef NO_INTRO
+  NULL, NULL, NULL,
+  NULL, NULL, NULL
+#else
   image_talogo_data,
   image_tachip_data,
   image_logo_data,
   image_wordmark_data,
   image_introbg_data,
   image_pat_data
+#endif
 };
 
 const unsigned int imageLen[GUI_IMAGE_MAX]={
   image_icon_size,
+#ifdef NO_INTRO
+  0, 0, 0,
+  0, 0, 0
+#else
   image_talogo_size,
   image_tachip_size,
   image_logo_size,
   image_wordmark_size,
   image_introbg_size,
   image_pat_size
+#endif
 };
 
 FurnaceGUITexture* FurnaceGUI::getTexture(FurnaceGUIImages image, FurnaceGUIBlendMode blendMode) {
@@ -53,8 +63,20 @@ FurnaceGUITexture* FurnaceGUI::getTexture(FurnaceGUIImages image, FurnaceGUIBlen
   if (img->data==NULL) return NULL;
   if (img->width<=0 || img->height<=0) return NULL;
 
+  bool createTex=false;
+
   if (img->tex==NULL) {
-    img->tex=rend->createTexture(false,img->width,img->height);
+    createTex=true;
+  } else {
+    if (!rend->isTextureValid(img->tex)) {
+      rend->destroyTexture(img->tex);
+      img->tex=NULL;
+      createTex=true;
+    }
+  }
+
+  if (createTex) {
+    img->tex=rend->createTexture(false,img->width,img->height,true,bestTexFormat);
     if (img->tex==NULL) {
       logE("error while creating image %d texture! %s",(int)image,SDL_GetError());
       return NULL;
@@ -100,6 +122,44 @@ FurnaceGUIImage* FurnaceGUI::getImage(FurnaceGUIImages image) {
       }
     }
 #endif
+
+    if (ret->ch==4) {
+      size_t total=ret->width*ret->height*ret->ch;
+      switch (bestTexFormat) {
+        case GUI_TEXFORMAT_ARGB32:
+          for (size_t i=0; i<total; i+=4) {
+            ret->data[i]^=ret->data[i|2];
+            ret->data[i|2]^=ret->data[i];
+            ret->data[i]^=ret->data[i|2];
+          }
+          break;
+        case GUI_TEXFORMAT_BGRA32:
+          for (size_t i=0; i<total; i+=4) {
+            ret->data[i]^=ret->data[i|3];
+            ret->data[i|3]^=ret->data[i];
+            ret->data[i]^=ret->data[i|3];
+            ret->data[i|1]^=ret->data[i|2];
+            ret->data[i|2]^=ret->data[i|1];
+            ret->data[i|1]^=ret->data[i|2];
+            ret->data[i|1]^=ret->data[i|3];
+            ret->data[i|3]^=ret->data[i|1];
+            ret->data[i|1]^=ret->data[i|3];
+          }
+          break;
+        case GUI_TEXFORMAT_RGBA32:
+          for (size_t i=0; i<total; i+=4) {
+            ret->data[i]^=ret->data[i|3];
+            ret->data[i|3]^=ret->data[i];
+            ret->data[i]^=ret->data[i|3];
+            ret->data[i|1]^=ret->data[i|2];
+            ret->data[i|2]^=ret->data[i|1];
+            ret->data[i|1]^=ret->data[i|2];
+          }
+          break;
+        default:
+          break;
+      }
+    }
 
     images[image]=ret;
   }

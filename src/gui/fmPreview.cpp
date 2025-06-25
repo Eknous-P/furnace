@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,6 +27,7 @@ extern "C" {
 #include "../../extern/Nuked-OPLL/opll.h"
 }
 #include "../engine/platform/sound/ymfm/ymfm_opz.h"
+#include "../engine/bsr.h"
 
 #define OPN_WRITE(addr,val) \
   OPN2_Write((ym3438_t*)fmPreviewOPN,0,(addr)); \
@@ -77,7 +78,13 @@ void FurnaceGUI::renderFMPreviewOPN(const DivInstrumentFM& params, int pos) {
     OPN_WRITE(0xb4,0xc0|(params.fms&7)|((params.ams&3)<<4));
     OPN_WRITE(0xa4,mult0?0x1c:0x14); // frequency
     OPN_WRITE(0xa0,0);
-    OPN_WRITE(0x28,0xf0); // key on
+    OPN_WRITE(
+     0x28,
+     (params.op[0].enable?0x10:0)|
+     (params.op[2].enable?0x20:0)|
+     (params.op[1].enable?0x40:0)|
+     (params.op[3].enable?0x80:0)
+    ); // key on
   }
 
   // render
@@ -138,7 +145,13 @@ void FurnaceGUI::renderFMPreviewOPM(const DivInstrumentFM& params, int pos) {
     OPM_WRITE(0x38,((params.fms&7)<<4)|(params.ams&3));
     OPM_WRITE(0x28,mult0?0x39:0x29); // frequency
     OPM_WRITE(0x30,0xe6);
-    OPM_WRITE(0x08,0x78); // key on
+    OPM_WRITE(
+     0x08,
+     (params.op[0].enable?0x08:0)|
+     (params.op[2].enable?0x10:0)|
+     (params.op[1].enable?0x20:0)|
+     (params.op[3].enable?0x40:0)
+    ); // key on
   }
 
   // render
@@ -350,7 +363,7 @@ void FurnaceGUI::renderFMPreviewESFM(const DivInstrumentFM& params, const DivIns
   bool mult0=false;
 
   if (pos==0) {
-    ESFM_init((esfm_chip*)fmPreviewESFM);
+    ESFM_init((esfm_chip*)fmPreviewESFM,0);
     // set native mode
     ESFM_WRITE(0x105, 0x80);
 
@@ -376,9 +389,9 @@ void FurnaceGUI::renderFMPreviewESFM(const DivInstrumentFM& params, const DivIns
         double fbase=(mult0?2048.0:1024.0)*pow(2.0,(float)offset/(128.0*12.0));
         int bf=round(fbase);
         int block=0;
-        while (bf>0x3ff) {
-          bf>>=1;
-          block++;
+        if (bf>0x3ff) {
+          block=bsr32(bf)-10;
+          bf>>=block;
         }
         freqL=bf&0xff;
         freqH=((block&7)<<2)|((bf>>8)&3);

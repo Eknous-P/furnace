@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -46,15 +46,31 @@ const char** DivPlatformVRC6::getRegisterSheet() {
   return regCheatSheetVRC6;
 }
 
-void DivPlatformVRC6::acquire(short** buf, size_t len) {
-  for (size_t i=0; i<len; i++) {
+void DivPlatformVRC6::acquireDirect(blip_buffer_t** bb, size_t len) {
+  for (int i=0; i<3; i++) {
+    oscBuf[i]->begin(len);
+  }
+
+  for (size_t h=0; h<len; h++) {
+    // running heuristic
+    int advance=vrc6.predict();
+    if ((int)(len-h)<advance) advance=len-h;
+    for (int i=0; i<2; i++) {
+      if (chan[i].pcm && chan[i].dacSample!=-1) {
+        if (chan[i].dacRate<=0) continue;
+        int remainTime=(rate-chan[i].dacPeriod+chan[i].dacRate-1)/chan[i].dacRate;
+        if (remainTime<advance) advance=remainTime;
+        if (remainTime<1) advance=1;
+      }
+    }
+    
     // PCM part
     for (int i=0; i<2; i++) {
       if (chan[i].pcm && chan[i].dacSample!=-1) {
-        chan[i].dacPeriod+=chan[i].dacRate;
+        chan[i].dacPeriod+=chan[i].dacRate*advance;
         if (chan[i].dacPeriod>rate) {
           DivSample* s=parent->getSample(chan[i].dacSample);
-          if (s->samples<=0) {
+          if (s->samples<=0 || chan[i].dacPos>=s->samples) {
             chan[i].dacSample=-1;
             chWrite(i,0,0);
             continue;
@@ -77,22 +93,20 @@ void DivPlatformVRC6::acquire(short** buf, size_t len) {
     }
 
     // VRC6 part
-    vrc6.tick();
+    vrc6.tick(advance);
+    h+=advance-1;
     int sample=vrc6.out()<<9; // scale to 16 bit
-    if (sample>32767) sample=32767;
-    if (sample<-32768) sample=-32768;
-    buf[0][i]=sample;
-
-    // Oscilloscope buffer part
-    if (++writeOscBuf>=32) {
-      writeOscBuf=0;
-      for (int i=0; i<2; i++) {
-        oscBuf[i]->data[oscBuf[i]->needle++]=vrc6.pulse_out(i)<<11;
-      }
-      oscBuf[2]->data[oscBuf[2]->needle++]=vrc6.sawtooth_out()<<10;
+    if (sample!=prevSample) {
+      blip_add_delta(bb[0],h,sample-prevSample);
+      prevSample=sample;
     }
 
-    // Command part
+    for (int i=0; i<2; i++) {
+      oscBuf[i]->putSample(h,vrc6.pulse_out(i)<<11);
+    }
+    oscBuf[2]->putSample(h,vrc6.sawtooth_out()<<10);
+
+    // Command part (what the heck why at the END?!)
     while (!writes.empty()) {
       QueuedWrite w=writes.front();
       switch (w.addr&0xf000) {
@@ -127,6 +141,10 @@ void DivPlatformVRC6::acquire(short** buf, size_t len) {
       }
       writes.pop();
     }
+  }
+
+  for (int i=0; i<3; i++) {
+    oscBuf[i]->end(len);
   }
 }
 
@@ -185,7 +203,11 @@ void DivPlatformVRC6::tick(bool sysTick) {
               chWrite(i,0,isMuted[i]?0:0x80);
               addWrite(0xffff0000+(i<<8),chan[i].dacSample);
             }
-            chan[i].dacPos=0;
+            if (chan[i].setPos) {
+              chan[i].setPos=false;
+            } else {
+              chan[i].dacPos=0;
+            }
             chan[i].dacPeriod=0;
             chan[i].keyOn=true;
           }
@@ -204,7 +226,7 @@ void DivPlatformVRC6::tick(bool sysTick) {
             if (s->centerRate<1) {
               off=1.0;
             } else {
-              off=8363.0/(double)s->centerRate;
+              off=parent->getCenterRate()/(double)s->centerRate;
             }
           }
           chan[i].dacRate=((double)chipClock)/MAX(1,off*chan[i].freq);
@@ -262,7 +284,11 @@ int DivPlatformVRC6::dispatch(DivCommand c) {
                 addWrite(0xffff0000+(c.chan<<8),chan[c.chan].dacSample);
               }
             }
-            chan[c.chan].dacPos=0;
+            if (chan[c.chan].setPos) {
+              chan[c.chan].setPos=false;
+            } else {
+              chan[c.chan].dacPos=0;
+            }
             chan[c.chan].dacPeriod=0;
             if (c.value!=DIV_NOTE_NULL) {
               chan[c.chan].baseFreq=NOTE_PERIODIC(c.value);
@@ -290,7 +316,11 @@ int DivPlatformVRC6::dispatch(DivCommand c) {
             } else {
               if (dumpWrites) addWrite(0xffff0000+(c.chan<<8),chan[c.chan].dacSample);
             }
-            chan[c.chan].dacPos=0;
+            if (chan[c.chan].setPos) {
+              chan[c.chan].setPos=false;
+            } else {
+              chan[c.chan].dacPos=0;
+            }
             chan[c.chan].dacPeriod=0;
             chan[c.chan].dacRate=parent->getSample(chan[c.chan].dacSample)->rate;
             if (dumpWrites) {
@@ -388,6 +418,9 @@ int DivPlatformVRC6::dispatch(DivCommand c) {
     case DIV_CMD_STD_NOISE_MODE:
       if ((c.chan!=2) && (!chan[c.chan].pcm)) { // pulse
         chan[c.chan].duty=c.value;
+        if (!isMuted[c.chan]) { // pulse
+          chWrite(c.chan,0,(chan[c.chan].outVol&0xf)|((chan[c.chan].duty&7)<<4));
+        }
       }
       break;
     case DIV_CMD_SAMPLE_MODE:
@@ -404,6 +437,10 @@ int DivPlatformVRC6::dispatch(DivCommand c) {
       if (sampleBank>(parent->song.sample.size()/12)) {
         sampleBank=parent->song.sample.size()/12;
       }
+      break;
+    case DIV_CMD_SAMPLE_POS:
+      chan[c.chan].dacPos=c.value;
+      chan[c.chan].setPos=true;
       break;
     case DIV_CMD_LEGATO:
       chan[c.chan].baseFreq=NOTE_PERIODIC(c.value+chan[c.chan].sampleNoteDelta+((HACKY_LEGATO_MESS)?(chan[c.chan].std.arp.val):(0)));
@@ -499,6 +536,7 @@ void DivPlatformVRC6::reset() {
   }
 
   sampleBank=0;
+  prevSample=0;
 
   vrc6.reset();
   // Initialize control register
@@ -510,6 +548,10 @@ void DivPlatformVRC6::reset() {
 }
 
 bool DivPlatformVRC6::keyOffAffectsArp(int ch) {
+  return true;
+}
+
+bool DivPlatformVRC6::hasAcquireDirect() {
   return true;
 }
 
@@ -525,7 +567,7 @@ void DivPlatformVRC6::setFlags(const DivConfig& flags) {
   CHECK_CUSTOM_CLOCK;
   rate=chipClock;
   for (int i=0; i<3; i++) {
-    oscBuf[i]->rate=rate/32;
+    oscBuf[i]->setRate(rate);
   }
 }
 
@@ -547,7 +589,6 @@ int DivPlatformVRC6::init(DivEngine* p, int channels, int sugRate, const DivConf
   parent=p;
   dumpWrites=false;
   skipRegisterWrites=false;
-  writeOscBuf=0;
   for (int i=0; i<3; i++) {
     isMuted[i]=false;
     oscBuf[i]=new DivDispatchOscBuffer;

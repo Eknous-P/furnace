@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,11 +29,14 @@
 void DivPlatformPCMDAC::acquire(short** buf, size_t len) {
   const int depthScale=(15-outDepth);
   int output=0;
+
+  oscBuf->begin(len);
+
   for (size_t h=0; h<len; h++) {
     if (!chan[0].active) {
       buf[0][h]=0;
       buf[1][h]=0;
-      oscBuf->data[oscBuf->needle++]=0;
+      oscBuf->putSample(h,0);
       continue;
     }
     if (chan[0].useWave || (chan[0].sample>=0 && chan[0].sample<parent->song.sampleLen)) {
@@ -227,9 +230,9 @@ void DivPlatformPCMDAC::acquire(short** buf, size_t len) {
     if (isMuted) {
       output=0;
     } else {
-      output=output*chan[0].vol*chan[0].envVol/16384;
+      output=((output*MIN(volMax,chan[0].vol)*MIN(chan[0].envVol,64))>>6)/volMax;
     }
-    oscBuf->data[oscBuf->needle++]=((output>>depthScale)<<depthScale)>>1;
+    oscBuf->putSample(h,((output>>depthScale)<<depthScale)>>1);
     if (outStereo) {
       buf[0][h]=((output*chan[0].panL)>>(depthScale+8))<<depthScale;
       buf[1][h]=((output*chan[0].panR)>>(depthScale+8))<<depthScale;
@@ -239,6 +242,8 @@ void DivPlatformPCMDAC::acquire(short** buf, size_t len) {
       buf[1][h]=output;
     }
   }
+
+  oscBuf->end(len);
 }
 
 void DivPlatformPCMDAC::tick(bool sysTick) {
@@ -292,7 +297,7 @@ void DivPlatformPCMDAC::tick(bool sysTick) {
     double off=1.0;
     if (!chan[0].useWave && chan[0].sample>=0 && chan[0].sample<parent->song.sampleLen) {
       DivSample* s=parent->getSample(chan[0].sample);
-      off=(s->centerRate>=1)?((double)s->centerRate/8363.0):1.0;
+      off=(s->centerRate>=1)?((double)s->centerRate/parent->getCenterRate()):1.0;
     }
     chan[0].freq=off*parent->calcFreq(chan[0].baseFreq,chan[0].pitch,chan[0].fixedArp?chan[0].baseNoteOverride:chan[0].arpOff,chan[0].fixedArp,false,2,chan[0].pitch2,chipClock,CHIP_FREQBASE);
     if (chan[0].freq>16777215) chan[0].freq=16777215;
@@ -451,7 +456,7 @@ int DivPlatformPCMDAC::dispatch(DivCommand c) {
       chan[0].setPos=true;
       break;
     case DIV_CMD_GET_VOLMAX:
-      return 255;
+      return volMax;
       break;
     case DIV_CMD_MACRO_OFF:
       chan[c.chan].std.mask(c.value,true);
@@ -542,7 +547,9 @@ void DivPlatformPCMDAC::setFlags(const DivConfig& flags) {
   outDepth=(flags.getInt("outDepth",15))&15;
   outStereo=flags.getBool("stereo",true);
   interp=flags.getInt("interpolation",0);
-  oscBuf->rate=rate;
+  oscBuf->setRate(rate);
+  volMax=flags.getInt("volMax",255);
+  if (volMax<1) volMax=1;
 }
 
 int DivPlatformPCMDAC::init(DivEngine* p, int channels, int sugRate, const DivConfig& flags) {

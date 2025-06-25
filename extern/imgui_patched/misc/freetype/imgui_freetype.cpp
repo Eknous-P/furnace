@@ -298,7 +298,7 @@ namespace
         out_glyph_info->Height = (int)ft_bitmap->rows;
         out_glyph_info->OffsetX = Face->glyph->bitmap_left;
         out_glyph_info->OffsetY = -Face->glyph->bitmap_top;
-        out_glyph_info->AdvanceX = (float)FT_CEIL(slot->advance.x);
+        out_glyph_info->AdvanceX = (float)FT_CEIL(slot->advance.x-((LoadFlags&FT_LOAD_NO_HINTING)?31:0));
         out_glyph_info->IsColored = (ft_bitmap->pixel_mode == FT_PIXEL_MODE_BGRA);
 
         return ft_bitmap;
@@ -617,7 +617,7 @@ bool ImFontAtlasBuildWithFreeTypeEx(FT_Library ft_library, ImFontAtlas* atlas, u
 
     // 5. Start packing
     // Pack our extra data rectangles first, so it will be on the upper-left corner of our texture (UV will have small values).
-    const int TEX_HEIGHT_MAX = 1024 * 32;
+    const int TEX_HEIGHT_MAX = 1024 * 16;
     const int num_nodes_for_packing_algorithm = atlas->TexWidth - atlas->TexGlyphPadding;
     ImVector<stbrp_node> pack_nodes;
     pack_nodes.resize(num_nodes_for_packing_algorithm);
@@ -643,6 +643,15 @@ bool ImFontAtlasBuildWithFreeTypeEx(FT_Library ft_library, ImFontAtlas* atlas, u
 
     // 7. Allocate texture
     atlas->TexHeight = (atlas->Flags & ImFontAtlasFlags_NoPowerOfTwoHeight) ? (atlas->TexHeight + 1) : ImUpperPowerOfTwo(atlas->TexHeight);
+
+    if (atlas->Flags & ImFontAtlasFlags_Square) {
+      if (atlas->TexWidth>atlas->TexHeight) {
+        atlas->TexHeight=atlas->TexWidth;
+      } else {
+        atlas->TexWidth=atlas->TexHeight;
+      }
+    }
+
     atlas->TexUvScale = ImVec2(1.0f / atlas->TexWidth, 1.0f / atlas->TexHeight);
     if (src_load_color)
     {
@@ -683,7 +692,9 @@ bool ImFontAtlasBuildWithFreeTypeEx(FT_Library ft_library, ImFontAtlas* atlas, u
         {
             ImFontBuildSrcGlyphFT& src_glyph = src_tmp.GlyphsList[glyph_i];
             stbrp_rect& pack_rect = src_tmp.Rects[glyph_i];
-            IM_ASSERT(pack_rect.was_packed);
+            if (!pack_rect.was_packed) // this was an assertion. why?!
+                continue;
+
             if (pack_rect.w == 0 && pack_rect.h == 0)
                 continue;
 

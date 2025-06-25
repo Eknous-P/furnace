@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,7 +23,13 @@
 void DivDispatch::acquire(short** buf, size_t len) {
 }
 
+void DivDispatch::acquireDirect(blip_buffer_t** bb, size_t len) {
+}
+
 void DivDispatch::fillStream(std::vector<DivDelayedWrite>& stream, int sRate, size_t len) {
+}
+
+void DivDispatch::postProcess(short* buf, int outIndex, size_t len, int sampleRate) {
 }
 
 void DivDispatch::tick(bool sysTick) {
@@ -37,8 +43,7 @@ unsigned short DivDispatch::getPan(int chan) {
   return 0;
 }
 
-DivChannelPair DivDispatch::getPaired(int chan) {
-  return DivChannelPair();
+void DivDispatch::getPaired(int ch, std::vector<DivChannelPair>& ret) {
 }
 
 DivChannelModeHints DivDispatch::getModeHints(int chan) {
@@ -107,6 +112,11 @@ int DivDispatch::mapVelocity(int ch, float vel) {
   return round(vel*volMax);
 }
 
+float DivDispatch::getGain(int ch, int vol) {
+  const float volMax=MAX(1,dispatch(DivCommand(DIV_CMD_GET_VOLMAX,MAX(ch,0))));
+  return (float)vol/volMax;
+}
+
 int DivDispatch::getPortaFloor(int ch) {
   return 0x00;
 }
@@ -120,6 +130,10 @@ float DivDispatch::getPostAmp() {
 }
 
 bool DivDispatch::getDCOffRequired() {
+  return false;
+}
+
+bool DivDispatch::hasAcquireDirect() {
   return false;
 }
 
@@ -197,6 +211,10 @@ const char* DivDispatch::getSampleMemName(int index) {
 
 size_t DivDispatch::getSampleMemUsage(int index) {
   return 0;
+}
+
+const DivMemoryComposition* DivDispatch::getMemCompo(int index) {
+  return NULL;
 }
 
 bool DivDispatch::isSampleLoaded(int index, int sample) {

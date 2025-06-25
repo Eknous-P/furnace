@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,8 +19,18 @@
 
 #include "../export.h"
 
+#include <thread>
+
 class DivExportAmigaValidation: public DivROMExport {
+  DivEngine* e;
+  std::thread* exportThread;
+  bool running;
+  void run();
   public:
-    std::vector<DivROMExportOutput> go(DivEngine* e);
+    bool go(DivEngine* e);
+    bool isRunning();
+    bool hasFailed();
+    void abort();
+    void wait();
     ~DivExportAmigaValidation() {}
 };

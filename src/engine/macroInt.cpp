@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -143,7 +143,11 @@ void DivMacroStruct::doMacro(DivInstrumentMacro& source, bool released, bool tic
           if (!linger) has=false;
           break;
       }
-      val=ADSR_LOW+((pos+(ADSR_HIGH-ADSR_LOW)*pos)>>8);
+      if (ADSR_HIGH>ADSR_LOW) {
+        val=ADSR_LOW+((pos+(ADSR_HIGH-ADSR_LOW)*pos)>>8);
+      } else {
+        val=ADSR_HIGH+(((255-pos)+(ADSR_LOW-ADSR_HIGH)*(255-pos))>>8);
+      }
     }
     if (type==2) { // LFO
       lfoPos+=LFO_SPEED;
@@ -161,7 +165,11 @@ void DivMacroStruct::doMacro(DivInstrumentMacro& source, bool released, bool tic
           lfoOut=(lfoPos&512)?255:0;
           break;
       }
-      val=ADSR_LOW+((lfoOut+(ADSR_HIGH-ADSR_LOW)*lfoOut)>>8);
+      if (ADSR_HIGH>ADSR_LOW) {
+        val=ADSR_LOW+((lfoOut+(ADSR_HIGH-ADSR_LOW)*lfoOut)>>8);
+      } else {
+        val=ADSR_HIGH+(((255-lfoOut)+(ADSR_LOW-ADSR_HIGH)*(255-lfoOut))>>8);
+      }
     }
   }
 }
@@ -234,6 +242,8 @@ void DivMacroInt::mask(unsigned char id, bool enabled) {
     CONSIDER(ex6,17)
     CONSIDER(ex7,18)
     CONSIDER(ex8,19)
+    CONSIDER(ex9,20)
+    CONSIDER(ex10,21)
 
     CONSIDER_OP(0,0x20)
     CONSIDER_OP(2,0x40)
@@ -301,6 +311,8 @@ void DivMacroInt::restart(unsigned char id) {
     CONSIDER(ex6,ex6Macro,17)
     CONSIDER(ex7,ex7Macro,18)
     CONSIDER(ex8,ex8Macro,19)
+    CONSIDER(ex9,ex9Macro,20)
+    CONSIDER(ex10,ex10Macro,21)
 
     CONSIDER_OP(0,0x20)
     CONSIDER_OP(2,0x40)
@@ -409,6 +421,12 @@ void DivMacroInt::init(DivInstrument* which) {
   }
   if (ins->std.ex8Macro.len>0) {
     ADD_MACRO(ex8,ins->std.ex8Macro);
+  }
+  if (ins->std.ex9Macro.len>0) {
+    ADD_MACRO(ex9,ins->std.ex9Macro);
+  }
+  if (ins->std.ex10Macro.len>0) {
+    ADD_MACRO(ex10,ins->std.ex10Macro);
   }
 
   // prepare FM operator macros
@@ -551,6 +569,8 @@ DivMacroStruct* DivMacroInt::structByType(unsigned char type) {
     CONSIDER(ex6,DIV_MACRO_EX6)
     CONSIDER(ex7,DIV_MACRO_EX7)
     CONSIDER(ex8,DIV_MACRO_EX8)
+    CONSIDER(ex9,DIV_MACRO_EX9)
+    CONSIDER(ex10,DIV_MACRO_EX10)
   }
 
   return NULL;

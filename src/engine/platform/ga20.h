@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -58,7 +58,7 @@ class DivPlatformGA20: public DivDispatch, public iremga20_intf {
   unsigned int sampleOffGA20[256];
   bool sampleLoaded[256];
 
-  int delay;
+  int oldOut;
 
   short* ga20Buf[4];
   size_t ga20BufLen;
@@ -66,6 +66,7 @@ class DivPlatformGA20: public DivDispatch, public iremga20_intf {
   unsigned char* sampleMem;
   size_t sampleMemLen;
   iremga20_device ga20;
+  DivMemoryComposition memCompo;
   unsigned char regPool[32];
   friend void putDispatchChip(void*,int);
   friend void putDispatchChan(void*,int,int);
@@ -73,6 +74,7 @@ class DivPlatformGA20: public DivDispatch, public iremga20_intf {
   void chWrite(unsigned char ch, unsigned int addr, unsigned char val);
   public:
     virtual u8 read_byte(u32 address) override;
+    virtual void acquireDirect(blip_buffer_t** bb, size_t len) override;
     virtual void acquire(short** buf, size_t len) override;
     virtual int dispatch(DivCommand c) override;
     virtual void* getChanState(int chan) override;
@@ -85,6 +87,7 @@ class DivPlatformGA20: public DivDispatch, public iremga20_intf {
     virtual void forceIns() override;
     virtual void tick(bool sysTick=true) override;
     virtual void muteChannel(int ch, bool mute) override;
+    virtual bool hasAcquireDirect() override;
     virtual int getOutputCount() override;
     virtual void notifyInsChange(int ins) override;
     virtual void notifyWaveChange(int wave) override;
@@ -97,6 +100,7 @@ class DivPlatformGA20: public DivDispatch, public iremga20_intf {
     virtual size_t getSampleMemCapacity(int index = 0) override;
     virtual size_t getSampleMemUsage(int index = 0) override;
     virtual bool isSampleLoaded(int index, int sample) override;
+    virtual const DivMemoryComposition* getMemCompo(int index) override;
     virtual void renderSamples(int chipID) override;
     virtual int init(DivEngine* parent, int channels, int sugRate, const DivConfig& flags) override;
     virtual void quit() override;

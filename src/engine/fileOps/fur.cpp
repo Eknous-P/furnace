@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -691,7 +691,7 @@ void DivEngine::convertOldFlags(unsigned int oldFlags, DivConfig& newFlags, DivS
   }
 }
 
-bool DivEngine::loadFur(unsigned char* file, size_t len) {
+bool DivEngine::loadFur(unsigned char* file, size_t len, int variantID) {
   unsigned int insPtr[256];
   unsigned int wavePtr[256];
   unsigned int samplePtr[256];
@@ -719,6 +719,11 @@ bool DivEngine::loadFur(unsigned char* file, size_t len) {
     }
     ds.version=reader.readS();
     logI("module version %d (0x%.2x)",ds.version,ds.version);
+
+    if (variantID!=DIV_FUR_VARIANT_VANILLA) {
+      logW("Furnace variant detected: %d",variantID);
+      addWarning("this module was created with a downstream version of Furnace. certain features may not be compatible.");
+    }
 
     if (ds.version>DIV_ENGINE_VERSION) {
       logW("this module was created with a more recent version of Furnace!");
@@ -855,6 +860,9 @@ bool DivEngine::loadFur(unsigned char* file, size_t len) {
     }
     if (ds.version<191) {
       ds.oldAlwaysSetVolume=true;
+    }
+    if (ds.version<200) {
+      ds.oldSampleOffset=true;
     }
     ds.isDMF=false;
 
@@ -1409,7 +1417,9 @@ bool DivEngine::loadFur(unsigned char* file, size_t len) {
       } else {
         reader.readC();
       }
-      for (int i=0; i<1; i++) {
+      if (ds.version>=200) {
+        ds.oldSampleOffset=reader.readC();
+      } else {
         reader.readC();
       }
     }
@@ -2052,6 +2062,86 @@ bool DivEngine::loadFur(unsigned char* file, size_t len) {
       }
     }
 
+    // OPLL fixedAll compat
+    if (ds.version<194) {
+      for (int i=0; i<ds.systemLen; i++) {
+        if (ds.system[i]==DIV_SYSTEM_OPLL ||
+            ds.system[i]==DIV_SYSTEM_OPLL_DRUMS) {
+          if (!ds.systemFlags[i].has("fixedAll")) {
+            ds.systemFlags[i].set("fixedAll",false);
+          }
+        }
+      }
+    }
+
+    // C64 macro race
+    if (ds.version<195) {
+      for (int i=0; i<ds.systemLen; i++) {
+        if (ds.system[i]==DIV_SYSTEM_C64_8580 || ds.system[i]==DIV_SYSTEM_C64_6581) {
+          ds.systemFlags[i].set("macroRace",true);
+        }
+      }
+    }
+
+    // VERA old chip revision
+    // TIA old tuning
+    if (ds.version<213) {
+      for (int i=0; i<ds.systemLen; i++) {
+        if (ds.system[i]==DIV_SYSTEM_VERA) {
+          ds.systemFlags[i].set("chipType",0);
+        }
+        if (ds.system[i]==DIV_SYSTEM_TIA) {
+          ds.systemFlags[i].set("oldPitch",true);
+        }
+      }
+    } else if (ds.version<217) {
+      for (int i=0; i<ds.systemLen; i++) {
+        if (ds.system[i]==DIV_SYSTEM_VERA) {
+          ds.systemFlags[i].set("chipType",1);
+        }
+      }
+    } else if (ds.version<229) {
+      for (int i=0; i<ds.systemLen; i++) {
+        if (ds.system[i]==DIV_SYSTEM_VERA) {
+          ds.systemFlags[i].set("chipType",2);
+        }
+      }
+    }
+
+    // SNES no anti-click
+    if (ds.version<220) {
+      for (int i=0; i<ds.systemLen; i++) {
+        if (ds.system[i]==DIV_SYSTEM_SNES) {
+          ds.systemFlags[i].set("antiClick",false);
+        }
+      }
+    }
+
+    // Y8950 broken ADPCM pitch
+    if (ds.version<223) {
+      for (int i=0; i<ds.systemLen; i++) {
+        if (ds.system[i]==DIV_SYSTEM_Y8950 || ds.system[i]==DIV_SYSTEM_Y8950_DRUMS) {
+          ds.systemFlags[i].set("compatYPitch",true);
+        }
+      }
+    }
+
+    // YM2612 chip type
+    if (ds.version<231) {
+      for (int i=0; i<ds.systemLen; i++) {
+        if (ds.system[i]==DIV_SYSTEM_YM2612 ||
+            ds.system[i]==DIV_SYSTEM_YM2612_EXT ||
+            ds.system[i]==DIV_SYSTEM_YM2612_EXT ||
+            ds.system[i]==DIV_SYSTEM_YM2612_DUALPCM ||
+            ds.system[i]==DIV_SYSTEM_YM2612_DUALPCM_EXT ||
+            ds.system[i]==DIV_SYSTEM_YM2612_CSM) {
+          if (!ds.systemFlags[i].has("chipType") && !ds.systemFlags[i].has("ladderEffect")) {
+            ds.systemFlags[i].set("chipType",0);
+          }
+        }
+      }
+    }
+
     if (active) quitDispatch();
     BUSY_BEGIN_SOFT;
     saveLock.lock();
@@ -2376,9 +2466,7 @@ SafeWriter* DivEngine::saveFur(bool notPrimary, bool newPatternFormat) {
   w->writeC(song.resetArpPhaseOnNewNote);
   w->writeC(song.ceilVolumeScaling);
   w->writeC(song.oldAlwaysSetVolume);
-  for (int i=0; i<1; i++) {
-    w->writeC(0);
-  }
+  w->writeC(song.oldSampleOffset);
 
   // speeds of first song
   w->writeC(subSong->speeds.len);

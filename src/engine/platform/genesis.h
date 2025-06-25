@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,20 +22,9 @@
 
 #include "fmshared_OPN.h"
 #include "sound/ymfm/ymfm_opn.h"
+extern "C" {
 #include "../../../extern/YMF276-LLE/fmopn2.h"
-
-class DivYM2612Interface: public ymfm::ymfm_interface {
-  int setA, setB;
-  int countA, countB;
-
-  public:
-    void clock();
-    void ymfm_set_timer(uint32_t tnum, int32_t duration_in_clocks);
-    DivYM2612Interface():
-      ymfm::ymfm_interface(),
-      countA(0),
-      countB(0) {}
-};
+}
 
 class DivPlatformGenesis: public DivPlatformOPN {
   protected:
@@ -81,14 +70,22 @@ class DivPlatformGenesis: public DivPlatformOPN {
 
     ymfm::ym2612* fm_ymfm;
     ymfm::ym2612::output_data out_ymfm;
-    DivYM2612Interface iface;
+    DivOPNInterface iface;
 
     int softPCMTimer;
 
-    bool extMode, softPCM, noExtMacros, canWriteDAC;
+    bool extMode, softPCM, noExtMacros, canWriteDAC, msw;
     unsigned char useYMFM;
     unsigned char chipType;
     short dacWrite;
+
+    int lleCycle;
+    int llePrevCycle;
+    int lleOscData[6];
+    int dacShifter, o_lro, o_bco;
+
+    int interruptSim;
+    int interruptSimCycles;
   
     unsigned char dacVolTable[128];
   
@@ -97,6 +94,7 @@ class DivPlatformGenesis: public DivPlatformOPN {
 
     inline void processDAC(int iRate);
     inline void commitState(int ch, DivInstrument* ins);
+    inline void acquire276OscSub(int h);
     void acquire_nuked(short** buf, size_t len);
     void acquire_nuked276(short** buf, size_t len);
     void acquire_ymfm(short** buf, size_t len);

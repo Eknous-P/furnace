@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2024 tildearrow and contributors
+ * Copyright (C) 2021-2025 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -87,6 +87,41 @@ void FurnaceGUI::drawMobileOrderSel() {
       orderScrollLocked=true;
       orderScrollTolerance=true;
     }
+
+    // time
+    if (e->isPlaying() && settings.playbackTime) {
+      int totalTicks=e->getTotalTicks();
+      int totalSeconds=e->getTotalSeconds();
+      String info="";
+
+      if (totalSeconds==0x7fffffff) {
+        info="∞";
+      } else {
+        if (totalSeconds>=86400) {
+          int totalDays=totalSeconds/86400;
+          int totalYears=totalDays/365;
+          totalDays%=365;
+          int totalMonths=totalDays/30;
+          totalDays%=30;
+
+          info+=fmt::sprintf("%dy",totalYears);
+          info+=fmt::sprintf("%dm",totalMonths);
+          info+=fmt::sprintf("%dd",totalDays);
+        }
+
+        if (totalSeconds>=3600) {
+          info+=fmt::sprintf("%.2d:",(totalSeconds/3600)%24);
+        }
+
+        info+=fmt::sprintf("%.2d:%.2d.%.2d",(totalSeconds/60)%60,totalSeconds%60,totalTicks/10000);
+      }
+
+      ImVec2 textSize=ImGui::CalcTextSize(info.c_str());
+
+      dl->AddRectFilled(ImVec2(11.0f*dpiScale,(size.y*0.5)-(5.0f*dpiScale)),ImVec2((21.0f*dpiScale)+textSize.x,(size.y*0.5)+textSize.y+(5.0f*dpiScale)),ImGui::GetColorU32(ImGuiCol_WindowBg));
+      dl->AddRect(ImVec2(11.0f*dpiScale,(size.y*0.5)-(5.0f*dpiScale)),ImVec2((21.0f*dpiScale)+textSize.x,(size.y*0.5)+textSize.y+(5.0f*dpiScale)),ImGui::GetColorU32(ImGuiCol_Border),0,0,dpiScale);
+      dl->AddText(ImVec2(16.0f*dpiScale,(size.y)*0.5),ImGui::GetColorU32(ImGuiCol_Text),info.c_str());
+    }
   }
   ImGui::End();
 }
@@ -111,7 +146,7 @@ void FurnaceGUI::drawOrderButtons() {
     doAction(GUI_ACTION_ORDERS_ADD);
   }
   if (ImGui::IsItemHovered()) {
-    ImGui::SetTooltip("Add new order");
+    ImGui::SetTooltip(_("Add new order"));
   }
   NEXT_BUTTON;
 
@@ -122,7 +157,7 @@ void FurnaceGUI::drawOrderButtons() {
   }
   popDestColor();
   if (ImGui::IsItemHovered()) {
-    ImGui::SetTooltip("Remove order");
+    ImGui::SetTooltip(_("Remove order"));
   } 
   NEXT_BUTTON;
 
@@ -134,7 +169,7 @@ void FurnaceGUI::drawOrderButtons() {
     doAction(GUI_ACTION_ORDERS_DEEP_CLONE);
   }
   if (ImGui::IsItemHovered()) {
-    ImGui::SetTooltip("Duplicate order (right-click to deep clone)");
+    ImGui::SetTooltip(_("Duplicate order (right-click to deep clone)"));
   }
   NEXT_BUTTON;
 
@@ -143,7 +178,7 @@ void FurnaceGUI::drawOrderButtons() {
     doAction(GUI_ACTION_ORDERS_MOVE_UP);
   }
   if (ImGui::IsItemHovered()) {
-    ImGui::SetTooltip("Move order up");
+    ImGui::SetTooltip(_("Move order up"));
   }
   NEXT_BUTTON;
 
@@ -152,7 +187,7 @@ void FurnaceGUI::drawOrderButtons() {
     doAction(GUI_ACTION_ORDERS_MOVE_DOWN);
   }
   if (ImGui::IsItemHovered()) {
-    ImGui::SetTooltip("Move order down");
+    ImGui::SetTooltip(_("Move order down"));
   }
   NEXT_BUTTON;
 
@@ -164,7 +199,7 @@ void FurnaceGUI::drawOrderButtons() {
     doAction(GUI_ACTION_ORDERS_DEEP_CLONE_END);
   }
   if (ImGui::IsItemHovered()) {
-    ImGui::SetTooltip("Place copy of current order at end of song (right-click to deep clone)");
+    ImGui::SetTooltip(_("Place copy of current order at end of song (right-click to deep clone)"));
   }
   NEXT_BUTTON;
 
@@ -174,9 +209,9 @@ void FurnaceGUI::drawOrderButtons() {
   }
   if (ImGui::IsItemHovered()) {
     if (changeAllOrders) {
-      ImGui::SetTooltip("Order change mode: entire row");
+      ImGui::SetTooltip(_("Order change mode: entire row"));
     } else {
-      ImGui::SetTooltip("Order change mode: one");
+      ImGui::SetTooltip(_("Order change mode: one"));
     }
   }
   NEXT_BUTTON;
@@ -202,13 +237,13 @@ void FurnaceGUI::drawOrderButtons() {
   }
   if (ImGui::IsItemHovered()) {
     if (orderEditMode==3) {
-      ImGui::SetTooltip("Order edit mode: Select and type (scroll vertically)");
+      ImGui::SetTooltip(_("Order edit mode: Select and type (scroll vertically)"));
     } else if (orderEditMode==2) {
-      ImGui::SetTooltip("Order edit mode: Select and type (scroll horizontally)");
+      ImGui::SetTooltip(_("Order edit mode: Select and type (scroll horizontally)"));
     } else if (orderEditMode==1) {
-      ImGui::SetTooltip("Order edit mode: Select and type (don't scroll)");
+      ImGui::SetTooltip(_("Order edit mode: Select and type (don't scroll)"));
     } else {
-      ImGui::SetTooltip("Order edit mode: Click to change");
+      ImGui::SetTooltip(_("Order edit mode: Click to change"));
     }
   }
 }
@@ -229,7 +264,7 @@ void FurnaceGUI::drawOrders() {
   } else {
     //ImGui::SetNextWindowSizeConstraints(ImVec2(440.0f*dpiScale,400.0f*dpiScale),ImVec2(canvasW,canvasH));
   }
-  if (ImGui::Begin("Orders",&ordersOpen,globalWinFlags|ImGuiWindowFlags_NoScrollbar|ImGuiWindowFlags_NoScrollWithMouse)) {
+  if (ImGui::Begin("Orders",&ordersOpen,globalWinFlags|ImGuiWindowFlags_NoScrollbar|ImGuiWindowFlags_NoScrollWithMouse,_("Orders"))) {
     if (ImGui::BeginTable("OrdColumn",(settings.orderButtonPos==0)?1:2,ImGuiTableFlags_BordersInnerV)) {
       if (settings.orderButtonPos==2) {
         ImGui::TableSetupColumn("c0",ImGuiTableColumnFlags_WidthStretch);
@@ -265,37 +300,48 @@ void FurnaceGUI::drawOrders() {
       bool tooSmall=((displayChans+1)>((ImGui::GetContentRegionAvail().x)/(ImGui::CalcTextSize("AA").x+2.0*ImGui::GetStyle().ItemInnerSpacing.x)));
       float yHeight=ImGui::GetContentRegionAvail().y;
       float lineHeight=(ImGui::GetTextLineHeight()+4*dpiScale);
-      if (e->isPlaying()) {
+      if (e->isPlaying() || haveHitBounds) {
         if (followOrders) {
           float nextOrdScroll=(playOrder+1)*lineHeight-((yHeight-(tooSmall?ImGui::GetStyle().ScrollbarSize:0.0f))/2.0f);
           if (nextOrdScroll<0.0f) nextOrdScroll=0.0f;
           ImGui::SetNextWindowScroll(ImVec2(-1.0f,nextOrdScroll));
         }
       }
+      ImVec2 clipBegin=ImGui::GetCursorScreenPos();
+      ImVec2 clipEnd=clipBegin+ImGui::GetContentRegionAvail();
       if (ImGui::BeginTable("OrdersTable",1+displayChans,(tooSmall?ImGuiTableFlags_SizingFixedFit:ImGuiTableFlags_SizingStretchSame)|ImGuiTableFlags_ScrollX|ImGuiTableFlags_ScrollY)) {
+        if (tooSmall) {
+          // set up cell sizes? I don't know
+        }
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,prevSpacing);
         ImGui::TableSetupScrollFreeze(1,1);
         ImGui::TableNextRow(0,lineHeight);
-        ImVec2 ra=ImGui::GetContentRegionAvail();
         ImGui::TableNextColumn();
         ImGui::PushStyleColor(ImGuiCol_Text,uiColors[GUI_COLOR_ORDER_ROW_INDEX]);
         for (int i=0; i<e->getTotalChannelCount(); i++) {
           if (!e->curSubSong->chanShow[i]) continue;
           ImGui::TableNextColumn();
-          ImGui::Text("%s",e->getChannelShortName(i));
+          ImGui::TextNoHashHide("%s",e->getChannelShortName(i));
         }
+        // OH MY FREAKING. just let me sleep.
+        clipBegin.y+=lineHeight;
         ImGui::PopStyleColor();
         for (int i=0; i<e->curSubSong->ordersLen; i++) {
           ImGui::TableNextRow(0,lineHeight);
           if (playOrder==i && e->isPlaying()) ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0,ImGui::GetColorU32(uiColors[GUI_COLOR_ORDER_ACTIVE]));
           ImGui::TableNextColumn();
           if (curOrder==i) {
+            if (ImGui::GetCurrentWindowRead()->ScrollbarY) {
+              clipEnd.x-=ImGui::GetStyle().ScrollbarSize;
+            }
             // draw a border
+            ImGui::PushClipRect(clipBegin,clipEnd,false);
             ImDrawList* dl=ImGui::GetWindowDrawList();
             ImVec2 rBegin=ImGui::GetCursorScreenPos();
             rBegin.y-=ImGui::GetStyle().CellPadding.y;
-            ImVec2 rEnd=ImVec2(rBegin.x+ra.x,rBegin.y+lineHeight);
+            ImVec2 rEnd=ImVec2(clipEnd.x,rBegin.y+lineHeight);
             dl->AddRect(rBegin,rEnd,ImGui::GetColorU32(uiColors[GUI_COLOR_ORDER_SELECTED]),2.0f*dpiScale);
+            ImGui::PopClipRect();
           }
           ImGui::PushStyleColor(ImGuiCol_Text,uiColors[GUI_COLOR_ORDER_ROW_INDEX]);
           bool highlightLoop=(i>=loopOrder && i<=loopEnd);
@@ -317,7 +363,7 @@ void FurnaceGUI::drawOrders() {
           ImGui::PopStyleColor();
           for (int j=0; j<e->getTotalChannelCount(); j++) {
             if (!e->curSubSong->chanShow[j]) continue;
-            ImGui::TableNextColumn();
+            if (!ImGui::TableNextColumn()) continue;
             DivPattern* pat=e->curPat[j].getPattern(e->curOrders->ord[j][i],false);
             /*if (!pat->name.empty()) {
               snprintf(selID,4096,"%s##O_%.2x_%.2x",pat->name.c_str(),j,i);
