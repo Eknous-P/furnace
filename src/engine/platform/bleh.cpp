@@ -17,11 +17,12 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "fmshared_OPM.h"
 #define _USE_MATH_DEFINES
 #include "bleh.h"
 #include "../engine.h"
 #include "../../ta-log.h"
+
+#define rWrite(a,v) if (!skipRegisterWrites) {writes.push(QueuedWrite(a,v)); if (dumpWrites) {addWrite(a,v);} }
 
 #define CHIP_FREQBASE 0x10000
 #define CHIP_DIVIDER 1
@@ -48,6 +49,12 @@ void DivPlatformBleh::acquire(short** buf, size_t len) {
   }
 
   for (size_t h=0; h<len; h++) {
+    while (!writes.empty()) {
+      QueuedWrite& w=writes.front();
+      bleh.write(w.addr,w.val);
+      writes.pop_front();
+    }
+
     bleh.tick();
     oscBuf[0]->putSample(h,bleh.getChanOutput(0)<<8);
     oscBuf[1]->putSample(h,bleh.getChanOutput(1)<<8);
@@ -66,12 +73,23 @@ void DivPlatformBleh::tick(bool sysTick) {
   for (int i=0; i<2; i++) {
     chan[i].std.next();
     if (chan[i].std.vol.had) {
-      chan[i].outVol=VOL_SCALE_LOG(chan[i].vol,MIN(8,chan[i].std.vol.val),8);
+      chan[i].volume=VOL_SCALE_LOG(chan[i].vol,MIN(8,chan[i].std.vol.val),8);
+      chan[i].state=(chan[i].state&~7)|chan[i].volume;
+      rWrite(BLEH_ADDR_CHAN1STATE+i, chan[i].state)
+    }
+    if (chan[i].std.wave.had) {
+      chan[i].waveNum=chan[i].std.wave.val;
+      chan[i].state=(chan[i].state&~0b11000)|(chan[i].waveNum<<3);
+      rWrite(BLEH_ADDR_CHAN1STATE+i, chan[i].state)
+    }
+    if (chan[i].std.ex1.had) {
+      chan[i].control=chan[i].std.ex1.val;
+      chan[i].state=(chan[i].state&~0b11100000)|(chan[i].control<<5);
+      rWrite(BLEH_ADDR_CHAN1STATE+i, chan[i].state)
     }
     if (chan[i].std.duty.had) {
-      chan[i].noise=chan[i].std.duty.val&2;
-      chan[i].square=chan[i].std.duty.val&1;
-      chan[i].freqChanged=true;
+      chan[i].noiseFreq=chan[i].std.duty.val;
+      rWrite(BLEH_ADDR_CHAN1NOISEFREQ+i, chan[i].waveNum)
     }
     if (NEW_ARP_STRAT) {
       chan[i].handleArp();
@@ -93,11 +111,13 @@ void DivPlatformBleh::tick(bool sysTick) {
     if (chan[i].freqChanged || chan[i].keyOn || chan[i].keyOff) {
       chan[i].freq=parent->calcFreq(chan[i].baseFreq,chan[i].pitch,chan[i].fixedArp?chan[i].baseNoteOverride:chan[i].arpOff,chan[i].fixedArp,true,0,chan[i].pitch2,chipClock,CHIP_DIVIDER)-1;
       if (chan[i].freq<0) chan[i].freq=0;
-      if (chan[i].freq>1023) chan[i].freq=1023;
+      if (chan[i].freq>65535) chan[i].freq=65535;
 
       if (chan[i].keyOn) chan[i].keyOn=false;
       if (chan[i].keyOff) chan[i].keyOff=false;
       chan[i].freqChanged=false;
+      rWrite(BLEH_ADDR_CHAN1FREQHIGH+2*i, chan[i].freq>>8)
+      rWrite(BLEH_ADDR_CHAN1FREQLOW+2*i, chan[i].freq&0xff)
     }
   }
 }
@@ -137,9 +157,9 @@ int DivPlatformBleh::dispatch(DivCommand c) {
         if (!chan[c.chan].std.vol.has) {
           chan[c.chan].outVol=c.value;
         }
-        if (chan[c.chan].active) {
-          on=chan[c.chan].vol;
-        }
+        // if (chan[c.chan].active) {
+        //   on=chan[c.chan].vol;
+        // }
       }
       break;
     case DIV_CMD_GET_VOLUME:
@@ -199,22 +219,22 @@ int DivPlatformBleh::dispatch(DivCommand c) {
       break;
     case DIV_CMD_BLEH_WAVE: {
       chan[c.chan].waveNum=c.value&3;
-      unsigned char stateCopy=chan[c.chan].state&=0b11100111;
+      unsigned char stateCopy=chan[c.chan].state&0b11100111;
       stateCopy|=chan[c.chan].waveNum<<3;
       chan[c.chan].state=stateCopy;
-      bleh.write(BLEH_ADDR_CHAN1STATE+c.chan, stateCopy);
+      rWrite(BLEH_ADDR_CHAN1STATE+c.chan, stateCopy);
       break;
     }
     case DIV_CMD_BLEH_NOISEFREQ:
       chan[c.chan].noiseFreq=c.value;
-      bleh.write(BLEH_ADDR_CHAN1NOISEFREQ+c.chan, c.value);
+      rWrite(BLEH_ADDR_CHAN1NOISEFREQ+c.chan, c.value);
       break;
     case DIV_CMD_BLEH_CONTROL: {
       chan[c.chan].control=c.value&7;
-      unsigned char stateCopy=chan[c.chan].state&=0b00011111;
+      unsigned char stateCopy=chan[c.chan].state&0b00011111;
       stateCopy|=chan[c.chan].control<<5;
       chan[c.chan].state=stateCopy;
-      bleh.write(BLEH_ADDR_CHAN1STATE+c.chan, stateCopy);
+      rWrite(BLEH_ADDR_CHAN1STATE+c.chan, stateCopy);
       break;
     }
     default:
@@ -225,10 +245,11 @@ int DivPlatformBleh::dispatch(DivCommand c) {
 
 void DivPlatformBleh::muteChannel(int ch, bool mute) {
   isMuted[ch]=mute;
+  rWrite(BLEH_ADDR_CHAN1STATE+ch, chan[ch].state&(isMuted[ch]?(~3):0xff));
 }
 
 void DivPlatformBleh::forceIns() {
-  for (int i=0; i<1; i++) {
+  for (int i=0; i<2; i++) {
     chan[i].insChanged=true;
   }
 }
@@ -246,7 +267,7 @@ DivDispatchOscBuffer* DivPlatformBleh::getOscBuffer(int ch) {
 }
 
 unsigned char* DivPlatformBleh::getRegisterPool() {
-  return (unsigned char*)(((unsigned char*)&bleh)+sizeof(void*));
+  return regPool;
 }
 
 int DivPlatformBleh::getRegisterPoolSize() {
@@ -254,16 +275,13 @@ int DivPlatformBleh::getRegisterPoolSize() {
 }
 
 void DivPlatformBleh::reset() {
-  for (int i=0; i<1; i++) {
+  for (int i=0; i<2; i++) {
     chan[i]=DivPlatformBleh::Channel();
     chan[i].std.setEngine(parent);
   }
   if (dumpWrites) {
     addWrite(0xffffffff,0);
   }
-
-
-  memset(regPool,0,8);
 }
 
 bool DivPlatformBleh::keyOffAffectsArp(int ch) {
@@ -275,6 +293,10 @@ bool DivPlatformBleh::hasAcquireDirect() {
 }
 
 void DivPlatformBleh::setFlags(const DivConfig& flags) {
+  CHECK_CUSTOM_CLOCK;
+  for (int i=0; i<2; i++) {
+    oscBuf[i]->setRate(chipClock);
+  }
 }
 
 void DivPlatformBleh::notifyInsDeletion(void* ins) {
@@ -310,7 +332,8 @@ int DivPlatformBleh::init(DivEngine* p, int channels, int sugRate, const DivConf
 
   bleh.setROM((unsigned char*)blehROM);
   bleh.reset();
-  return 5;
+  regPool=bleh.getRegSpace();
+  return 2;
 }
 
 void DivPlatformBleh::quit() {

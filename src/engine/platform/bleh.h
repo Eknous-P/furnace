@@ -25,26 +25,33 @@
 
 #define INCLUDE_BLEH_ROM
 #define INCLUDE_BLEH_REG_HELPER
+#define INCLUDE_BLEH_EXTRA_FUNCTIONS
 #include "sound/bleh.cpp"
 
 class DivPlatformBleh: public DivDispatch {
   struct Channel: public SharedChannel<signed char> {
     unsigned char volume, waveNum, noiseFreq, control, state;
     Channel():
-      SharedChannel<signed char>(15) {}
+      SharedChannel<signed char>(7) {}
   };
   Channel chan[2];
   DivDispatchOscBuffer* oscBuf[2];
   blehSys bleh;
   bool isMuted[2];
 
-  unsigned char regPool[8];
+  unsigned char* regPool;
+  struct QueuedWrite {
+    unsigned short addr;
+    unsigned char val;
+    QueuedWrite(): addr(0), val(0) {}
+    QueuedWrite(unsigned short a, unsigned char v): addr(a), val(v) {}
+  };
+  FixedQueue<QueuedWrite,128> writes;
 
   friend void putDispatchChip(void*,int);
   friend void putDispatchChan(void*,int,int);
 
   public:
-    void pcSpeakerThread();
     void acquireDirect(blip_buffer_t** bb, size_t len);
     void acquire(short** buf, size_t len);
     int dispatch(DivCommand c);

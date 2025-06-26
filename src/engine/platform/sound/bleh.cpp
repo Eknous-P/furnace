@@ -218,10 +218,19 @@ public:
   uint16_t getOutput() {
     return output;
   }
+#ifdef INCLUDE_BLEH_EXTRA_FUNCTIONS
+#ifndef BLEH_EXTRA_FUNCTIONS
+#define BLEH_EXTRA_FUNCTIONS
   uint8_t getChanOutput(uint8_t c) {
     return blehChannel[c].output;
   }
+  unsigned char* getRegSpace() {
+    return regSpace;
+  }
+#endif
+#endif
   blehSys() {
+    rom=NULL;
     reset();
   }
 };
