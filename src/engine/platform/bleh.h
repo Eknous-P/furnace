@@ -32,7 +32,12 @@ class DivPlatformBleh: public DivDispatch {
   struct Channel: public SharedChannel<signed char> {
     unsigned char volume, waveNum, noiseFreq, control, state;
     Channel():
-      SharedChannel<signed char>(7) {}
+      SharedChannel<signed char>(7),
+      volume(7),
+      waveNum(0),
+      noiseFreq(0),
+      control(2),
+      state(64) {}
   };
   Channel chan[2];
   DivDispatchOscBuffer* oscBuf[2];

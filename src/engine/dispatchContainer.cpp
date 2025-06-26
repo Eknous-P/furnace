@@ -19,7 +19,6 @@
 
 #include "blip_buf.h"
 #include "engine.h"
-#include "platform/bleh.h"
 #include "platform/genesis.h"
 #include "platform/genesisext.h"
 #include "platform/msm5232.h"
@@ -94,6 +93,7 @@
 #include "platform/bifurcator.h"
 #include "platform/sid2.h"
 #include "platform/sid3.h"
+#include "platform/bleh.h"
 #include "platform/dummy.h"
 #include "../ta-log.h"
 #include "song.h"

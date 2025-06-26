@@ -6,7 +6,7 @@ specs:
 2 channels of wave or noise (or both, binary AND mixing)
 up to 4 waves, comes from an ext. rom
 the channels can modulate each other (phase modulation)
-8 step volume control
+8 step attenuation control
 
 the rom:
 max: 4*256*8 bit
@@ -20,7 +20,7 @@ register map:
 S1,S2 - channel state
 bit 7 6 5 4 3 2 1 0
     | | | \ / \   /
-    | | |  |  volume
+    | | |  |  atten.
     | | | wave
     | | pm enable
     | wave enable
@@ -200,20 +200,18 @@ public:
       }
       if (CHANPMEN(1-i)) { // other ch pm
         C.wavePos += blehChannel[1-i].output;
-        C.output = 0;
-      } else {
-        C.curWave = getWaveSample(CHANwAVENUM(i),C.wavePos);
-        if (CHANWAVEEN(i)) {
-          C.output = C.curWave;
-          if (CHANNOISEEN(i)) C.output &= C.noise;
-        } else {
-          if (CHANNOISEEN(i)) C.output = C.noise;
-        }
-        C.output>>=CHANVOLUME(i);
       }
+      C.curWave = getWaveSample(CHANwAVENUM(i),C.wavePos);
+      if (CHANWAVEEN(i)) {
+        C.output = C.curWave;
+        if (CHANNOISEEN(i)) C.output &= C.noise>>8;
+      } else {
+        if (CHANNOISEEN(i)) C.output = C.noise>>8;
+      }
+      C.output>>=CHANVOLUME(i);
 #undef C
     }
-    output = blehChannel[0].output + blehChannel[1].output;
+    output = (CHANPMEN(0)?0:blehChannel[0].output) + (CHANPMEN(1)?0:blehChannel[1].output);
   }
   uint16_t getOutput() {
     return output;
@@ -222,7 +220,7 @@ public:
 #ifndef BLEH_EXTRA_FUNCTIONS
 #define BLEH_EXTRA_FUNCTIONS
   uint8_t getChanOutput(uint8_t c) {
-    return blehChannel[c].output;
+    return (CHANPMEN(c)?0:blehChannel[c].output);
   }
   unsigned char* getRegSpace() {
     return regSpace;
