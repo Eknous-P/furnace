@@ -17,7 +17,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "fmshared_OPM.h"
 #define _USE_MATH_DEFINES
 #include "bleh.h"
 #include "../engine.h"
@@ -25,8 +24,10 @@
 
 #define rWrite(a,v) if (!skipRegisterWrites) {writes.push(QueuedWrite(a,v)); if (dumpWrites) {addWrite(a,v);} }
 
-#define CHIP_FREQBASE 0x20000
-#define CHIP_DIVIDER 1
+#define CHIP_FREQBASE 512
+#define CHIP_DIVIDER 1024
+
+#define NOTE_IDK(x) NOTE_FREQUENCY(x)
 
 const char* regCheatSheetBleh[]={
   "Channel 1 freq high", "0",
@@ -75,16 +76,19 @@ void DivPlatformBleh::tick(bool sysTick) {
     chan[i].std.next();
     if (chan[i].std.vol.had) {
       chan[i].volume=VOL_SCALE_LOG(chan[i].vol,MIN(8,chan[i].std.vol.val),8);
+      CLAMP_VAR(chan[i].volume, 0, 7)
       chan[i].state=(chan[i].state&~7)|(6-chan[i].volume);
       rWrite(BLEH_ADDR_CHAN1STATE+i, chan[i].state)
     }
     if (chan[i].std.wave.had) {
       chan[i].waveNum=chan[i].std.wave.val;
+      CLAMP_VAR(chan[i].waveNum, 0, 3)
       chan[i].state=(chan[i].state&~0b11000)|(chan[i].waveNum<<3);
       rWrite(BLEH_ADDR_CHAN1STATE+i, chan[i].state)
     }
     if (chan[i].std.ex1.had) {
       chan[i].control=chan[i].std.ex1.val;
+      CLAMP_VAR(chan[i].control, 0, 7)
       chan[i].state=(chan[i].state&~0b11100000)|(chan[i].control<<5);
       rWrite(BLEH_ADDR_CHAN1STATE+i, chan[i].state)
     }
@@ -96,7 +100,7 @@ void DivPlatformBleh::tick(bool sysTick) {
       chan[i].handleArp();
     } else if (chan[i].std.arp.had) {
       if (!chan[i].inPorta) {
-        chan[i].baseFreq=NOTE_FREQUENCY(parent->calcArp(chan[i].note,chan[i].std.arp.val));
+        chan[i].baseFreq=NOTE_IDK(parent->calcArp(chan[i].note,chan[i].std.arp.val));
       }
       chan[i].freqChanged=true;
     }
@@ -110,12 +114,12 @@ void DivPlatformBleh::tick(bool sysTick) {
       chan[i].freqChanged=true;
     }
     if (chan[i].freqChanged || chan[i].keyOn || chan[i].keyOff) {
-      chan[i].freq=parent->calcFreq(chan[i].baseFreq,chan[i].pitch,chan[i].fixedArp?chan[i].baseNoteOverride:chan[i].arpOff,chan[i].fixedArp,true,0,chan[i].pitch2,chipClock,CHIP_DIVIDER)-1;
+      chan[i].freq=parent->calcFreq(chan[i].baseFreq,chan[i].pitch,chan[i].fixedArp?chan[i].baseNoteOverride:chan[i].arpOff,chan[i].fixedArp,false,0,chan[i].pitch2,chipClock,CHIP_DIVIDER)-1;
       if (chan[i].freq<0) chan[i].freq=0;
       if (chan[i].freq>65535) chan[i].freq=65535;
 
-      rWrite(BLEH_ADDR_CHAN1FREQHIGH+2*i, chan[i].keyOff?0:chan[i].freq>>8)
-      rWrite(BLEH_ADDR_CHAN1FREQLOW+2*i, chan[i].keyOff?0:chan[i].freq&0xff)
+      rWrite(BLEH_ADDR_CHAN1FREQHIGH+2*i, chan[i].keyOff?0:(chan[i].freq)>>8)
+      rWrite(BLEH_ADDR_CHAN1FREQLOW+2*i, chan[i].keyOff?0:(chan[i].freq)&0xff)
       rWrite(BLEH_ADDR_CHAN1NOISEFREQ+i, chan[i].keyOff?0:chan[i].noiseFreq)
       if (chan[i].keyOn) chan[i].keyOn=false;
       if (chan[i].keyOff) chan[i].keyOff=false;
@@ -128,7 +132,7 @@ int DivPlatformBleh::dispatch(DivCommand c) {
   switch (c.cmd) {
     case DIV_CMD_NOTE_ON:
       if (c.value!=DIV_NOTE_NULL) {
-        chan[c.chan].baseFreq=NOTE_FREQUENCY(c.value);
+        chan[c.chan].baseFreq=NOTE_IDK(c.value);
         chan[c.chan].freqChanged=true;
         chan[c.chan].note=c.value;
       }
@@ -174,7 +178,7 @@ int DivPlatformBleh::dispatch(DivCommand c) {
       chan[c.chan].freqChanged=true;
       break;
     case DIV_CMD_NOTE_PORTA: {
-      int destFreq=NOTE_FREQUENCY(c.value2);
+      int destFreq=NOTE_IDK(c.value2);
       bool return2=false;
       if (destFreq>chan[c.chan].baseFreq) {
         chan[c.chan].baseFreq+=c.value;
@@ -198,7 +202,7 @@ int DivPlatformBleh::dispatch(DivCommand c) {
     }
     case DIV_CMD_LEGATO:
       if (c.chan==3) break;
-      chan[c.chan].baseFreq=NOTE_FREQUENCY(c.value+((HACKY_LEGATO_MESS)?(chan[c.chan].std.arp.val):(0)));
+      chan[c.chan].baseFreq=NOTE_IDK(c.value+((HACKY_LEGATO_MESS)?(chan[c.chan].std.arp.val):(0)));
       chan[c.chan].freqChanged=true;
       chan[c.chan].note=c.value;
       break;
@@ -206,7 +210,7 @@ int DivPlatformBleh::dispatch(DivCommand c) {
       if (chan[c.chan].active && c.value2) {
         if (parent->song.resetMacroOnPorta) chan[c.chan].macroInit(parent->getIns(chan[c.chan].ins,DIV_INS_BLEH));
       }
-      if (!chan[c.chan].inPorta && c.value && !parent->song.brokenPortaArp && chan[c.chan].std.arp.will && !NEW_ARP_STRAT) chan[c.chan].baseFreq=NOTE_FREQUENCY(chan[c.chan].note);
+      if (!chan[c.chan].inPorta && c.value && !parent->song.brokenPortaArp && chan[c.chan].std.arp.will && !NEW_ARP_STRAT) chan[c.chan].baseFreq=NOTE_IDK(chan[c.chan].note);
       chan[c.chan].inPorta=c.value;
       break;
     case DIV_CMD_GET_VOLMAX:
@@ -249,8 +253,8 @@ int DivPlatformBleh::dispatch(DivCommand c) {
 
 void DivPlatformBleh::muteChannel(int ch, bool mute) {
   isMuted[ch]=mute;
-  rWrite(BLEH_ADDR_CHAN1FREQHIGH+2*ch, isMuted[ch]?0:(chan[ch].freq>>8));
-  rWrite(BLEH_ADDR_CHAN1FREQLOW+2*ch, isMuted[ch]?0:(chan[ch].freq&0xff));
+  rWrite(BLEH_ADDR_CHAN1FREQHIGH+2*ch, isMuted[ch]?0:(chan[ch].freq)>>8);
+  rWrite(BLEH_ADDR_CHAN1FREQLOW+2*ch, isMuted[ch]?0:(chan[ch].freq)&0xff);
 }
 
 void DivPlatformBleh::forceIns() {
