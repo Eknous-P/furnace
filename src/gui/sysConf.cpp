@@ -2750,6 +2750,31 @@ bool FurnaceGUI::drawSysConf(int chan, int sysPos, DivSystem type, DivConfig& fl
       }
       break;
     }
+    case DIV_SYSTEM_BLEH: {
+      int romVer=flags.getInt("romVer", 0);
+      ImGui::Text(_("ROM version:"));
+      ImGui::Indent();
+      if (ImGui::RadioButton(_("Version 0"), romVer==0)) {
+        romVer=0;
+        altered=true;
+      }
+      if (ImGui::RadioButton(_("Version 1"), romVer==1)) {
+        romVer=1;
+        altered=true;
+      }
+      if (ImGui::RadioButton(_("No ROM"), romVer==-1)) {
+        romVer=-1;
+        altered=true;
+      }
+
+      if (altered) {
+        e->lockSave([&]() {
+          flags.set("romVer",romVer);
+        });
+      }
+      ImGui::Unindent();
+      break;
+    }
     default: {
       bool sysPal=flags.getInt("clockSel",0);
 

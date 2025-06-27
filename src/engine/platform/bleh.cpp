@@ -25,7 +25,7 @@
 #define rWrite(a,v) if (!skipRegisterWrites) {writes.push(QueuedWrite(a,v)); if (dumpWrites) {addWrite(a,v);} }
 
 #define CHIP_FREQBASE 512
-#define CHIP_DIVIDER 1024
+#define CHIP_DIVIDER 2048
 
 #define NOTE_IDK(x) NOTE_FREQUENCY(x)
 
@@ -303,11 +303,24 @@ bool DivPlatformBleh::hasAcquireDirect() {
 }
 
 void DivPlatformBleh::setFlags(const DivConfig& flags) {
-  // CHECK_CUSTOM_CLOCK;
   chipClock=100000;
+  CHECK_CUSTOM_CLOCK;
+  romVersion=flags.getInt("romVer", 0);
   rate=chipClock;
   for (int i=0; i<2; i++) {
     oscBuf[i]->setRate(chipClock);
+  }
+
+  switch (romVersion) {
+    case 0:
+      bleh.setROM((unsigned char*)blehROM_V0);
+      break;
+    case 1:
+      bleh.setROM((unsigned char*)blehROM_V1);
+      break;
+    default:
+      bleh.setROM(NULL); // no rom
+      break;
   }
 }
 
@@ -342,7 +355,6 @@ int DivPlatformBleh::init(DivEngine* p, int channels, int sugRate, const DivConf
   }
   setFlags(flags);
 
-  bleh.setROM((unsigned char*)blehROM);
   bleh.reset();
   regPool=bleh.getRegSpace();
   return 2;

@@ -23,7 +23,8 @@
 #include "../dispatch.h"
 #include "../../fixedQueue.h"
 
-#define INCLUDE_BLEH_ROM
+#define INCLUDE_BLEH_ROM_V0
+#define INCLUDE_BLEH_ROM_V1
 #define INCLUDE_BLEH_REG_HELPER
 #define INCLUDE_BLEH_EXTRA_FUNCTIONS
 #include "sound/bleh.cpp"
@@ -43,6 +44,8 @@ class DivPlatformBleh: public DivDispatch {
   DivDispatchOscBuffer* oscBuf[2];
   blehSys bleh;
   bool isMuted[2];
+
+  int romVersion;
 
   unsigned char* regPool;
   struct QueuedWrite {
