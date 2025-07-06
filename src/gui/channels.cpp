@@ -38,13 +38,17 @@ void FurnaceGUI::drawChannels() {
     //ImGui::SetNextWindowSizeConstraints(ImVec2(440.0f*dpiScale,400.0f*dpiScale),ImVec2(canvasW,canvasH));
   }
   if (ImGui::Begin("Channels",&channelsOpen,globalWinFlags,_("Channels"))) {
-    if (ImGui::BeginTable("ChannelList",5)) {
+    if (ImGui::BeginTable("ChannelList",7)) {
       ImGui::TableSetupColumn("c0",ImGuiTableColumnFlags_WidthFixed,0.0);
       ImGui::TableSetupColumn("c1",ImGuiTableColumnFlags_WidthFixed,0.0);
       ImGui::TableSetupColumn("c2",ImGuiTableColumnFlags_WidthFixed,0.0);
-      ImGui::TableSetupColumn("c3",ImGuiTableColumnFlags_WidthStretch,0.0);
-      ImGui::TableSetupColumn("c4",ImGuiTableColumnFlags_WidthFixed,48.0f*dpiScale);
+      ImGui::TableSetupColumn("c3",ImGuiTableColumnFlags_WidthFixed,0.0);
+      ImGui::TableSetupColumn("c4",ImGuiTableColumnFlags_WidthStretch,0.0);
+      ImGui::TableSetupColumn("c5",ImGuiTableColumnFlags_WidthFixed,48.0f*dpiScale);
+      ImGui::TableSetupColumn("c6",ImGuiTableColumnFlags_WidthFixed,0.0f);
       ImGui::TableNextRow(ImGuiTableRowFlags_Headers);
+      ImGui::TableNextColumn();
+      ImGui::Text(_("All"));
       ImGui::TableNextColumn();
       ImGui::Text(_("Pat"));
       ImGui::TableNextColumn();
@@ -53,9 +57,22 @@ void FurnaceGUI::drawChannels() {
       ImGui::Text(_("Swap"));
       ImGui::TableNextColumn();
       ImGui::Text(_("Name"));
+      ImGui::TableNextColumn();
+      ImGui::TableNextColumn();
+      ImGui::Text(_("Color"));
       for (int i=0; i<e->getTotalChannelCount(); i++) {
         ImGui::PushID(i);
         ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        bool chanShowAll = e->curSubSong->chanShow[i] || e->curSubSong->chanShowChanOsc[i];
+        bool chanShowIndeterminate = e->curSubSong->chanShow[i] ^ e->curSubSong->chanShowChanOsc[i];
+        ImGui::PushItemFlag(ImGuiItemFlags_MixedValue, chanShowIndeterminate);
+        if (ImGui::Checkbox("##VisibleAll",&chanShowAll)) {
+          e->curSubSong->chanShow[i] = chanShowAll;
+          e->curSubSong->chanShowChanOsc[i] = chanShowAll;
+          MARK_MODIFIED;
+        }
+        ImGui::PopItemFlag();
         ImGui::TableNextColumn();
         if (ImGui::Checkbox("##VisiblePat",&e->curSubSong->chanShow[i])) {
           MARK_MODIFIED;
@@ -104,6 +121,25 @@ void FurnaceGUI::drawChannels() {
         if (ImGui::InputTextWithHint("##ChanShortName",e->getChannelShortName(i),&e->curSubSong->chanShortName[i])) {
           MARK_MODIFIED;
         }
+        ImGui::TableNextColumn();
+        ImVec4 curColor=e->curSubSong->chanColor[i]?ImGui::ColorConvertU32ToFloat4(e->curSubSong->chanColor[i]):uiColors[GUI_COLOR_CHANNEL_FM+e->getChannelType(i)];
+        ImGui::ColorButton("##ChanColor",curColor);
+        if (ImGui::BeginPopupContextItem("##ChanColorEditPopup", ImGuiPopupFlags_MouseButtonLeft)) {
+          ImGui::ColorPicker4("##ChanColorEdit", (float*)&curColor);
+          e->curSubSong->chanColor[i]=ImGui::ColorConvertFloat4ToU32(curColor);
+          MARK_MODIFIED;
+          ImGui::EndPopup();
+        }
+        ImGui::SameLine();
+        ImGui::BeginDisabled(e->curSubSong->chanColor[i]==0);
+        if (ImGui::Button(ICON_FA_REFRESH)) {
+          e->curSubSong->chanColor[i]=0;
+          MARK_MODIFIED;
+        }
+        if (ImGui::IsItemHovered()) {
+          ImGui::SetTooltip("reset color");
+        }
+        ImGui::EndDisabled();
         ImGui::PopID();
       }
       ImGui::EndTable();
