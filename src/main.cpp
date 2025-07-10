@@ -31,6 +31,9 @@
 #include <windows.h>
 #include <combaseapi.h>
 #include <shellapi.h>
+#if defined(HAVE_SDL2) && !defined(SUPPORT_XP)
+#include <versionhelpers.h>
+#endif
 #include "utfutils.h"
 #include "gui/shellScalingStub.h"
 
@@ -90,6 +93,7 @@ String romOutName;
 String txtOutName;
 int benchMode=0;
 int subsong=-1;
+DivCSOptions csExportOptions;
 DivAudioExportOptions exportOptions;
 DivConfig romExportConfig;
 
@@ -544,11 +548,13 @@ int main(int argc, char** argv) {
   // Windows console thing - thanks dj.tuBIG/MaliceX
 #ifdef _WIN32
 #ifndef TA_SUBSYSTEM_CONSOLE
+#ifndef SUPPORT_XP
   if (AttachConsole(ATTACH_PARENT_PROCESS)) {
     freopen("CONOUT$", "w", stdout);
     freopen("CONOUT$", "w", stderr);
     freopen("CONIN$", "r", stdin);
   }
+#endif
 #endif
 #endif
 
@@ -675,8 +681,8 @@ int main(int argc, char** argv) {
         logV("text domain 2: %s",localeRet);
       }
     }
-#endif
   }
+#endif
 
   initParams();
 
@@ -708,7 +714,7 @@ int main(int argc, char** argv) {
         arg=arg.substr(0,eqSplit);
       }
       for (size_t j=0; j<params.size(); j++) {
-        if (params[j].name==arg || params[j].shortName==arg) {
+        if (params[j].name==arg || (params[j].shortName!="" && params[j].shortName==arg)) {
           switch (params[j].func(val)) {
             case TA_PARAM_ERROR:
               return 1;
@@ -756,6 +762,12 @@ int main(int argc, char** argv) {
     return 1;
   }
 
+#if defined(HAVE_SDL2) && defined(_WIN32) && !defined(SUPPORT_XP)
+  if (!IsWindows7OrGreater()) {
+    SDL_SetHint(SDL_HINT_AUDIODRIVER,"winmm");
+  }
+#endif
+
 #ifdef HAVE_GUI
   if (e.preInit(consoleMode || benchMode || infoMode || outputMode)) {
     if (consoleMode || benchMode || infoMode || outputMode) {
@@ -785,7 +797,6 @@ int main(int argc, char** argv) {
     SDL_SetHint(SDL_HINT_ANDROID_BLOCK_ON_PAUSE_PAUSEAUDIO,"0");
   }
 #endif
-
 
   if (!fileName.empty() && ((!e.getConfBool("tutIntroPlayed",TUT_INTRO_PLAYED)) || e.getConfInt("alwaysPlayIntro",0)!=3 || consoleMode || benchMode || infoMode || outputMode)) {
     logI("loading module...");
@@ -881,7 +892,7 @@ int main(int argc, char** argv) {
 
   if (outputMode) {
     if (cmdOutName!="") {
-      SafeWriter* w=e.saveCommand();
+      SafeWriter* w=e.saveCommand(NULL);
       if (w!=NULL) {
         FILE* f=ps_fopen(cmdOutName.c_str(),"wb");
         if (f!=NULL) {
@@ -1093,5 +1104,10 @@ int main(int argc, char** argv) {
   }
 #endif
   e.everythingOK();
+
+#ifdef HAVE_SDL2
+  SDL_Quit();
+#endif
+
   return 0;
 }

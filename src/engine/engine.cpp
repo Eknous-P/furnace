@@ -3763,6 +3763,12 @@ void DivEngine::initDispatch(bool isRender) {
   lowQuality=getConfInt("audioQuality",0);
   dcHiPass=getConfInt("audioHiPass",1);
 
+  if (lowQuality) {
+    blip_add_delta=blip_add_delta_fast;
+  } else {
+    blip_add_delta=blip_add_delta_slow;
+  }
+
   for (int i=0; i<song.systemLen; i++) {
     disCont[i].init(song.system[i],this,getChannelCount(song.system[i]),got.rate,song.systemFlags[i],isRender);
     disCont[i].setRates(got.rate);
@@ -3841,7 +3847,7 @@ bool DivEngine::initAudioBackend() {
   if (audioEngine==DIV_AUDIO_SDL) {
     String audioDriver=getConfString("sdlAudioDriver","");
     if (!audioDriver.empty()) {
-      SDL_SetHint("SDL_HINT_AUDIODRIVER",audioDriver.c_str());
+      SDL_SetHint(SDL_HINT_AUDIODRIVER,audioDriver.c_str());
     }
   }
 #endif
@@ -4066,7 +4072,7 @@ bool DivEngine::preInit(bool noSafeMode) {
 #ifdef HAVE_SDL2
   String audioDriver=getConfString("sdlAudioDriver","");
   if (!audioDriver.empty()) {
-    SDL_SetHint("SDL_HINT_AUDIODRIVER",audioDriver.c_str());
+    SDL_SetHint(SDL_HINT_AUDIODRIVER,audioDriver.c_str());
   }
 #endif
 

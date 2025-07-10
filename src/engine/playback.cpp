@@ -68,6 +68,10 @@ const char* cmdName[]={
   "HINT_PORTA",
   "HINT_LEGATO",
   "HINT_VOL_SLIDE_TARGET",
+  "HINT_TREMOLO",
+  "HINT_PANBRELLO",
+  "HINT_PAN_SLIDE",
+  "HINT_PANNING",
 
   "SAMPLE_MODE",
   "SAMPLE_FREQ",
@@ -305,7 +309,13 @@ const char* cmdName[]={
   "SID3_CUTOFF_SCALING",
   "SID3_RESONANCE_SCALING",
 
-  "WS_GLOBAL_SPEAKER_VOLUME"
+  "WS_GLOBAL_SPEAKER_VOLUME",
+
+  "FM_ALG",
+  "FM_FMS",
+  "FM_AMS",
+  "FM_FMS2",
+  "FM_AMS2"
 };
 
 static_assert((sizeof(cmdName)/sizeof(void*))==DIV_CMD_MAX,"update cmdName!");
@@ -764,6 +774,7 @@ void DivEngine::processRow(int i, bool afterDelay) {
         } else {
           chan[i].panSpeed=0;
         }
+        dispatchCmd(DivCommand(DIV_CMD_HINT_PAN_SLIDE,i,chan[i].panSpeed&0xff));
         break;
       case 0x84: // panbrello
         if (chan[i].panDepth==0) {
@@ -774,6 +785,7 @@ void DivEngine::processRow(int i, bool afterDelay) {
         if (chan[i].panDepth!=0) {
           chan[i].panSpeed=0;
         }
+        dispatchCmd(DivCommand(DIV_CMD_HINT_PANBRELLO,i,effectVal));
         break;
       case 0x88: // panning rear (split 4-bit)
         chan[i].panRL=(effectVal>>4)|(effectVal&0xf0);
@@ -864,7 +876,7 @@ void DivEngine::processRow(int i, bool afterDelay) {
         if (effectVal) chan[i].lastVibrato=effectVal;
         chan[i].vibratoDepth=effectVal&15;
         chan[i].vibratoRate=effectVal>>4;
-        dispatchCmd(DivCommand(DIV_CMD_HINT_VIBRATO,i,chan[i].vibratoDepth,chan[i].vibratoRate));
+        dispatchCmd(DivCommand(DIV_CMD_HINT_VIBRATO,i,(chan[i].vibratoDepth&15)|(chan[i].vibratoRate<<4)));
         dispatchCmd(DivCommand(DIV_CMD_PITCH,i,chan[i].pitch+(((chan[i].vibratoDepth*vibTable[chan[i].vibratoPos]*chan[i].vibratoFine)>>4)/15)));
         break;
       case 0x05: // vol slide + vibrato
@@ -875,7 +887,7 @@ void DivEngine::processRow(int i, bool afterDelay) {
           chan[i].vibratoDepth=chan[i].lastVibrato&15;
           chan[i].vibratoRate=chan[i].lastVibrato>>4;
         }
-        dispatchCmd(DivCommand(DIV_CMD_HINT_VIBRATO,i,chan[i].vibratoDepth,chan[i].vibratoRate));
+        dispatchCmd(DivCommand(DIV_CMD_HINT_VIBRATO,i,(chan[i].vibratoDepth&15)|(chan[i].vibratoRate<<4)));
         dispatchCmd(DivCommand(DIV_CMD_PITCH,i,chan[i].pitch+(((chan[i].vibratoDepth*vibTable[chan[i].vibratoPos]*chan[i].vibratoFine)>>4)/15)));
         // TODO: non-0x-or-x0 value should be treated as 00
         if (effectVal!=0) {
@@ -941,6 +953,7 @@ void DivEngine::processRow(int i, bool afterDelay) {
         }
         chan[i].tremoloDepth=effectVal&15;
         chan[i].tremoloRate=effectVal>>4;
+        dispatchCmd(DivCommand(DIV_CMD_HINT_TREMOLO,i,effectVal));
         if (chan[i].tremoloDepth!=0) {
           chan[i].volSpeed=0;
           chan[i].volSpeedTarget=-1;
@@ -1229,6 +1242,7 @@ void DivEngine::processRow(int i, bool afterDelay) {
 
   if (panChanged) {
     dispatchCmd(DivCommand(DIV_CMD_PANNING,i,chan[i].panL,chan[i].panR));
+    dispatchCmd(DivCommand(DIV_CMD_HINT_PANNING,i,chan[i].panL,chan[i].panR));
   }
   if (surroundPanChanged) {
     dispatchCmd(DivCommand(DIV_CMD_SURROUND_PANNING,i,2,chan[i].panRL));
@@ -1563,6 +1577,9 @@ bool DivEngine::nextTick(bool noAccum, bool inhibitLowLat) {
     cycles++;
   }
 
+  // don't let user play anything during export
+  if (exporting) pendingNotes.clear();
+
   if (!pendingNotes.empty()) {
     bool isOn[DIV_MAX_CHANS];
     memset(isOn,0,DIV_MAX_CHANS*sizeof(bool));
@@ -1602,6 +1619,7 @@ bool DivEngine::nextTick(bool noAccum, bool inhibitLowLat) {
       }
       dispatchCmd(DivCommand(DIV_CMD_NOTE_ON,note.channel,note.note));
       keyHit[note.channel]=true;
+      chan[note.channel].note = note.note;
       chan[note.channel].releasing=false;
       chan[note.channel].noteOnInhibit=true;
       chan[note.channel].lastIns=note.ins;
@@ -2234,7 +2252,7 @@ void DivEngine::nextBuf(float** in, float** out, int inChans, int outChans, unsi
       }
     }
     int ins=-1;
-    if ((ins=midiCallback(msg))!=-2) {
+    if ((ins=midiCallback(msg))!=-3) {
       int chan=msg.type&15;
       switch (msg.type&0xf0) {
         case TA_MIDI_NOTE_OFF: {
@@ -2284,7 +2302,7 @@ void DivEngine::nextBuf(float** in, float** out, int inChans, int outChans, unsi
   }
   
   // process sample/wave preview
-  if ((sPreview.sample>=0 && sPreview.sample<(int)song.sample.size()) || (sPreview.wave>=0 && sPreview.wave<(int)song.wave.size())) {
+  if (((sPreview.sample>=0 && sPreview.sample<(int)song.sample.size()) || (sPreview.wave>=0 && sPreview.wave<(int)song.wave.size())) && !exporting) {
     unsigned int samp_bbOff=0;
     unsigned int prevAvail=blip_samples_avail(samp_bb);
     if (prevAvail>size) prevAvail=size;

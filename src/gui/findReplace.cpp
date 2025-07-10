@@ -105,6 +105,8 @@ void FurnaceGUI::doFind() {
   if (curQueryRangeY==1) {
     finishSelection();
 
+    firstOrder=selStart.order;
+    lastOrder=selEnd.order;
     firstRow=selStart.y;
     lastRow=selEnd.y;
   }
@@ -568,7 +570,10 @@ void FurnaceGUI::drawFindReplace() {
                     makeCursorUndo();
                     e->changeSongP(i.subsong);
                     if (e->isPlaying()) {
-                      followPattern=false;
+                      if (followPattern) {
+                        wasFollowing=followPattern;
+                        followPattern=false;
+                      }
                     } else {
                       e->setOrder(i.order);
                     }
