@@ -1492,6 +1492,25 @@ void FurnaceGUI::drawPattern() {
             2.0f*dpiScale
           );
 
+          float arrowPos=pos;
+          if ((pair.arrows&PAIR_ARROW_VERTICAL) && (pair.arrows&PAIR_ARROW_LEFT)) { // point down
+            arrowPos=pos;
+            float yLineCenter=posY+textSize.y-5.0f;
+            if (pair.arrows&PAIR_ARROW_CENTERED) yLineCenter=(posY+textSize.y+chanHeadBottom)/2.0f-2.5f;
+              tdl->AddLine(
+                ImVec2(arrowPos,yLineCenter),
+                ImVec2(arrowPos-5.0f*dpiScale,yLineCenter-5.0f*dpiScale),
+                ImGui::GetColorU32(uiColors[GUI_COLOR_PATTERN_PAIR]),
+                2.0f*dpiScale
+              );
+              tdl->AddLine(
+                ImVec2(arrowPos,yLineCenter),
+                ImVec2(arrowPos+5.0f*dpiScale,yLineCenter-5.0f*dpiScale),
+                ImGui::GetColorU32(uiColors[GUI_COLOR_PATTERN_PAIR]),
+                2.0f*dpiScale
+              );
+          }
+
           for (int j=0; j<8; j++) {
             if (pair.pairs[j]==-1) continue;
             int pairCh=e->dispatchFirstChan[i]+pair.pairs[j];
@@ -1510,6 +1529,23 @@ void FurnaceGUI::drawPattern() {
               ImGui::GetColorU32(uiColors[GUI_COLOR_PATTERN_PAIR]),
               2.0f*dpiScale
             );
+
+            if ((pair.arrows&PAIR_ARROW_VERTICAL) && (pair.arrows&PAIR_ARROW_RIGHT)) { // point up
+              arrowPos=pos;
+              float yLineCenter=(posY+textSize.y+chanHeadBottom)/2.0f-2.5f;
+              tdl->AddLine(
+                ImVec2(arrowPos,yLineCenter),
+                ImVec2(arrowPos-5.0f*dpiScale,yLineCenter+5.0f*dpiScale),
+                ImGui::GetColorU32(uiColors[GUI_COLOR_PATTERN_PAIR]),
+                2.0f*dpiScale
+              );
+              tdl->AddLine(
+                ImVec2(arrowPos,yLineCenter),
+                ImVec2(arrowPos+5.0f*dpiScale,yLineCenter+5.0f*dpiScale),
+                ImGui::GetColorU32(uiColors[GUI_COLOR_PATTERN_PAIR]),
+                2.0f*dpiScale
+              );
+            }
           }
 
           posCenter/=numPairs;
@@ -1535,6 +1571,40 @@ void FurnaceGUI::drawPattern() {
               2.0f*dpiScale
             );
 
+            if (!(pair.arrows&PAIR_ARROW_VERTICAL)) {
+              if (pair.arrows&PAIR_ARROW_LEFT) {
+                float arrowPos=posMin+5.0f;
+                if (pair.arrows&PAIR_ARROW_CENTERED) arrowPos=(posCenter-textSize.x*0.5-6.0f*dpiScale*0.5+posMin)/2.0f;
+                tdl->AddLine(
+                  ImVec2(arrowPos-2.5f,posY+textSize.y),
+                  ImVec2(arrowPos+2.5f*dpiScale,posY+textSize.y+5.0f*dpiScale),
+                  ImGui::GetColorU32(uiColors[GUI_COLOR_PATTERN_PAIR]),
+                  2.0f*dpiScale
+                );
+                tdl->AddLine(
+                  ImVec2(arrowPos-2.5f,posY+textSize.y),
+                  ImVec2(arrowPos+2.5f*dpiScale,posY+textSize.y-5.0f*dpiScale),
+                  ImGui::GetColorU32(uiColors[GUI_COLOR_PATTERN_PAIR]),
+                  2.0f*dpiScale
+                );
+              }
+              if (pair.arrows&PAIR_ARROW_RIGHT) {
+                float arrowPos=posMax-5.0f;
+                if (pair.arrows&PAIR_ARROW_CENTERED) arrowPos=(posCenter+textSize.x*0.5+6.0f+posMax)/2.0f;
+                tdl->AddLine(
+                  ImVec2(arrowPos+2.5f,posY+textSize.y),
+                  ImVec2(arrowPos-2.5f*dpiScale,posY+textSize.y+5.0f*dpiScale),
+                  ImGui::GetColorU32(uiColors[GUI_COLOR_PATTERN_PAIR]),
+                  2.0f*dpiScale
+                );
+                tdl->AddLine(
+                  ImVec2(arrowPos+2.5f,posY+textSize.y),
+                  ImVec2(arrowPos-2.5f*dpiScale,posY+textSize.y-5.0f*dpiScale),
+                  ImGui::GetColorU32(uiColors[GUI_COLOR_PATTERN_PAIR]),
+                  2.0f*dpiScale
+                );
+              }
+            }
             delayedLabels.push_back(DelayedLabel(posCenter,posY,textSize,pair.label));
           }
         }

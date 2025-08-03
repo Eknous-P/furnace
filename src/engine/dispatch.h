@@ -524,19 +524,39 @@ struct DivDispatchOscBuffer {
   }
 };
 
+enum DivChannelPairArrows {
+  PAIR_ARROW_NONE=0,
+  PAIR_ARROW_LEFT=1,
+  PAIR_ARROW_RIGHT=2,
+  PAIR_ARROW_VERTICAL=4,
+  PAIR_ARROW_CENTERED=8,
+};
+
 struct DivChannelPair {
   const char* label;
+  unsigned char arrows;
   // -1: none
   signed char pairs[8];
 
   DivChannelPair(const char* l, signed char p0, signed char p1, signed char p2, signed char p3, signed char p4, signed char p5, signed char p6, signed char p7):
     label(l),
+    arrows(0),
     pairs{p0,p1,p2,p3,p4,p5,p6,p7} {}
   DivChannelPair(const char* l, signed char p):
     label(l),
+    arrows(0),
+    pairs{-1,-1,-1,-1,-1,-1,-1,-1} {}
+  DivChannelPair(const char* l, unsigned char a, signed char p0, signed char p1, signed char p2, signed char p3, signed char p4, signed char p5, signed char p6, signed char p7):
+    label(l),
+    arrows(a),
+    pairs{p0,p1,p2,p3,p4,p5,p6,p7} {}
+  DivChannelPair(const char* l, unsigned char a, signed char p):
+    label(l),
+    arrows(a),
     pairs{p,-1,-1,-1,-1,-1,-1,-1} {}
   DivChannelPair():
     label(NULL),
+    arrows(0),
     pairs{-1,-1,-1,-1,-1,-1,-1,-1} {}
 };
 

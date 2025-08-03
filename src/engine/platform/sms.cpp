@@ -572,6 +572,12 @@ int DivPlatformSMS::getPortaFloor(int ch) {
   return 12;
 }
 
+void DivPlatformSMS::getPaired(int ch, std::vector<DivChannelPair>& ret) {
+  if (snNoiseMode&2 && ch==2) {
+    ret.push_back(DivChannelPair(_("pitch"),PAIR_ARROW_NONE,3));
+  }
+}
+
 void DivPlatformSMS::notifyInsDeletion(void* ins) {
   for (int i=0; i<4; i++) {
     chan[i].std.notifyInsDeletion((DivInstrument*)ins);
