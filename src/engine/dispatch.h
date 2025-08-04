@@ -537,27 +537,33 @@ struct DivChannelPair {
   unsigned char arrows;
   // -1: none
   signed char pairs[8];
+  unsigned char color;
 
-  DivChannelPair(const char* l, signed char p0, signed char p1, signed char p2, signed char p3, signed char p4, signed char p5, signed char p6, signed char p7):
-    label(l),
-    arrows(0),
-    pairs{p0,p1,p2,p3,p4,p5,p6,p7} {}
-  DivChannelPair(const char* l, signed char p):
-    label(l),
-    arrows(0),
-    pairs{-1,-1,-1,-1,-1,-1,-1,-1} {}
   DivChannelPair(const char* l, unsigned char a, signed char p0, signed char p1, signed char p2, signed char p3, signed char p4, signed char p5, signed char p6, signed char p7):
     label(l),
     arrows(a),
-    pairs{p0,p1,p2,p3,p4,p5,p6,p7} {}
+    pairs{p0,p1,p2,p3,p4,p5,p6,p7},
+    color(0) {}
   DivChannelPair(const char* l, unsigned char a, signed char p):
     label(l),
     arrows(a),
-    pairs{p,-1,-1,-1,-1,-1,-1,-1} {}
+    pairs{p,-1,-1,-1,-1,-1,-1,-1},
+    color(0) {}
+  DivChannelPair(const char* l, unsigned char a, signed char p0, signed char p1, signed char p2, signed char p3, signed char p4, signed char p5, signed char p6, signed char p7, unsigned char col):
+    label(l),
+    arrows(a),
+    pairs{p0,p1,p2,p3,p4,p5,p6,p7},
+    color(col) {}
+  DivChannelPair(const char* l, unsigned char a, signed char p, unsigned char col):
+    label(l),
+    arrows(a),
+    pairs{p,-1,-1,-1,-1,-1,-1,-1},
+    color(col) {}
   DivChannelPair():
     label(NULL),
     arrows(0),
-    pairs{-1,-1,-1,-1,-1,-1,-1,-1} {}
+    pairs{-1,-1,-1,-1,-1,-1,-1,-1},
+    color(0) {}
 };
 
 struct DivChannelModeHints {
