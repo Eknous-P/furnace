@@ -1419,10 +1419,10 @@ void FurnaceGUI::drawPattern() {
       float posMin=FLT_MAX;
       float posMax=-FLT_MAX;
       ImVec2 textSize;
-      unsigned int floors[4][4]; // bit array
+      unsigned int floors[6][4]; // bit array
       std::vector<DelayedLabel> delayedLabels;
 
-      memset(floors,0,4*4*sizeof(unsigned int));
+      memset(floors,0,6*4*sizeof(unsigned int));
 
       for (int i=0; i<chans; i++) {
         std::vector<DivChannelPair> pairs;
@@ -1455,7 +1455,7 @@ void FurnaceGUI::drawPattern() {
           float posY=chanHeadBottom;
 
           // find a free floor
-          while (curFloor<4) {
+          while (curFloor<6) {
             bool free=true;
             for (unsigned int j=pairMin; j<=pairMax; j++) {
               const unsigned int j0=j>>5;
@@ -1468,7 +1468,7 @@ void FurnaceGUI::drawPattern() {
             if (free) break;
             curFloor++;
           }
-          if (curFloor<4) {
+          if (curFloor<6) {
             // occupy floor
             floors[curFloor][pairMin>>5]|=1U<<(pairMin&31);
             floors[curFloor][pairMax>>5]|=1U<<(pairMax&31);
@@ -1925,7 +1925,7 @@ void FurnaceGUI::drawPattern() {
           float width=patChanX[i+1]-patChanX[i];
 
           ImVec2 partPos=ImVec2(
-            off.x+patChanX[i]+(width*0.5+0.5*sin(M_PI*(float)ch->vibratoPosGiant/64.0f)*width),
+            off.x+patChanX[i]+(width*0.5+0.5*sin(2*M_PI*(float)ch->vibratoPosGiant/64.0f)*width),
             off.y+(ImGui::GetWindowHeight()*0.5f)+randRange(0,patFont->FontSize)
           );
 
