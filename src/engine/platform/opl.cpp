@@ -37,6 +37,9 @@
 #define PCM_CHECK(ch) ((chipType==4) && (ch>=pcmChanOffs))
 #define PCM_REG(ch) (ch-pcmChanOffs)
 
+// check if PCM in RAM (and size is <= 2MB) - 4MB uses whole sample area
+#define PCM_IN_RAM (ramSize<=0x200000)
+
 // N = invalid
 #define N 255
 
@@ -1466,7 +1469,7 @@ void DivPlatformOPL::tick(bool sysTick) {
         ctrl|=(chan[i].active?0x80:0)|(chan[i].damp?0x40:0)|(chan[i].lfoReset?0x20:0)|(chan[i].ch?0x10:0)|(isMuted[i]?8:(chan[i].pan&0xf));
         int waveNum=chan[i].sample;
         if (waveNum>=0) {
-          if (ramSize<=0x200000) {
+          if (PCM_IN_RAM) {
             waveNum=CLAMP(waveNum,0,0x7f)|0x180;
           }
           if (chan[i].keyOn) {
@@ -2941,7 +2944,7 @@ void DivPlatformOPL::reset() {
     if (chipType==4) {
       immWrite(0x105,3);
       // Reset wavetable header
-      immWrite(0x202,(ramSize<=0x200000)?0x10:0x00);
+      immWrite(0x202,PCM_IN_RAM?0x10:0x00);
       // initialize mixer volume
       fmMixL=7;
       fmMixR=7;
@@ -2987,6 +2990,12 @@ void DivPlatformOPL::notifyInsChange(int ins) {
     if (chan[i].ins==ins) {
       chan[i].insChanged=true;
     }
+  }
+}
+
+void DivPlatformOPL::notifySampleChange(int sample) {
+  if (pcmChanOffs>=0) {
+    renderInstruments();
   }
 }
 
@@ -3209,7 +3218,7 @@ void DivPlatformOPL::setFlags(const DivConfig& flags) {
       pcm.setClockFrequency(chipClock);
       rate=chipClock/768;
       chipRateBase=chipClock/684;
-      immWrite(0x202,(ramSize<=0x200000)?0x10:0x00);
+      immWrite(0x202,PCM_IN_RAM?0x10:0x00);
       break;
     case 759:
       rate=48000;
@@ -3232,7 +3241,7 @@ const void* DivPlatformOPL::getSampleMem(int index) {
 
 size_t DivPlatformOPL::getSampleMemCapacity(int index) {
   return (index==0 && pcmChanOffs>=0)?
-          ((ramSize<=0x200000)?0x200000+ramSize:ramSize):
+          (PCM_IN_RAM?0x200000+ramSize:ramSize):
           ((index==0 && adpcmChan>=0)?262144:0);
 }
 
@@ -3241,9 +3250,17 @@ size_t DivPlatformOPL::getSampleMemUsage(int index) {
           (index==0 && adpcmChan>=0)?adpcmBMemLen:0;
 }
 
+bool DivPlatformOPL::hasSamplePtrHeader(int index) {
+  return (index==0 && pcmChanOffs>=0);
+}
+
+size_t DivPlatformOPL::getSampleMemOffset(int index) {
+  return (index==0 && pcmChanOffs>=0 && ramSize<=0x200000)?0x200000:0;
+}
+
 bool DivPlatformOPL::isSampleLoaded(int index, int sample) {
   if (index!=0) return false;
-  if (sample<0 || sample>255) return false;
+  if (sample<0 || sample>32767) return false;
   return sampleLoaded[sample];
 }
 
@@ -3251,6 +3268,58 @@ const DivMemoryComposition* DivPlatformOPL::getMemCompo(int index) {
   if ((adpcmChan<0) && (pcmChanOffs<0)) return NULL;
   if (index!=0) return NULL;
   return &memCompo;
+}
+
+// this is called on instrument change, reset and/or renderSamples().
+// I am not making this part of DivDispatch as this is the only chip with
+// instruments in ROM.
+void DivPlatformOPL::renderInstruments() {
+  if (pcmChanOffs>=0) {
+    const int maxSample=PCM_IN_RAM?128:512;
+    int sampleCount=parent->song.sampleLen;
+    if (sampleCount>maxSample) {
+      sampleCount=maxSample;
+    }
+    // instrument table
+    for (int i=0; i<sampleCount; i++) {
+      DivSample* s=parent->song.sample[i];
+      unsigned int insAddr=(i*12)+(PCM_IN_RAM?0x200000:0);
+      unsigned char bitDepth;
+      int endPos=CLAMP(s->isLoopable()?s->loopEnd:(s->samples+1),1,0x10000);
+      int loop=s->isLoopable()?CLAMP(s->loopStart,0,endPos-2):(endPos-2);
+      switch (s->depth) {
+        case DIV_SAMPLE_DEPTH_8BIT:
+          bitDepth=0;
+          break;
+        case DIV_SAMPLE_DEPTH_12BIT:
+          bitDepth=1;
+          if (!s->isLoopable()) {
+            endPos++;
+            loop++;
+          }
+          break;
+        case DIV_SAMPLE_DEPTH_16BIT:
+          bitDepth=2;
+          break;
+        default:
+          bitDepth=0;
+          break;
+      }
+      pcmMem[insAddr]=(bitDepth<<6)|((sampleOffPCM[i]>>16)&0x3f);
+      pcmMem[1+insAddr]=(sampleOffPCM[i]>>8)&0xff;
+      pcmMem[2+insAddr]=(sampleOffPCM[i])&0xff;
+      pcmMem[3+insAddr]=(loop>>8)&0xff;
+      pcmMem[4+insAddr]=(loop)&0xff;
+      pcmMem[5+insAddr]=((~(endPos-1))>>8)&0xff;
+      pcmMem[6+insAddr]=(~(endPos-1))&0xff;
+      // on MultiPCM this consists of instrument params, but on OPL4 this is not used
+      pcmMem[7+insAddr]=0; // LFO, VIB
+      pcmMem[8+insAddr]=(0xf<<4)|(0xf<<0); // AR, D1R
+      pcmMem[9+insAddr]=0; // DL, D2R
+      pcmMem[10+insAddr]=(0xf<<4)|(0xf<<0); // RC, RR
+      pcmMem[11+insAddr]=0; // AM
+    }
+  }
 }
 
 void DivPlatformOPL::renderSamples(int sysID) {
@@ -3261,18 +3330,24 @@ void DivPlatformOPL::renderSamples(int sysID) {
   if (pcmChanOffs>=0 && pcmMem!=NULL) {
     memset(pcmMem,0,4194304);
   }
-  memset(sampleOffPCM,0,256*sizeof(unsigned int));
-  memset(sampleOffB,0,256*sizeof(unsigned int));
-  memset(sampleLoaded,0,256*sizeof(bool));
+  memset(sampleOffPCM,0,32768*sizeof(unsigned int));
+  memset(sampleOffB,0,32768*sizeof(unsigned int));
+  memset(sampleLoaded,0,32768*sizeof(bool));
 
   memCompo=DivMemoryComposition();
   memCompo.name="Sample Memory";
 
   if (pcmChanOffs>=0) { // OPL4 PCM
-    size_t memPos=((ramSize<=0x200000)?0x200600:0x1800);
-    const int maxSample=(ramSize<=0x200000)?127:511;
+    size_t memPos=(PCM_IN_RAM?0x200600:0x1800);
+    const int maxSample=PCM_IN_RAM?128:512;
     int sampleCount=parent->song.sampleLen;
-    if (sampleCount>maxSample) sampleCount=maxSample;
+    if (sampleCount>maxSample) {
+      // mark the rest as unavailable
+      for (int i=maxSample; i<sampleCount; i++) {
+        sampleLoaded[i]=false;
+      }
+      sampleCount=maxSample;
+    }
     for (int i=0; i<sampleCount; i++) {
       DivSample* s=parent->song.sample[i];
       if (!s->renderOn[0][sysID]) {
@@ -3332,46 +3407,8 @@ void DivPlatformOPL::renderSamples(int sysID) {
     }
     pcmMemLen=memPos+256;
 
-    // instrument table
-    for (int i=0; i<sampleCount; i++) {
-      DivSample* s=parent->song.sample[i];
-      unsigned int insAddr=(i*12)+((ramSize<=0x200000)?0x200000:0);
-      unsigned char bitDepth;
-      int endPos=CLAMP(s->isLoopable()?s->loopEnd:(s->samples+1),1,0x10000);
-      int loop=s->isLoopable()?CLAMP(s->loopStart,0,endPos-2):(endPos-2);
-      switch (s->depth) {
-        case DIV_SAMPLE_DEPTH_8BIT:
-          bitDepth=0;
-          break;
-        case DIV_SAMPLE_DEPTH_12BIT:
-          bitDepth=1;
-          if (!s->isLoopable()) {
-            endPos++;
-            loop++;
-          }
-          break;
-        case DIV_SAMPLE_DEPTH_16BIT:
-          bitDepth=2;
-          break;
-        default:
-          bitDepth=0;
-          break;
-      }
-      pcmMem[insAddr]=(bitDepth<<6)|((sampleOffPCM[i]>>16)&0x3f);
-      pcmMem[1+insAddr]=(sampleOffPCM[i]>>8)&0xff;
-      pcmMem[2+insAddr]=(sampleOffPCM[i])&0xff;
-      pcmMem[3+insAddr]=(loop>>8)&0xff;
-      pcmMem[4+insAddr]=(loop)&0xff;
-      pcmMem[5+insAddr]=((~(endPos-1))>>8)&0xff;
-      pcmMem[6+insAddr]=(~(endPos-1))&0xff;
-      // on MultiPCM this consists of instrument params, but on OPL4 this is not used
-      pcmMem[7+insAddr]=0; // LFO, VIB
-      pcmMem[8+insAddr]=(0xf << 4) | (0xf << 0); // AR, D1R
-      pcmMem[9+insAddr]=0; // DL, D2R
-      pcmMem[10+insAddr]=(0xf << 4) | (0xf << 0); // RC, RR
-      pcmMem[11+insAddr]=0; // AM
-    }
-    if (ramSize<=0x200000) {
+    renderInstruments();
+    if (PCM_IN_RAM) {
       memCompo.entries.push_back(DivMemoryEntry(DIV_MEMORY_RESERVED,"ROM data",0,0,0x200000));
     }
 
@@ -3503,5 +3540,17 @@ void DivPlatformOPL::quit() {
   }
 }
 
+// initialization of important arrays
+DivPlatformOPL::DivPlatformOPL():
+  pcmMemory(0x400000),
+  pcm(pcmMemory) {
+  sampleOffPCM=new unsigned int[32768];
+  sampleOffB=new unsigned int[32768];
+  sampleLoaded=new bool[32768];
+}
+
 DivPlatformOPL::~DivPlatformOPL() {
+  delete[] sampleOffPCM;
+  delete[] sampleOffB;
+  delete[] sampleLoaded;
 }

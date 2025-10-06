@@ -283,6 +283,14 @@ void DivEngine::notifyWaveChange(int wave) {
   BUSY_END;
 }
 
+void DivEngine::notifySampleChange(int sample) {
+  BUSY_BEGIN;
+  for (int i=0; i<song.systemLen; i++) {
+    disCont[i].dispatch->notifySampleChange(sample);
+  }
+  BUSY_END;
+}
+
 int DivEngine::loadSampleROM(String path, ssize_t expectedSize, unsigned char*& ret) {
   ret=NULL;
   if (path.empty()) {
@@ -595,10 +603,41 @@ void DivEngine::createNewFromDefaults() {
   BUSY_END;
 }
 
+void DivEngine::copyChannel(int src, int dest) {
+  logV("copying channel %d to %d",src,dest);
+  if (src==dest) {
+    logV("not copying because it's the same channel!");
+    return;
+  }
+
+  for (int i=0; i<DIV_MAX_PATTERNS; i++) {
+    curOrders->ord[dest][i]=curOrders->ord[src][i];
+
+    DivPattern* srcPat=curPat[src].data[i];
+    DivPattern* destPat=curPat[dest].data[i];
+    if (srcPat==NULL) {
+      if (destPat!=NULL) {
+        delete destPat;
+        curPat[dest].data[i]=NULL;
+      }
+    } else {
+      curPat[src].data[i]->copyOn(curPat[dest].getPattern(i, true));
+    }
+  }
+
+  curPat[dest].effectCols=curPat[src].effectCols;
+
+  curSubSong->chanName[dest]=curSubSong->chanName[src];
+  curSubSong->chanShortName[dest]=curSubSong->chanShortName[src];
+  curSubSong->chanShow[dest]=curSubSong->chanShow[src];
+  curSubSong->chanShowChanOsc[dest]=curSubSong->chanShowChanOsc[src];
+  curSubSong->chanCollapse[dest]=curSubSong->chanCollapse[src];
+}
+
 void DivEngine::swapChannels(int src, int dest) {
   logV("swapping channel %d with %d",src,dest);
   if (src==dest) {
-    logV("not swapping channels because it's the same channel!",src,dest);
+    logV("not swapping channels because it's the same channel!");
     return;
   }
 
@@ -736,6 +775,16 @@ void DivEngine::checkAssetDir(std::vector<DivAssetDir>& dir, size_t entries) {
   }
 
   delete[] inAssetDir;
+}
+
+void DivEngine::copyChannelP(int src, int dest) {
+  if (src<0 || src>=chans) return;
+  if (dest<0 || dest>=chans) return;
+  BUSY_BEGIN;
+  saveLock.lock();
+  copyChannel(src,dest);
+  saveLock.unlock();
+  BUSY_END;
 }
 
 void DivEngine::swapChannelsP(int src, int dest) {
@@ -932,11 +981,14 @@ void DivEngine::delUnusedWaves() {
 }
 
 void DivEngine::delUnusedSamples() {
+  if (song.sample.empty()) return;
+
   BUSY_BEGIN;
   saveLock.lock();
 
-  bool isUsed[256];
-  memset(isUsed,0,256*sizeof(bool));
+  bool* isUsed=new bool[song.sample.size()];
+  memset(isUsed,0,song.sample.size()*sizeof(bool));
+  int isUsedMax=((int)song.sample.size())-1;
 
   // scan in instruments
   for (DivInstrument* i: song.ins) {
@@ -1018,16 +1070,18 @@ void DivEngine::delUnusedSamples() {
     if (!isUsed[i]) {
       delSampleUnsafe(i,false);
       // rotate
-      for (int j=i; j<255; j++) {
+      for (int j=i; j<isUsedMax; j++) {
         isUsed[j]=isUsed[j+1];
       }
-      isUsed[255]=true;
+      isUsed[isUsedMax]=true;
       i--;
     }
   }
 
   // render
   renderSamples();
+
+  delete[] isUsed;
 
   saveLock.unlock();
   BUSY_END;
@@ -2642,6 +2696,9 @@ int DivEngine::addInstrument(int refChan, DivInstrumentType fallbackType) {
   song.ins.push_back(ins);
   song.insLen=insCount+1;
   checkAssetDir(song.insDir,song.ins.size());
+  for (int i=0; i<song.systemLen; i++) {
+    disCont[i].dispatch->notifyInsAddition(i);
+  }
   saveLock.unlock();
   BUSY_END;
   return insCount;
@@ -2659,6 +2716,9 @@ int DivEngine::addInstrumentPtr(DivInstrument* which) {
   checkAssetDir(song.insDir,song.ins.size());
   checkAssetDir(song.waveDir,song.wave.size());
   checkAssetDir(song.sampleDir,song.sample.size());
+  for (int i=0; i<song.systemLen; i++) {
+    disCont[i].dispatch->notifyInsAddition(i);
+  }
   saveLock.unlock();
   BUSY_END;
   return song.insLen;
@@ -2670,6 +2730,9 @@ void DivEngine::loadTempIns(DivInstrument* which) {
     tempIns=new DivInstrument;
   }
   *tempIns=*which;
+  for (int i=0; i<song.systemLen; i++) {
+    disCont[i].dispatch->notifyInsAddition(i);
+  }
   BUSY_END;
 }
 
@@ -2707,7 +2770,7 @@ void DivEngine::delInstrument(int index) {
 }
 
 int DivEngine::addWave() {
-  if (song.wave.size()>=256) {
+  if (song.wave.size()>=32768) {
     lastError=_("too many wavetables!");
     return -1;
   }
@@ -2724,7 +2787,7 @@ int DivEngine::addWave() {
 }
 
 int DivEngine::addWavePtr(DivWavetable* which) {
-  if (song.wave.size()>=256) {
+  if (song.wave.size()>=32768) {
     lastError=_("too many wavetables!");
     delete which;
     return -1;
@@ -2901,7 +2964,7 @@ void DivEngine::delWave(int index) {
 }
 
 int DivEngine::addSample() {
-  if (song.sample.size()>=256) {
+  if (song.sample.size()>=32768) {
     lastError=_("too many samples!");
     return -1;
   }
@@ -2924,7 +2987,7 @@ int DivEngine::addSample() {
 }
 
 int DivEngine::addSamplePtr(DivSample* which) {
-  if (song.sample.size()>=256) {
+  if (song.sample.size()>=32768) {
     lastError=_("too many samples!");
     delete which;
     return -1;

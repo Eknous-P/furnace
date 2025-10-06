@@ -543,7 +543,7 @@ bool DivSample::saveRaw(const char* path) {
 }
 
 // 16-bit memory is padded to 512, to make things easier for ADPCM-A/B.
-bool DivSample::initInternal(DivSampleDepth d, int count) {
+bool DivSample::initInternal(DivSampleDepth d, unsigned int count) {
   logV("initInternal(%d,%d)",(int)d,count);
   switch (d) {
     case DIV_SAMPLE_DEPTH_1BIT: // 1-bit
@@ -651,6 +651,7 @@ bool DivSample::initInternal(DivSampleDepth d, int count) {
 }
 
 bool DivSample::init(unsigned int count) {
+  if (count>16777215) return false;
   if (!initInternal(depth,count)) return false;
   setSampleCount(count);
   return true;
@@ -1189,6 +1190,7 @@ bool DivSample::resampleSinc(double sRate, double tRate) {
 
 bool DivSample::resample(double sRate, double tRate, int filter) {
   if (depth!=DIV_SAMPLE_DEPTH_8BIT && depth!=DIV_SAMPLE_DEPTH_16BIT) return false;
+  if (tRate<100) return false;
   switch (filter) {
     case DIV_RESAMPLE_NONE:
       return resampleNone(sRate,tRate);
@@ -1478,7 +1480,8 @@ void DivSample::render(unsigned int formatMask) {
     }
   }
   if (NOT_IN_FORMAT(DIV_SAMPLE_DEPTH_BRR)) { // BRR
-    int sampleCount=loop?loopEnd:samples;
+    int sampleCount=isLoopable()?loopEnd:samples;
+    if (sampleCount>(int)samples) sampleCount=samples;
     if (!initInternal(DIV_SAMPLE_DEPTH_BRR,sampleCount)) return;
     brrEncode(data16,dataBRR,sampleCount,loop?loopStart:-1,brrEmphasis,brrNoFilter);
   }

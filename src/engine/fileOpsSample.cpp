@@ -27,7 +27,7 @@
 std::vector<DivSample*> DivEngine::sampleFromFile(const char* path) {
   std::vector<DivSample*> ret;
 
-  if (song.sample.size()>=256) {
+  if (song.sample.size()>=32768) {
     lastError="too many samples!";
     return ret;
   }
@@ -402,13 +402,12 @@ std::vector<DivSample*> DivEngine::sampleFromFile(const char* path) {
   {
     // There's no documentation on libsndfile detune range, but the code
     // implies -50..50. Yet when loading a file you can get a >50 value.
-    // disabled for now
-    /*
-    if(inst.detune > 50)
-      inst.detune = inst.detune - 100;
-    short pitch = ((0x3c-inst.basenote)*100) + inst.detune;
-    sample->centerRate=si.samplerate*pow(2.0,pitch/(12.0 * 100.0));
-    */
+    if (getConfInt("sampleImportInstDetune", 0)) {
+      if(inst.detune > 50)
+        inst.detune = inst.detune - 100;
+      short pitch = ((0x3c-inst.basenote)*100) + inst.detune;
+      sample->centerRate=si.samplerate*pow(2.0,pitch/(12.0 * 100.0));
+    }
     if(inst.loop_count && inst.loops[0].mode >= SF_LOOP_FORWARD)
     {
       sample->loop=true;
@@ -432,7 +431,7 @@ std::vector<DivSample*> DivEngine::sampleFromFile(const char* path) {
 }
 
 DivSample* DivEngine::sampleFromFileRaw(const char* path, DivSampleDepth depth, int channels, bool bigEndian, bool unsign, bool swapNibbles, int rate) {
-  if (song.sample.size()>=256) {
+  if (song.sample.size()>=32768) {
     lastError="too many samples!";
     return NULL;
   }
