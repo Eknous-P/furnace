@@ -23,6 +23,8 @@
 #include "../engine/engine.h"
 #include "../engine/workPool.h"
 #include "../engine/waveSynth.h"
+#include "SDL_render.h"
+#include "SDL_surface.h"
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "imgui_impl_sdl2.h"
@@ -2851,6 +2853,34 @@ class FurnaceGUI {
   int pianoOffset, pianoOffsetEdit;
   int pianoView, pianoInputPadMode, pianoLabelsMode;
 
+  // piano roll
+  struct RollNote {
+    float width;
+    int note;
+    float noteFine;
+    bool active;
+  };
+
+  struct PianoRollData{
+    int rollTime;
+    int noteWidth;
+
+    int width, height;
+    SDL_Surface* surface;
+    FurnaceGUITexture* texture;
+    RollNote notes[DIV_MAX_CHANS];
+    bool updateTex;
+    PianoRollData():
+      rollTime(600),
+      noteWidth(16),
+      width(0), height(0),
+      surface(NULL),
+      texture(NULL),
+      updateTex(true) {
+        memset(notes,0,sizeof(notes));
+      }
+  } pianoRollData;
+
   // effect sorting / searching
   bool effectsShow[10];
   ImGuiTextFilter effectSearch;
@@ -3093,6 +3123,7 @@ class FurnaceGUI {
   float drawSystemChannelInfo(const DivSysDef* whichDef, int keyHitOffset=-1, float width=-1.0f, int chanCount=-1);
   void drawSystemChannelInfoText(const DivSysDef* whichDef);
   void drawVolMeterInternal(ImDrawList* dl, ImRect rect, float* data, int chans, bool aspectRatio);
+  void drawPianoRoll(ImDrawList* dl, ImRect rect);
 
   void assignActionMap(std::map<int,int>& actionMap, int first, int last);
   void drawKeybindSettingsTableRow(FurnaceGUIActions actionIdx);

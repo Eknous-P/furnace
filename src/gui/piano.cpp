@@ -264,7 +264,13 @@ void FurnaceGUI::drawPiano() {
       } else {
         ImGuiWindow* window=ImGui::GetCurrentWindow();
         ImVec2 size=ImGui::GetContentRegionAvail();
+        ImVec2 rollSize=ImVec2(size.x,0);
         ImDrawList* dl=ImGui::GetWindowDrawList();
+
+        if (size.y>100) {
+          rollSize.y=size.y-100;
+          size.y=100;
+        }
 
         ImVec2 minArea=window->DC.CursorPos;
         ImVec2 maxArea=ImVec2(
@@ -272,6 +278,7 @@ void FurnaceGUI::drawPiano() {
           minArea.y+size.y
         );
         ImRect rect=ImRect(minArea,maxArea);
+        ImRect rollRect=ImRect(ImVec2(minArea.x,maxArea.y),ImVec2(maxArea.x,maxArea.y+rollSize.y));
 
         // render piano
         //ImGui::ItemSize(size,ImGui::GetStyle().FramePadding.y);
@@ -472,6 +479,9 @@ void FurnaceGUI::drawPiano() {
               }
             }
           }
+        }
+        if (rollSize.y>0) {
+          drawPianoRoll(dl,rollRect);
         }
       }
 
