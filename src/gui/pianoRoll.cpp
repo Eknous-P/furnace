@@ -73,7 +73,7 @@ void FurnaceGUI::drawPianoRoll(ImDrawList* dl, ImRect rect) {
       switch (i.cmd) {
         case DIV_CMD_NOTE_ON:
           pianoRollData.notes[i.chan].active=true;
-          pianoRollData.notes[i.chan].note=i.value;
+          pianoRollData.notes[i.chan].note=i.value+60;
           pianoRollData.notes[i.chan].width=noteDrawWidth;
           pianoRollData.notes[i.chan].notePorta=0;
           pianoRollData.notes[i.chan].noteHit=1;
@@ -91,7 +91,7 @@ void FurnaceGUI::drawPianoRoll(ImDrawList* dl, ImRect rect) {
           break;
         }
         case DIV_CMD_LEGATO:
-          pianoRollData.notes[i.chan].note=i.value;
+          pianoRollData.notes[i.chan].note=i.value+60;
           break;
         default: continue;
       }
@@ -177,7 +177,7 @@ void FurnaceGUI::drawPianoRoll(ImDrawList* dl, ImRect rect) {
     RollNote i=pianoRollData.notes[ch];
     if (!e->curSubSong->chanShow[ch] || !i.active) continue;
     if (e->isChannelMuted(ch)) continue;
-    float x=(float)(floor(i.note/12.0f)*12+60-rollOff*12)/(rollOct*12);
+    float x=(float)(floor(i.note/12.0f)-rollOff)/rollOct;
     x+=(i.note%12)/12.0f/rollOct;
     noteRect.x=(int)round(pianoRollData.width*x+i.noteVib+i.notePorta+(pianoRollData.noteWidth-i.width)/2.0f);
     noteRect.w=i.width;
