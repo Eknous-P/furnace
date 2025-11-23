@@ -2857,7 +2857,7 @@ class FurnaceGUI {
   struct RollNote {
     float width;
     int note;
-    float noteFine;
+    float noteVib, notePorta;
     bool active;
   };
 
