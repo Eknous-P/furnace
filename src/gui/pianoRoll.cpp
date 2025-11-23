@@ -28,7 +28,6 @@
 TODO:
 - add draw interface to struct
   - may need to be updated by the engine cuz um... tickrate, or no?
-- brighten on note on
 - moar cmds
 - maybe use chanstate for everything
 */
@@ -36,8 +35,9 @@ TODO:
 void FurnaceGUI::drawPianoRoll(ImDrawList* dl, ImRect rect) {
   int& rollOff=(e->isPlaying() || pianoSharePosition)?pianoOffset:pianoOffsetEdit;
   int& rollOct=(e->isPlaying() || pianoSharePosition)?pianoOctaves:pianoOctavesEdit;
+  float noteDrawWidth=((float)pianoRollData.width/rollOct)/13;
   if (pianoRollData.updateTex) {
-    pianoRollData.width=rollOct*12*pianoRollData.noteWidth;
+    pianoRollData.width=rollOct*7*pianoRollData.noteWidth;
     pianoRollData.height=pianoRollData.rollTime;
     SDL_FreeSurface(pianoRollData.surface);
     pianoRollData.surface=NULL;
@@ -74,8 +74,9 @@ void FurnaceGUI::drawPianoRoll(ImDrawList* dl, ImRect rect) {
         case DIV_CMD_NOTE_ON:
           pianoRollData.notes[i.chan].active=true;
           pianoRollData.notes[i.chan].note=i.value;
-          pianoRollData.notes[i.chan].width=pianoRollData.noteWidth;
+          pianoRollData.notes[i.chan].width=noteDrawWidth;
           pianoRollData.notes[i.chan].notePorta=0;
+          pianoRollData.notes[i.chan].noteHit=1;
           break;
         case DIV_CMD_NOTE_OFF:
         case DIV_CMD_ENV_RELEASE:
@@ -86,7 +87,7 @@ void FurnaceGUI::drawPianoRoll(ImDrawList* dl, ImRect rect) {
         case DIV_CMD_VOLUME: {
           float scaledVol=(float)i.value/(float)e->getMaxVolumeChan(i.chan);
           if (scaledVol>1.0f) scaledVol=1.0f;
-          pianoRollData.notes[i.chan].width=scaledVol*pianoRollData.noteWidth;
+          pianoRollData.notes[i.chan].width=scaledVol*noteDrawWidth;
           break;
         }
         case DIV_CMD_LEGATO:
@@ -97,6 +98,10 @@ void FurnaceGUI::drawPianoRoll(ImDrawList* dl, ImRect rect) {
     }
     for (int i=0; i<e->getTotalChannelCount(); i++) {
       if (!e->curSubSong->chanShow[i]) continue;
+      if (pianoRollData.notes[i].noteHit>0) {
+        pianoRollData.notes[i].noteHit-=10.f*ImGui::GetIO().DeltaTime;
+        if (pianoRollData.notes[i].noteHit<0) pianoRollData.notes[i].noteHit=0;
+      }
       DivChannelState* s=e->getChanState(i);
         if (s->vibratoDepth>0) {
 #define vibTable(x) sin(((double)(x)/64.0)*(2*M_PI))
@@ -172,11 +177,21 @@ void FurnaceGUI::drawPianoRoll(ImDrawList* dl, ImRect rect) {
     RollNote i=pianoRollData.notes[ch];
     if (!e->curSubSong->chanShow[ch] || !i.active) continue;
     if (e->isChannelMuted(ch)) continue;
-    float x=((float)(i.note+60-rollOff*12)/(rollOct*12));
-    noteRect.x=(int)round(pianoRollData.width*x+i.noteVib+i.notePorta-i.width/2.0f);
+    float x=(float)(floor(i.note/12.0f)*12+60-rollOff*12)/(rollOct*12);
+    x+=(i.note%12)/12.0f/rollOct;
+    noteRect.x=(int)round(pianoRollData.width*x+i.noteVib+i.notePorta+(pianoRollData.noteWidth-i.width)/2.0f);
     noteRect.w=i.width;
     int color=e->curSubSong->chanColor[ch];
     if (color==0) color=ImGui::GetColorU32(uiColors[GUI_COLOR_CHANNEL_FM+e->getChannelType(ch)]);
+    if (i.noteHit>0) {
+      ImVec4 color4=ImGui::ColorConvertU32ToFloat4(color);
+      color=ImGui::ColorConvertFloat4ToU32(ImVec4(
+        ImLerp(color4.x,1.0f,i.noteHit),
+        ImLerp(color4.y,1.0f,i.noteHit),
+        ImLerp(color4.z,1.0f,i.noteHit),
+        color4.w
+      ));
+    }
     SDL_FillRect(pianoRollData.surface,&noteRect,color);
   }
   
@@ -188,8 +203,8 @@ void FurnaceGUI::drawPianoRoll(ImDrawList* dl, ImRect rect) {
     rect.Min,rect.Max,
     ImVec2(0,0),
     ImVec2(rend->getTextureU(pianoRollData.texture),rend->getTextureV(pianoRollData.texture)));
-  {
-    String debugText="piano debug";
+  if (1) {
+    String debugText="piano roll debug";
     debugText+=fmt::sprintf("\nw/h: %d:%d", pianoRollData.width,pianoRollData.height);
     debugText+=fmt::sprintf("\ncmds: %lu", cmdStream.size());
     for (int ch=0; ch<e->getTotalChannelCount(); ch++) {

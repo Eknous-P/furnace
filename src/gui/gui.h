@@ -2858,6 +2858,7 @@ class FurnaceGUI {
     float width;
     int note;
     float noteVib, notePorta;
+    float noteHit;
     bool active;
   };
 
@@ -2871,8 +2872,8 @@ class FurnaceGUI {
     RollNote notes[DIV_MAX_CHANS];
     bool updateTex;
     PianoRollData():
-      rollTime(600),
-      noteWidth(16),
+      rollTime(320),
+      noteWidth(32),
       width(0), height(0),
       surface(NULL),
       texture(NULL),
