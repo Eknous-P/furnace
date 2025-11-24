@@ -1128,7 +1128,7 @@ Collapsed=0\n\
 \n\
 [Window][Tuner]\n\
 Pos=60,60\n\
-Size=395,171\n\
+Size=160,170\n\
 Collapsed=0\n\
 \n\
 [Window][Warning##Export AudioFileDialogOverWriteDialog]\n\
@@ -1242,6 +1242,21 @@ Collapsed=0\n\
 [Window][Oscilloscope (X-Y)]\n\
 Pos=60,60\n\
 Size=300,300\n\
+Collapsed=0\n\
+\n\
+[Window][Multi-Ins Setup]\n\
+Pos=858,549\n\
+Size=250,165\n\
+Collapsed=0\n\
+\n\
+[Window][Spectrum]\n\
+Pos=771,384\n\
+Size=600,244\n\
+Collapsed=0\n\
+\n\
+[Window][Music Player]\n\
+Pos=704,243\n\
+Size=413,115\n\
 Collapsed=0\n\
 \n\
 [Docking][Data]\n\

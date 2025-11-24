@@ -1686,6 +1686,7 @@ bool DivEngine::loadFur(unsigned char* file, size_t len, int variantID) {
 
     // read song comments
     if (commentPtr) {
+      logD("reading song comments...");
       if (!reader.seek(commentPtr,SEEK_SET)) {
         logE("couldn't seek to song comments!");
         lastError=fmt::sprintf("couldn't seek to song comments!");
@@ -1711,6 +1712,11 @@ bool DivEngine::loadFur(unsigned char* file, size_t len, int variantID) {
     ds.grooves.reserve(groovePtr.size());
     for (size_t i=0; i<groovePtr.size(); i++) {
       DivGroovePattern groove;
+
+      if (groovePtr[i]==0) {
+        // could happen due to a bug in unstable Furnace
+        continue;
+      }
       if (!reader.seek(groovePtr[i],SEEK_SET)) {
         logE("couldn't seek to groove %d!",i);
         lastError=fmt::sprintf("couldn't seek to groove %d!",i);
@@ -2720,6 +2726,12 @@ SafeWriter* DivEngine::saveFur(bool notPrimary) {
   putAssetDirData(w,song.waveDir);
   assetDirPtr[2]=w->tell();
   putAssetDirData(w,song.sampleDir);
+
+  /// GROOVES
+  for (DivGroovePattern& i: song.grooves) {
+    groovePtr.push_back(w->tell());
+    i.putData(w);
+  }
 
   /// INSTRUMENT
   insPtr.reserve(song.insLen);
