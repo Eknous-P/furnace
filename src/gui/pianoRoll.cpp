@@ -36,6 +36,7 @@ void FurnaceGUI::drawPianoRoll(ImDrawList* dl, ImRect rect) {
   int& rollOff=(e->isPlaying() || pianoSharePosition)?pianoOffset:pianoOffsetEdit;
   int& rollOct=(e->isPlaying() || pianoSharePosition)?pianoOctaves:pianoOctavesEdit;
   float noteDrawWidth=((float)pianoRollData.width/rollOct)/13;
+  pianoRollData.noteWidth=16;
   if (pianoRollData.updateTex) {
     pianoRollData.width=rollOct*7*pianoRollData.noteWidth;
     pianoRollData.height=pianoRollData.rollTime;
@@ -65,7 +66,12 @@ void FurnaceGUI::drawPianoRoll(ImDrawList* dl, ImRect rect) {
   SDL_LockSurface(pianoRollData.surface);
   unsigned int* px=(unsigned int*)pianoRollData.surface->pixels;
   memcpy(((unsigned char*)px)+pianoRollData.width*4,px,pianoRollData.width*4*(pianoRollData.height-1));
-  memset(px,0,pianoRollData.width*4);
+  unsigned char fill=0;
+  // if (e->isPlaying()) {
+  //   if (oldRow%e->curSubSong->hilightB==0) fill=0x80;
+  //   else if (oldRow%e->curSubSong->hilightA==0) fill=0x40;
+  // }
+  memset(px,fill,pianoRollData.width*4);
 
   // the draw code
   if (e->isRunning()) {
@@ -160,9 +166,9 @@ void FurnaceGUI::drawPianoRoll(ImDrawList* dl, ImRect rect) {
         // aaahhhh help pitch slides are such a mess
         // e1/e2 are backwards aaa
         if (s->portaSpeed>0 && !s->inPorta) { // pitch slide
-          pianoRollData.notes[i].notePorta+=s->portaSpeed*((s->portaNote<=s->note)?-.5f:.5f);
+          pianoRollData.notes[i].notePorta+=s->portaSpeed*((s->portaNote<=s->note)?-1.f:1.f);
         } else if (s->portaSpeed>0 && s->inPorta) { // portamento
-          pianoRollData.notes[i].notePorta+=s->portaSpeed*((s->portaNote<=s->oldNote)?-.5f:.5f);
+          pianoRollData.notes[i].notePorta+=s->portaSpeed*((s->portaNote<=s->oldNote)?-1.f:1.f);
         } else {
           pianoRollData.notes[i].notePorta=0;
         }
@@ -177,9 +183,10 @@ void FurnaceGUI::drawPianoRoll(ImDrawList* dl, ImRect rect) {
     RollNote i=pianoRollData.notes[ch];
     if (!e->curSubSong->chanShow[ch] || !i.active) continue;
     if (e->isChannelMuted(ch)) continue;
-    float x=(float)(floor(i.note/12.0f)-rollOff)/rollOct;
-    x+=(i.note%12)/12.0f/rollOct;
-    noteRect.x=(int)round(pianoRollData.width*x+i.noteVib+i.notePorta+(pianoRollData.noteWidth-i.width)/2.0f);
+    float portaMult=(float)pianoRollData.width/(24.0f*rollOct*pianoRollData.noteWidth);
+    float x=(float)(floor(i.note/12.0f)-rollOff);
+    x+=(i.note%12)/12.0f; // temporary
+    noteRect.x=(int)round(pianoRollData.width*x/rollOct+(i.noteVib+i.notePorta)*portaMult+(pianoRollData.noteWidth-i.width)/2.0f);
     noteRect.w=i.width;
     int color=e->curSubSong->chanColor[ch];
     if (color==0) color=ImGui::GetColorU32(uiColors[GUI_COLOR_CHANNEL_FM+e->getChannelType(ch)]);
@@ -203,7 +210,7 @@ void FurnaceGUI::drawPianoRoll(ImDrawList* dl, ImRect rect) {
     rect.Min,rect.Max,
     ImVec2(0,0),
     ImVec2(rend->getTextureU(pianoRollData.texture),rend->getTextureV(pianoRollData.texture)));
-  if (1) {
+  if (0) {
     String debugText="piano roll debug";
     debugText+=fmt::sprintf("\nw/h: %d:%d", pianoRollData.width,pianoRollData.height);
     debugText+=fmt::sprintf("\ncmds: %lu", cmdStream.size());

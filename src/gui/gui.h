@@ -2862,7 +2862,7 @@ class FurnaceGUI {
     bool active;
   };
 
-  struct PianoRollData{
+  struct PianoRollData {
     int rollTime;
     int noteWidth;
 
