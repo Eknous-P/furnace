@@ -1378,12 +1378,14 @@ struct Gradient2D {
 struct FurnaceGUISysDefChip {
   DivSystem sys;
   float vol, pan, panFR;
+  int chans;
   String flags;
-  FurnaceGUISysDefChip(DivSystem s, float v, float p, const char* f, float pf=0.0):
+  FurnaceGUISysDefChip(DivSystem s, float v, float p, const char* f, float pf=0.0, int ch=0):
     sys(s),
     vol(v),
     pan(p),
     panFR(pf),
+    chans(ch),
     flags(f) {}
 };
 
@@ -2841,6 +2843,12 @@ class FurnaceGUI {
     PIANO_LABELS_OCTAVE_NOTE
   };
 
+  enum PianoKeyColorMode {
+    PIANO_KEY_COLOR_SINGLE=0,
+    PIANO_KEY_COLOR_CHANNEL,
+    PIANO_KEY_COLOR_INSTRUMENT
+  };
+
   int pianoOctaves, pianoOctavesEdit;
   bool pianoOptions, pianoSharePosition, pianoOptionsSet;
   struct pianoKeyState {
@@ -2851,7 +2859,7 @@ class FurnaceGUI {
   bool pianoKeyPressed[180];
   bool pianoReadonly;
   int pianoOffset, pianoOffsetEdit;
-  int pianoView, pianoInputPadMode, pianoLabelsMode;
+  int pianoView, pianoInputPadMode, pianoLabelsMode, pianoKeyColorMode;
 
   // piano roll
   struct RollNote {
@@ -3009,6 +3017,7 @@ class FurnaceGUI {
   bool portSet(String label, unsigned int portSetID, int ins, int outs, int activeIns, int activeOuts, int& clickedPort, std::map<unsigned int,ImVec2>& portPos);
 
   // piano
+  ImVec4 pianoKeyColor(int chan, ImVec4 fallback);
   void pianoLabel(ImDrawList* dl, ImVec2& p0, ImVec2& p1, int note);
 
   void updateWindowTitle();
