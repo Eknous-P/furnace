@@ -40,11 +40,11 @@ struct DelayedLabel {
     label(l) {}
 };
 
-inline float randRange(float min, float max) {
+static inline float randRange(float min, float max) {
   return min+((float)rand()/(float)RAND_MAX)*(max-min);
 }
 
-void _pushPartBlend(const ImDrawList* drawList, const ImDrawCmd* cmd) {
+static void _pushPartBlend(const ImDrawList* drawList, const ImDrawCmd* cmd) {
   if (cmd!=NULL) {
     if (cmd->UserCallbackData!=NULL) {
       ((FurnaceGUI*)cmd->UserCallbackData)->pushPartBlend();
@@ -52,7 +52,7 @@ void _pushPartBlend(const ImDrawList* drawList, const ImDrawCmd* cmd) {
   }
 }
 
-void _popPartBlend(const ImDrawList* drawList, const ImDrawCmd* cmd) {
+static void _popPartBlend(const ImDrawList* drawList, const ImDrawCmd* cmd) {
   if (cmd!=NULL) {
     if (cmd->UserCallbackData!=NULL) {
       ((FurnaceGUI*)cmd->UserCallbackData)->popPartBlend();
@@ -419,6 +419,11 @@ inline void FurnaceGUI::patternRow(int i, bool isPlaying, float lineHeight, int 
 }
 
 void FurnaceGUI::drawPattern() {
+  if (newPatternRenderer) {
+    drawPatternNew();
+    return;
+  }
+
   //int delta0=SDL_GetPerformanceCounter();
   if (nextWindow==GUI_WINDOW_PATTERN) {
     patternOpen=true;
@@ -807,7 +812,7 @@ void FurnaceGUI::drawPattern() {
             ImGui::ItemSize(size,ImGui::GetStyle().FramePadding.y);
             if (ImGui::ItemAdd(rect,ImGui::GetID(chanID))) {
               bool hovered=ImGui::ItemHoverable(rect,ImGui::GetID(chanID),0);
-              ImU32 col=(hovered || (mobileUI && ImGui::IsMouseDown(ImGuiMouseButton_Left)))?ImGui::GetColorU32(ImGuiCol_HeaderHovered):ImGui::GetColorU32(ImGuiCol_Header);
+              ImU32 col=hovered?ImGui::GetColorU32(ImGuiCol_HeaderHovered):ImGui::GetColorU32(ImGuiCol_Header);
               dl->AddRectFilled(rect.Min,rect.Max,col);
               dl->AddTextNoHashHide(ImVec2(minLabelArea.x,rect.Min.y),ImGui::GetColorU32(channelTextColor(i)),chanID);
             }

@@ -3794,11 +3794,13 @@ void FurnaceGUI::pointMotion(int x, int y, int xrel, int yrel) {
     if (y>patWindowPos.y+patWindowSize.y-2.0f*dpiScale) {
       addScroll(1);
     }
-    if (x<patWindowPos.x+(mobileUI?40.0f:4.0f)*dpiScale) {
-      addScrollX(-1);
-    }
-    if (x>patWindowPos.x+patWindowSize.x-(mobileUI?40.0f:4.0f)*dpiScale) {
-      addScrollX(1);
+    if (!selectingFull) {
+      if (x<patWindowPos.x+(mobileUI?40.0f:4.0f)*dpiScale) {
+        addScrollX(-1);
+      }
+      if (x>patWindowPos.x+patWindowSize.x-(mobileUI?40.0f:4.0f)*dpiScale) {
+        addScrollX(1);
+      }
     }
   }
   if (macroDragActive || macroLoopDragActive || waveDragActive || sampleDragActive || orderScrollLocked) {
@@ -4931,6 +4933,13 @@ bool FurnaceGUI::loop() {
         }
         ImGui::EndMenu();
       }
+      pushToggleColors(newPatternRenderer);
+      if (ImGui::SmallButton("NPR")) {
+        newPatternRenderer=!newPatternRenderer;
+      }
+      ImGui::SetItemTooltip(_("New Pattern Renderer"));
+      popToggleColors();
+      ImGui::SameLine();
       ImGui::PushStyleColor(ImGuiCol_Text,uiColors[GUI_COLOR_PLAYBACK_STAT]);
       if (e->isPlaying() && settings.playbackTime) {
         TimeMicros totalTime=e->getCurTime();
@@ -5174,6 +5183,7 @@ bool FurnaceGUI::loop() {
       if (!selectingFull) cursor=selEnd;
       finishSelection();
       if (!mobileUI) {
+        // TODO: don't demand if selectingFull?
         demandScrollX=true;
         if (cursor.xCoarse==selStart.xCoarse && cursor.xFine==selStart.xFine && cursor.y==selStart.y && cursor.order==selStart.order &&
             cursor.xCoarse==selEnd.xCoarse && cursor.xFine==selEnd.xFine && cursor.y==selEnd.y && cursor.order==selEnd.order) {
@@ -6159,7 +6169,7 @@ bool FurnaceGUI::loop() {
         ImVec2 romLogSize=ImGui::GetContentRegionAvail();
         romLogSize.y-=ImGui::GetFrameHeightWithSpacing();
         if (romLogSize.y<60.0f*dpiScale) romLogSize.y=60.0f*dpiScale;
-        if (ImGui::BeginChild("Export Log",romLogSize,ImGuiChildFlags_Border)) {
+        if (ImGui::BeginChild("Export Log",romLogSize,ImGuiChildFlags_Borders)) {
           pendingExport->logLock.lock();
           ImGui::PushFont(patFont);
           for (String& i: pendingExport->exportLog) {
@@ -6784,6 +6794,13 @@ bool FurnaceGUI::loop() {
                 tutorial.importedIT=true;
                 break;
             }
+            commitTutorial();
+            ImGui::CloseCurrentPopup();
+          }
+          break;
+        case GUI_WARN_NPR:
+          if (ImGui::Button(_("Got it"))) {
+            tutorial.nprFieldTrial=true;
             commitTutorial();
             ImGui::CloseCurrentPopup();
           }
@@ -7659,6 +7676,9 @@ bool FurnaceGUI::loop() {
 bool FurnaceGUI::init() {
   logI("initializing GUI.");
 
+  // new pattern renderer "field" trial.
+  newPatternRenderer=(rand()&1);
+
   newFilePicker=new FurnaceFilePicker;
   newFilePicker->setConfigPrefix("fp_");
 
@@ -7667,6 +7687,10 @@ bool FurnaceGUI::init() {
   syncState();
   syncSettings();
   syncTutorial();
+
+  if (!tutorial.nprFieldTrial && newPatternRenderer) {
+    showWarning(_("welcome to the New Pattern Renderer!\nit should be lighter on your CPU.\n\nif you find an issue, you can go back to the old pattern renderer by clicking the NPR button (next to Help).\nmake sure to report it!\n\nthank you!"),GUI_WARN_NPR);
+  }
 
   recentFile.clear();
   for (int i=0; i<settings.maxRecentFile; i++) {
@@ -8390,6 +8414,7 @@ void FurnaceGUI::syncState() {
   pianoView=e->getConfInt("pianoView",pianoView);
   pianoInputPadMode=e->getConfInt("pianoInputPadMode",pianoInputPadMode);
   pianoLabelsMode=e->getConfInt("pianoLabelsMode",pianoLabelsMode);
+  pianoKeyColorMode=e->getConfInt("pianoKeyColorMode",pianoKeyColorMode);
 
   chanOscCols=e->getConfInt("chanOscCols",3);
   chanOscAutoCols=e->getConfBool("chanOscAutoColsType",0);
@@ -8563,6 +8588,7 @@ void FurnaceGUI::commitState(DivConfig& conf) {
   conf.set("pianoView",pianoView);
   conf.set("pianoInputPadMode",pianoInputPadMode);
   conf.set("pianoLabelsMode",pianoLabelsMode);
+  conf.set("pianoKeyColorMode",pianoKeyColorMode);
 
   // commit per-chan osc state
   conf.set("chanOscCols",chanOscCols);
@@ -8763,6 +8789,7 @@ FurnaceGUI::FurnaceGUI():
   replacePendingSample(false),
   displayExportingROM(false),
   displayExportingCS(false),
+  newPatternRenderer(false),
   quitNoSave(false),
   changeCoarse(false),
   orderLock(false),
@@ -9008,6 +9035,7 @@ FurnaceGUI::FurnaceGUI():
   wavePreviewHeight(255),
   wavePreviewInit(true),
   wavePreviewPaused(false),
+  wavePreviewAccum(0.0f),
   pgSys(0),
   pgAddr(0),
   pgVal(0),
@@ -9252,6 +9280,7 @@ FurnaceGUI::FurnaceGUI():
   pianoView(PIANO_LAYOUT_AUTOMATIC),
   pianoInputPadMode(PIANO_INPUT_PAD_SPLIT_AUTO),
   pianoLabelsMode(PIANO_LABELS_OCTAVE),
+  pianoKeyColorMode(PIANO_KEY_COLOR_SINGLE),
 #else
   pianoOctaves(7),
   pianoOctavesEdit(4),
@@ -9263,6 +9292,7 @@ FurnaceGUI::FurnaceGUI():
   pianoView(PIANO_LAYOUT_STANDARD),
   pianoInputPadMode(PIANO_INPUT_PAD_DISABLE),
   pianoLabelsMode(PIANO_LABELS_OCTAVE),
+  pianoKeyColorMode(PIANO_KEY_COLOR_SINGLE),
 #endif
   hasACED(false),
   waveGenBaseShape(0),

@@ -994,6 +994,7 @@ bool FurnaceGUI::drawSysConf(int chan, int sysPos, DivSystem type, DivConfig& fl
     case DIV_SYSTEM_SAA1099: {
       int clockSel=flags.getInt("clockSel",0);
 
+      ImGui::Text(_("Clock rate:"));
       ImGui::Indent();
       if (ImGui::RadioButton(_("SAM Coupé (8MHz)"),clockSel==0)) {
         clockSel=0;
@@ -1255,7 +1256,7 @@ bool FurnaceGUI::drawSysConf(int chan, int sysPos, DivSystem type, DivConfig& fl
     }
     case DIV_SYSTEM_N163: {
       int clockSel=flags.getInt("clockSel",0);
-      int channels=flags.getInt("channels",0)+1;
+      int channels=flags.getInt("channels",7)+1;
       bool multiplex=flags.getBool("multiplex",false);
       bool lenCompensate=flags.getBool("lenCompensate",false);
 
@@ -2644,7 +2645,7 @@ bool FurnaceGUI::drawSysConf(int chan, int sysPos, DivSystem type, DivConfig& fl
         chipType=0;
         altered=true;
       }
-      if (ImGui::RadioButton(_("V 47.0.2 (9-bit volume)"),chipType==1)) {
+      if (ImGui::RadioButton(_("V 47.0.2 (different volume curve)"),chipType==1)) {
         chipType=1;
         altered=true;
       }
