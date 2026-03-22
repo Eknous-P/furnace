@@ -100,6 +100,7 @@ enum DivInstrumentType: unsigned short {
   DIV_INS_SUPERVISION=64,
   DIV_INS_UPD1771C=65,
   DIV_INS_SID3=66,
+  DIV_INS_FLASHSYNTH=67,
   DIV_INS_MAX,
   DIV_INS_NULL
 };
@@ -1028,6 +1029,26 @@ struct DivInstrumentSID3 {
     }
 };
 
+struct DivInstrumentFlashSynth {
+  unsigned char lfoDepth;
+  unsigned char lfoFreq;
+  unsigned char attack, release;
+  unsigned char fmFreq, fmFreqFine;
+  unsigned char fmDepth, fmAttack, fmDecay;
+  unsigned char pwmDepth;
+  unsigned char alg, waveform, waveformParam;
+  unsigned char patchNum;
+  DivInstrumentFlashSynth():
+    lfoDepth(0),
+    lfoFreq(0),
+    attack(0), release(0),
+    fmFreq(0), fmFreqFine(0),
+    fmDepth(0), fmAttack(0), fmDecay(0),
+    pwmDepth(0),
+    alg(0), waveform(0), waveformParam(0),
+    patchNum(0) {}
+};
+
 struct DivInstrumentPOD {
   DivInstrumentType type;
   DivInstrumentFM fm;
@@ -1047,6 +1068,7 @@ struct DivInstrumentPOD {
   DivInstrumentPowerNoise powernoise;
   DivInstrumentSID2 sid2;
   DivInstrumentSID3 sid3;
+  DivInstrumentFlashSynth flash;
 
   DivInstrumentPOD() :
     type(DIV_INS_FM) {

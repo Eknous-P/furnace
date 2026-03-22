@@ -618,6 +618,8 @@ extern/YM2608-LLE/fmopna_2612.c
 
 extern/pwrnoise/pwrnoise.c
 
+extern/flash-synth-core/Src/flashsynth.c
+
 extern/blip_buf/blip_buf.c
 
 src/pch.cpp
@@ -885,6 +887,7 @@ src/engine/platform/bifurcator.cpp
 src/engine/platform/sid2.cpp
 src/engine/platform/sid3.cpp
 src/engine/platform/multipcm.cpp
+src/engine/platform/flashsynth.cpp
 src/engine/platform/pcmdac.cpp
 src/engine/platform/dummy.cpp
 

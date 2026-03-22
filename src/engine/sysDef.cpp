@@ -2736,6 +2736,13 @@ void DivEngine::registerSystems() {
     c64PostEffectHandlerMap
   );
 
+  sysDefs[DIV_SYSTEM_FLASHSYNTH]=new DivSysDef(
+    _("flashsynth(?)"), NULL, 0xfe, 0, 16, 16, 16,
+    true, false, 0, false, 0, 0, 0,
+    _("the worlds smallest midi synthesizer (?)"),
+    DivChanDefFunc(simpleChanDef<DIV_CH_NOISE,DIV_INS_FLASHSYNTH>)
+  );
+
   sysDefs[DIV_SYSTEM_DUMMY]=new DivSysDef(
     _("Dummy System"), NULL, 0xfd, 0, 8, 1, 128,
     false, true, 0, false, 0, 0, 0,

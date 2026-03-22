@@ -11,3 +11,6 @@
 [submodule "extern/asio"]
 	path = extern/asio
 	url = https://github.com/tildearrow/asio-cmake.git
+[submodule "extern/flash-synth-core"]
+	path = extern/flash-synth-core
+	url = https://git.gay/KaliTheCatgirl/flash-synth-core.git

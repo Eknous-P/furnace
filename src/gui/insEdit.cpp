@@ -8918,6 +8918,9 @@ void FurnaceGUI::drawInsEdit() {
                 macroList.push_back(FurnaceGUIMacroDesc(_("Sample Mode"),&ins->std.opMacros[1].arMacro,0,1,32,uiColors[GUI_COLOR_MACRO_NOISE],false,NULL,NULL,true));
               }
               break;
+            case DIV_INS_FLASHSYNTH:
+              macroList.push_back(FurnaceGUIMacroDesc(_("Patch"), &ins->std.ex1Macro, 0, 39, 160, uiColors[GUI_COLOR_MACRO_OTHER]));
+              break;
             case DIV_INS_MAX:
             case DIV_INS_NULL:
               break;
