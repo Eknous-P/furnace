@@ -877,6 +877,19 @@ bool DivInstrumentSID2::operator==(const DivInstrumentSID2& other) {
   );
 }
 
+bool DivInstrumentFlashSynth::operator==(const DivInstrumentFlashSynth& other) {
+  return (
+    _C(lfoDepth) &&
+    _C(lfoFreq) &&
+    _C(attack) && _C(release) &&
+    _C(fmFreq) && _C(fmFreqFine) &&
+    _C(fmDepth) && _C(fmAttack) && _C(fmDecay) &&
+    _C(pwmDepth) &&
+    _C(alg) && _C(waveform) && _C(waveformParam) &&
+    _C(usePatch) && _C(patch)
+  );
+}
+
 #undef _C
 
 #define CONSIDER(x,t) \

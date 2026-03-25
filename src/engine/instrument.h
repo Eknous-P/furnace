@@ -1036,8 +1036,14 @@ struct DivInstrumentFlashSynth {
   unsigned char fmFreq, fmFreqFine;
   unsigned char fmDepth, fmAttack, fmDecay;
   unsigned char pwmDepth;
-  unsigned char alg, waveform, waveformParam;
-  unsigned char patchNum;
+  unsigned char alg, oldAlg, waveform, waveformParam, oldWaveform, oldWaveformParam;
+  bool usePatch;
+  unsigned char patch, gain;
+
+  bool operator==(const DivInstrumentFlashSynth& other);
+  bool operator!=(const DivInstrumentFlashSynth& other) {
+    return !(*this==other);
+  }
   DivInstrumentFlashSynth():
     lfoDepth(0),
     lfoFreq(0),
@@ -1045,8 +1051,8 @@ struct DivInstrumentFlashSynth {
     fmFreq(0), fmFreqFine(0),
     fmDepth(0), fmAttack(0), fmDecay(0),
     pwmDepth(0),
-    alg(0), waveform(0), waveformParam(0),
-    patchNum(0) {}
+    alg(0), oldAlg(0), waveform(0), waveformParam(0), oldWaveform(0), oldWaveformParam(0),
+    usePatch(false), patch(0), gain(0) {}
 };
 
 struct DivInstrumentPOD {

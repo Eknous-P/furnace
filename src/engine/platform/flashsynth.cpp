@@ -18,6 +18,7 @@
  */
 
 #include "flashsynth.h"
+#include "../engine.h"
 
 // #define CHIP_FREQBASE 2048
 
@@ -37,8 +38,49 @@ void DivPlatformFlashSynth::acquire(short** buf, size_t len) {
   }
 }
 
+void DivPlatformFlashSynth::muteChannel(int ch, bool mute) {
+  isMuted[ch]=mute;
+  flashsynth_muteChannel(&fs, ch, mute);
+}
+
 void DivPlatformFlashSynth::tick(bool sysTick) {
   for (int i=0; i<16; i++) {
+    if (chan[i].insChanged) {
+      chan[i].insChanged=false;
+      DivInstrument* ins=parent->getIns(chan[i].ins,DIV_INS_FLASHSYNTH);
+      if (ins->flash.usePatch) {
+        flashsynth_loadPatch(&fs, ins->flash.patch);
+      } else {
+        DivInstrumentFlashSynth f=ins->flash;
+        // literal copypase from parameterChange...
+        fs.channels[i].mod=f.lfoDepth;
+        fs.channels[i].lfo_depth=f.lfoDepth*8.0f;
+        fs.lfo_freq=f.lfoFreq==127? 0.0: 204.8 + (float)(f.lfoFreq*4);
+        fs.pwm_freq=(float)(f.lfoFreq*f.lfoFreq)*0.04419368838737677; //[0..712.8]
+        fs.attackrate_cc=f.attack;
+        fs.releaserate_cc=f.release;
+        fs.outputGain = f.gain==0 ? 1.0 : f.gain*0.125;
+        fs.attackRate = (0.128 / (float)(fs.attackrate_cc + 1)) * fs.outputGain;
+        fs.releaseRate = -(0.128 / (float)(fs.releaserate_cc + 1)) * fs.outputGain;
+        fs.fm_freq_cc[0]=f.fmFreq;
+        fs.fm_freq_cc[1]=f.fmFreqFine;
+        fs.fm_freq = (float)((fs.fm_freq_cc[0] << 7) + fs.fm_freq_cc[1]) / 1024;
+        fs.fm_depth=25.0f*f.fmDepth/127.0f;
+        fs.fm_attack_cc=f.fmAttack;
+        fs.fm_attack = (fs.fm_depth * 0.001 / ((float)fs.fm_attack_cc + 0.5));
+        fs.fm_decay=1.0f-((float)(f.fmDecay*f.fmDecay)/25400000.f);
+        fs.pwm_depth=1795.f*f.pwmDepth/127.f;
+        if (f.waveform!=f.oldWaveform || f.waveformParam!=f.oldWaveformParam) {
+          flashsynth_setWaveform(&fs, f.waveform, f.waveformParam);
+          f.oldWaveform=f.waveform;
+          f.oldWaveformParam=f.waveformParam;
+        }
+        if (f.oldAlg!=f.alg) {
+          flashsynth_parameterChange(&fs, 0, cc_algo, f.alg);
+          f.oldAlg=f.alg;
+        }
+      }
+    }
     if (chan[i].freqChanged || chan[i].keyOn || chan[i].keyOff) {
       int note=chan[i].note;
       chan[i].freqChanged=false;
@@ -51,22 +93,22 @@ void DivPlatformFlashSynth::tick(bool sysTick) {
         chan[i].keyOff=false;
       }
     }
-    if (chan[i].std.ex1.had) {
-      flashsynth_loadPatch(&fs, chan[i].std.ex1.val);
-    }
   }
 }
 
 int DivPlatformFlashSynth::dispatch(DivCommand c) {
   switch (c.cmd) {
-    case DIV_CMD_NOTE_ON:
+    case DIV_CMD_NOTE_ON: {
       chan[c.chan].keyOn=true;
       if (c.value!=DIV_NOTE_NULL) {
         chan[c.chan].freqChanged=true;
         chan[c.chan].note=c.value;
       }
       break;
+    }
     case DIV_CMD_NOTE_OFF:
+    case DIV_CMD_NOTE_OFF_ENV:
+    case DIV_CMD_ENV_RELEASE:
       chan[c.chan].keyOff=true;
       break;
     case DIV_CMD_VOLUME:
@@ -74,9 +116,23 @@ int DivPlatformFlashSynth::dispatch(DivCommand c) {
       break;
     case DIV_CMD_GET_VOLMAX:
       return 127;
+    case DIV_CMD_INSTRUMENT:
+      if (chan[c.chan].ins!=c.value || c.value2==1) {
+        chan[c.chan].ins=c.value;
+        chan[c.chan].insChanged=true;
+      }
+      break;
     default: break;
   }
   return 1;
+}
+
+void DivPlatformFlashSynth::notifyInsChange(int ins) {
+  for (int i=0; i<16; i++) {
+    if (chan[i].ins==ins) {
+      chan[i].insChanged=true;
+    }
+  }
 }
 
 void* DivPlatformFlashSynth::getChanState(int i) {
@@ -100,14 +156,14 @@ int DivPlatformFlashSynth::getRegisterPoolSize() {
 }
 
 void DivPlatformFlashSynth::reset() {
-  fs=flashsynth_defaultInstance();
+  flashsynth_reset(&fs);
   flashsynth_parameterChange(&fs, 0, cc_all_channels_tuning, 0);
-  flashsynth_setWaveform(&fs, 0, 0);
+  // flashsynth_setWaveform(&fs, 0, 0);
   for (int i=0; i<16; i++) {
     chan[i]=Channel();
     isMuted[i]=false;
-    flashsynth_parameterChange(&fs, i, cc_algo, 0);
-    flashsynth_parameterChange(&fs, i, cc_sustain, 0);
+    // flashsynth_parameterChange(&fs, i, cc_output_gain, 127);
+    // flashsynth_parameterChange(&fs, i, cc_sustain, 0);
   }
   flashsynth_loadPatch(&fs, 0);
 }

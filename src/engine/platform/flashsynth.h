@@ -40,9 +40,10 @@ class DivPlatformFlashSynth : public DivDispatch {
   friend void putDispatchChan(void*,int,int);
   public:
     void acquire(short** buf, size_t len);
-    // void muteChannel(int ch, bool mute);
+    void muteChannel(int ch, bool mute);
     int dispatch(DivCommand c);
     // void notifyInsDeletion(void* ins);
+    void notifyInsChange(int ins);
     void* getChanState(int i);
     DivDispatchOscBuffer* getOscBuffer(int ch);
     int getOutputCount();

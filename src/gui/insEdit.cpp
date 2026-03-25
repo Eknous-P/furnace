@@ -36,6 +36,7 @@
 
 extern "C" {
 #include "../../extern/Nuked-OPLL/opll.h"
+#include "../../extern/flash-synth-core/Src/flashsynth.h"
 }
 
 const char* ssgEnvTypes[8]={
@@ -1259,6 +1260,37 @@ void FurnaceGUI::drawWaveformSID3(unsigned char type, const ImVec2& size) {
 
     dl->AddPolyline(waveform,waveformLen+1,color,ImDrawFlags_None,dpiScale);
   }
+}
+
+void FurnaceGUI::drawWaveformFromBuffer(float* buffer, size_t len, const ImVec2& size) {
+  ImDrawList* dl=ImGui::GetWindowDrawList();
+  ImGuiWindow* window=ImGui::GetCurrentWindow();
+
+  ImVec2 waveform[257];
+  const size_t waveformLen=256;
+
+  ImVec2 minArea=window->DC.CursorPos;
+  ImVec2 maxArea=ImVec2(
+    minArea.x+size.x,
+    minArea.y+size.y
+  );
+  ImRect rect=ImRect(minArea,maxArea);
+  ImGuiStyle& style=ImGui::GetStyle();
+  ImU32 color=ImGui::GetColorU32(uiColors[GUI_COLOR_FM_WAVE]);
+  ImGui::ItemSize(size,style.FramePadding.y);
+  if (ImGui::ItemAdd(rect,ImGui::GetID("SID3wsDisplay"))) {
+    ImGui::RenderFrame(rect.Min,rect.Max,ImGui::GetColorU32(ImGuiCol_FrameBg),true,style.FrameRounding);
+    const size_t step=len/waveformLen;
+    float x;
+    for (size_t i=0, j=0; i<waveformLen; i++, j+=step) {
+      x=(float)i/(float)waveformLen;
+      waveform[i]=ImLerp(rect.Min,rect.Max,ImVec2(x,buffer[j]));
+    }
+    waveform[waveformLen]=waveform[0];
+    waveform[waveformLen].x=rect.Max.x;
+    dl->AddPolyline(waveform,waveformLen+1,color,ImDrawFlags_None,dpiScale);
+  }
+
 }
 
 void FurnaceGUI::drawAlgorithm(unsigned char alg, FurnaceGUIFMAlgs algType, const ImVec2& size) {
@@ -7752,6 +7784,41 @@ void FurnaceGUI::drawInsEdit() {
         }
         if (ins->type==DIV_INS_SID3) {
           drawInsSID3(ins);
+        }
+        if (ins->type==DIV_INS_FLASHSYNTH) if (ImGui::BeginTabItem(_("FlashSynth"))) {
+          bool* usePatch=&ins->flash.usePatch;
+          ImGui::Checkbox(_("Use builtin patches"), usePatch);
+          ImGui::BeginDisabled(!*usePatch);
+          if (CWSliderScalar(_("Patch"), ImGuiDataType_U8, &ins->flash.patch, &_ZERO, &_THIRTY_EIGHT, (char*)&bPatches[ins->flash.patch][44])) {
+            PARAMETER
+          }
+          ImGui::EndDisabled();
+          ImGui::BeginDisabled(*usePatch);
+          if (CWSliderScalar(_("Waveform"), ImGuiDataType_U8, &ins->flash.waveform, &_ZERO, &_NINETEEN)) {
+            PARAMETER
+            flashsynth_generateWaveform(flashSynthWaveform, ins->flash.waveform, ins->flash.waveformParam);
+          }
+          if (CWSliderScalar(_("Parameter"), ImGuiDataType_U8, &ins->flash.waveformParam, &_ZERO, &_ONE_HUNDRED_TWENTY_SEVEN)) {
+            PARAMETER
+            flashsynth_generateWaveform(flashSynthWaveform, ins->flash.waveform, ins->flash.waveformParam);
+          }
+          drawWaveformFromBuffer(flashSynthWaveform, 8192, ImVec2(100,70));
+          #define _FS_CC_PARAM(n,p) if (CWSliderScalar(n, ImGuiDataType_U8, &ins->flash.p, &_ZERO, &_ONE_HUNDRED_TWENTY_SEVEN)) {PARAMETER}
+          _FS_CC_PARAM(_("LFO Depth"), lfoDepth)
+          _FS_CC_PARAM(_("LFO Frequency"), lfoFreq)
+          _FS_CC_PARAM(_("Attack"), attack)
+          _FS_CC_PARAM(_("Release"), release)
+          _FS_CC_PARAM(_("FM Frequency"), fmFreq)
+          _FS_CC_PARAM(_("FM Frequency (fine)"), fmFreqFine)
+          _FS_CC_PARAM(_("FM Depth"), fmDepth)
+          _FS_CC_PARAM(_("FM Attack"), fmAttack)
+          _FS_CC_PARAM(_("FM Decay"), fmDecay)
+          _FS_CC_PARAM(_("PWM Depth"), pwmDepth)
+          if (CWSliderScalar(_("Algorithm"), ImGuiDataType_U8, &ins->flash.alg, &_ZERO, &_TEN)) {PARAMETER}
+          _FS_CC_PARAM(_("Gain"), gain)
+          #undef _FS_CC_PARAM
+          ImGui::EndDisabled();
+          ImGui::EndTabItem();
         }
         if (ins->type==DIV_INS_MSM6258 ||
             ins->type==DIV_INS_MSM6295 ||
