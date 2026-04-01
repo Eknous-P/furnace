@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2025 tildearrow and contributors
+ * Copyright (C) 2021-2026 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1201,6 +1201,14 @@ void FurnaceGUI::drawSettings() {
         if (ImGui::Checkbox(_("New instruments are blank"),&blankInsB)) {
           settings.blankIns=blankInsB;
           settingsChanged=true;
+        }
+        bool warnNotePassthroughB=settings.warnNotePassthrough;
+        if (ImGui::Checkbox(_("Allow note input with open warning"),&warnNotePassthroughB)) {
+          settings.warnNotePassthrough=warnNotePassthroughB;
+          settingsChanged=true;
+        }
+        if (ImGui::IsItemHovered()) {
+          ImGui::SetTooltip(_("allows passthrough for notes while warnings are open; only ESC will be used for warnings"));
         }
         // SUBSECTION CONFIGURATION
         CONFIG_SUBSECTION(_("Configuration"));
@@ -2570,6 +2578,8 @@ void FurnaceGUI::drawSettings() {
             drawKeybindSettingsTableRow(GUI_ACTION_SAMPLE_ZOOM_AUTO);
             drawKeybindSettingsTableRow(GUI_ACTION_SAMPLE_MAKE_INS);
             drawKeybindSettingsTableRow(GUI_ACTION_SAMPLE_SET_LOOP);
+            drawKeybindSettingsTableRow(GUI_ACTION_SAMPLE_TRIM_AFTER_LOOP);
+            drawKeybindSettingsTableRow(GUI_ACTION_SAMPLE_TRIM_TO_LOOP);
 
             KEYBIND_CONFIG_END;
             ImGui::TreePop();
@@ -3664,14 +3674,6 @@ void FurnaceGUI::drawSettings() {
         }
         ImGui::Unindent();
         ImGui::EndDisabled();
-
-        // SUBSECTION WAVE EDITOR
-        CONFIG_SUBSECTION(_("Wave Editor"));
-        bool waveLayoutB=settings.waveLayout;
-        if (ImGui::Checkbox(_("Use compact wave editor"),&waveLayoutB)) {
-          settings.waveLayout=waveLayoutB;
-          settingsChanged=true;
-        }
 
         // SUBSECTION FM EDITOR
         CONFIG_SUBSECTION(_("FM Editor"));
@@ -4946,6 +4948,7 @@ void FurnaceGUI::readConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
     settings.displayAllInsTypes=conf.getInt("displayAllInsTypes",0);
 
     settings.blankIns=conf.getInt("blankIns",0);
+    settings.warnNotePassthrough=conf.getInt("warnNotePassthrough",0);
 
     settings.saveWindowPos=conf.getInt("saveWindowPos",1);
 
@@ -5201,7 +5204,6 @@ void FurnaceGUI::readConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
   if (groups&GUI_SETTINGS_LAYOUTS) {
     settings.fmLayout=conf.getInt("fmLayout",4);
     settings.sampleLayout=conf.getInt("sampleLayout",0);
-    settings.waveLayout=conf.getInt("waveLayout",0);
     settings.exportOptionsLayout=conf.getInt("exportOptionsLayout",1);
     settings.unifiedDataView=conf.getInt("unifiedDataView",0);
     settings.macroLayout=conf.getInt("macroLayout",0);
@@ -5375,7 +5377,6 @@ void FurnaceGUI::readConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
   clampSetting(settings.frameBorders,0,1);
   clampSetting(settings.effectDeletionAltersValue,0,1);
   clampSetting(settings.sampleLayout,0,1);
-  clampSetting(settings.waveLayout,0,1);
   clampSetting(settings.separateFMColors,0,1);
   clampSetting(settings.insEditColorize,0,1);
   clampSetting(settings.metroVol,0,200);
@@ -5403,6 +5404,7 @@ void FurnaceGUI::readConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
   clampSetting(settings.effectValCellSpacing,0,32);
   clampSetting(settings.doubleClickColumn,0,1);
   clampSetting(settings.blankIns,0,1);
+  clampSetting(settings.warnNotePassthrough,0,1);
   clampSetting(settings.dragMovesSelection,0,5);
   clampSetting(settings.draggableDataView,0,1);
   clampSetting(settings.unsignedDetune,0,1);
@@ -5550,6 +5552,7 @@ void FurnaceGUI::writeConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
     conf.set("displayAllInsTypes",settings.displayAllInsTypes);
 
     conf.set("blankIns",settings.blankIns);
+    conf.set("warnNotePassthrough",settings.warnNotePassthrough);
 
     conf.set("saveWindowPos",settings.saveWindowPos);
 
@@ -5791,7 +5794,6 @@ void FurnaceGUI::writeConfig(DivConfig& conf, FurnaceGUISettingGroups groups) {
   if (groups&GUI_SETTINGS_LAYOUTS) {
     conf.set("fmLayout",settings.fmLayout);
     conf.set("sampleLayout",settings.sampleLayout);
-    conf.set("waveLayout",settings.waveLayout);
     conf.set("exportOptionsLayout",settings.exportOptionsLayout);
     conf.set("unifiedDataView",settings.unifiedDataView);
     conf.set("macroLayout",settings.macroLayout);

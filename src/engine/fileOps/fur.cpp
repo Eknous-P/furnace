@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2025 tildearrow and contributors
+ * Copyright (C) 2021-2026 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1165,7 +1165,10 @@ bool DivEngine::loadFur(unsigned char* file, size_t len, int variantID) {
       }
       if (tchans>DIV_MAX_CHANS) {
         tchans=DIV_MAX_CHANS;
-        logW("too many channels!");
+        logE("too many channels!");
+        lastError="too many channels!";
+        delete[] file;
+        return false;
       }
       logV("system len: %d",ds.systemLen);
       if (ds.systemLen<1) {
@@ -1545,6 +1548,9 @@ bool DivEngine::loadFur(unsigned char* file, size_t len, int variantID) {
       if (ds.version>=96) {
         subSong->virtualTempoN=reader.readS();
         subSong->virtualTempoD=reader.readS();
+
+        if (subSong->virtualTempoN<1) subSong->virtualTempoN=1;
+        if (subSong->virtualTempoD<1) subSong->virtualTempoD=1;
       } else {
         reader.readI();
       }
@@ -1638,6 +1644,7 @@ bool DivEngine::loadFur(unsigned char* file, size_t len, int variantID) {
         for (int i=0; i<16; i++) {
           subSong->speeds.val[i]=(unsigned char)reader.readC();
         }
+        subSong->speeds.checkBounds();
 
         // grooves
         unsigned char grooveCount=reader.readC();
@@ -1648,6 +1655,7 @@ bool DivEngine::loadFur(unsigned char* file, size_t len, int variantID) {
           for (int j=0; j<16; j++) {
             gp.val[j]=(unsigned char)reader.readC();
           }
+          gp.checkBounds();
 
           ds.grooves.push_back(gp);
         }
@@ -2392,6 +2400,27 @@ bool DivEngine::loadFur(unsigned char* file, size_t len, int variantID) {
           }
         }
         ch+=ds.systemChans[i];
+      }
+    }
+
+    // OPL4 default mix levels
+    if (ds.version<242) {
+      for (int i=0; i<ds.systemLen; i++) {
+        if (ds.system[i]==DIV_SYSTEM_OPL4 || ds.system[i]==DIV_SYSTEM_OPL4_DRUMS) {
+          ds.systemFlags[i].set("fmMixL",7);
+          ds.systemFlags[i].set("fmMixR",7);
+          ds.systemFlags[i].set("pcmMixL",7);
+          ds.systemFlags[i].set("pcmMixR",7);
+        }
+      }
+    }
+
+    // Namco 163 no wave pos latch
+    if (ds.version<244) {
+      for (int i=0; i<ds.systemLen; i++) {
+        if (ds.system[i]==DIV_SYSTEM_N163) {
+          ds.systemFlags[i].set("posLatch",false);
+        }
       }
     }
 

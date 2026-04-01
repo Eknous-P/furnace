@@ -1,6 +1,6 @@
 /**
  * Furnace Tracker - multi-system chiptune tracker
- * Copyright (C) 2021-2025 tildearrow and contributors
+ * Copyright (C) 2021-2026 tildearrow and contributors
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -235,6 +235,68 @@ void FurnaceGUI::drawDebug() {
 
       ImGui::Checkbox("Enable row timestamps (in pattern view)",&debugRowTimestamps);
       
+      ImGui::TreePop();
+    }
+    if (ImGui::TreeNode("Macro Int Debug")) {
+      static int ch=0;
+      static int macroIndex=0;
+      ImGui::Text("Damn it, get back to work already!\nMacro indices are the same as macro on/off/restart effect.");
+
+      ImGui::InputInt("Channel...",&ch);
+      ImGui::InputInt("Macro ID...",&macroIndex);
+
+      DivMacroInt* macroInt=e->getMacroInt(ch);
+      if (macroInt==NULL) {
+        ImGui::Text("YAAAAAAAAAAAAAAAAAAAA");
+      } else {
+        DivMacroStruct* macroStruct=macroInt->structByType(macroIndex);
+
+        if (macroStruct==NULL) {
+          ImGui::Text("WAAAAAAAAAAAAAAAAAHHHHH");
+        } else {
+          ImGui::TextColored(macroStruct->has?uiColors[GUI_COLOR_TOGGLE_ON]:uiColors[GUI_COLOR_TOGGLE_OFF],"has");
+          ImGui::SameLine();
+          ImGui::TextColored(macroStruct->had?uiColors[GUI_COLOR_TOGGLE_ON]:uiColors[GUI_COLOR_TOGGLE_OFF],"had");
+          ImGui::SameLine();
+          ImGui::TextColored(macroStruct->actualHad?uiColors[GUI_COLOR_TOGGLE_ON]:uiColors[GUI_COLOR_TOGGLE_OFF],"actualHad");
+          ImGui::SameLine();
+          ImGui::TextColored(macroStruct->finished?uiColors[GUI_COLOR_TOGGLE_ON]:uiColors[GUI_COLOR_TOGGLE_OFF],"finished");
+          ImGui::SameLine();
+          ImGui::TextColored(macroStruct->will?uiColors[GUI_COLOR_TOGGLE_ON]:uiColors[GUI_COLOR_TOGGLE_OFF],"will");
+          ImGui::SameLine();
+          ImGui::TextColored(macroStruct->linger?uiColors[GUI_COLOR_TOGGLE_ON]:uiColors[GUI_COLOR_TOGGLE_OFF],"linger");
+          ImGui::SameLine();
+          ImGui::TextColored(macroStruct->began?uiColors[GUI_COLOR_TOGGLE_ON]:uiColors[GUI_COLOR_TOGGLE_OFF],"began");
+          ImGui::SameLine();
+          ImGui::TextColored(macroStruct->masked?uiColors[GUI_COLOR_TOGGLE_ON]:uiColors[GUI_COLOR_TOGGLE_OFF],"masked");
+          ImGui::SameLine();
+          ImGui::TextColored(macroStruct->activeRelease?uiColors[GUI_COLOR_TOGGLE_ON]:uiColors[GUI_COLOR_TOGGLE_OFF],"activeRelease");
+          ImGui::SameLine();
+          ImGui::TextColored(macroStruct->lfoDir?uiColors[GUI_COLOR_TOGGLE_ON]:uiColors[GUI_COLOR_TOGGLE_OFF],"lfoDir");
+
+          ImGui::Text("mode: %d - type: %d",macroStruct->mode,macroStruct->type);
+          ImGui::Text("macroType: %d",macroStruct->macroType);
+          ImGui::Text("pos: %d - lastPos: %d - delay: %d",macroStruct->pos,macroStruct->lastPos,macroStruct->delay);
+          ImGui::Text("val: %d",macroStruct->val);
+        }
+      }
+      ImGui::TreePop();
+    }
+    if (ImGui::TreeNode("Instrument Compiler")) {
+      if (ImGui::BeginCombo("Type",(insCompileType>=DIV_INS_MAX)?_("Unknown"):_(insTypes[insCompileType][0]))) {
+        for (int i=0; insTypes[i][0]; i++) {
+          if (ImGui::Selectable(insTypes[i][0],insCompileType==i)) {
+            insCompileType=i;
+          }
+        }
+        ImGui::EndCombo();
+      }
+      if (ImGui::Button("Let's Go!")) {
+        openFileDialog(GUI_FILE_EXPORT_COMPILED_INS);
+      }
+      if (ImGui::Button("Export only the current instrument")) {
+        openFileDialog(GUI_FILE_EXPORT_COMPILED_INS_ONE);
+      }
       ImGui::TreePop();
     }
     if (ImGui::TreeNode("Sample Debug")) {
