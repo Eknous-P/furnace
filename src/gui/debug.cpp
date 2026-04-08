@@ -58,6 +58,7 @@
 #include "../engine/platform/c140.h"
 #include "../engine/platform/msm6295.h"
 #include "../engine/platform/multipcm.h"
+#include "../engine/platform/flashsynth.h"
 #include "../engine/platform/dummy.h"
 
 #define COMMON_CHIP_DEBUG \
@@ -1094,6 +1095,20 @@ void putDispatchChan(void* data, int chanNum, int type) {
       COMMON_CHAN_DEBUG_BOOL;
       ImGui::TextColored(ch->writeCtrl?colorOn:colorOff,">> WriteCtrl");
       ImGui::TextColored(ch->levelDirect?colorOn:colorOff,">> LevelDirect");
+      break;
+    }
+    case DIV_SYSTEM_FLASHSYNTH: {
+      DivPlatformFlashSynth::Channel* ch=(DivPlatformFlashSynth::Channel*)data;
+      ImGui::Text("> FlashSynth");
+      COMMON_CHAN_DEBUG;
+      if (ch->osc) {
+        ImGui::Text("- amplitude: %f", ch->osc->amplitude);
+        ImGui::Text("- fm_amplitude: %f", ch->osc->fm_amplitude);
+        ImGui::Text("- alive: %d", ch->osc->alive);
+        ImGui::Text("- sustained: %d", ch->osc->sustained);
+        ImGui::Text("- released: %d", ch->osc->released);
+      }
+      COMMON_CHAN_DEBUG_BOOL;
       break;
     }
     default:

@@ -27,14 +27,19 @@ extern "C" {
 
 class DivPlatformFlashSynth : public DivDispatch {
   struct Channel : public SharedChannel<unsigned char>{
+    struct flashsynth_instance::flashsynth_oscillator* osc;
+    struct flashsynth_instance::flashsynth_channel* chan;
     Channel():
-      SharedChannel<unsigned char>(127)
+      SharedChannel<unsigned char>(127),
+      osc(NULL),
+      chan(NULL)
     {}
   };
   Channel chan[16];
   DivDispatchOscBuffer* oscBuf[16];
   bool isMuted[16];
   flashsynth_instance fs;
+  unsigned char alg;
   unsigned char chans;  
   friend void putDispatchChip(void*,int);
   friend void putDispatchChan(void*,int,int);
@@ -49,6 +54,7 @@ class DivPlatformFlashSynth : public DivDispatch {
     int getOutputCount();
     unsigned char* getRegisterPool();
     int getRegisterPoolSize();
+    void getPaired(int ch, std::vector<DivChannelPair>& ret);
     void reset();
     void tick(bool sysTick=true);
     int init(DivEngine* parent, int channels, int sugRate, const DivConfig& flags);

@@ -27,6 +27,7 @@ extern const int _THREE;
 extern const int _FOUR;
 extern const int _SEVEN;
 extern const int _EIGHT;
+extern const int _NINE;
 extern const int _TEN;
 extern const int _FIFTEEN;
 extern const int _SIXTEEN;

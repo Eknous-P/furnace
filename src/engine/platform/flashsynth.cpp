@@ -22,6 +22,24 @@
 
 // #define CHIP_FREQBASE 2048
 
+struct fsAlgoFlags {
+  int oscs;
+  bool mono;
+};
+
+fsAlgoFlags algFlags[]={
+  {1,false},
+  {2,false},
+  {2,true},
+  {2,false},
+  {1,false},
+  {2,false},
+  {2,true},
+  {4,false},
+  {1,false},
+  {3,true},
+};
+
 void DivPlatformFlashSynth::acquire(short** buf, size_t len) {
   // unsigned short left, right;
   for (int i=0; i<16; i++) {
@@ -53,6 +71,7 @@ void DivPlatformFlashSynth::tick(bool sysTick) {
       } else {
         DivInstrumentFlashSynth f=ins->flash;
         // literal copypase from parameterChange...
+        flashsynth_parameterChange(&fs, i, cc_sustain, f.sustain);
         fs.channels[i].mod=f.lfoDepth;
         fs.channels[i].lfo_depth=f.lfoDepth*8.0f;
         fs.lfo_freq=f.lfoFreq==127? 0.0: 204.8 + (float)(f.lfoFreq*4);
@@ -69,6 +88,9 @@ void DivPlatformFlashSynth::tick(bool sysTick) {
         fs.fm_attack_cc=f.fmAttack;
         fs.fm_attack = (fs.fm_depth * 0.001 / ((float)fs.fm_attack_cc + 0.5));
         fs.fm_decay=1.0f-((float)(f.fmDecay*f.fmDecay)/25400000.f);
+        float detune= ((float)f.detune/10160.0);
+        fs.detuneUp = 1.0 + detune;
+        fs.detuneDown = 1.0 - detune;
         fs.pwm_depth=1795.f*f.pwmDepth/127.f;
         if (f.waveform!=f.oldWaveform || f.waveformParam!=f.oldWaveformParam) {
           flashsynth_setWaveform(&fs, f.waveform, f.waveformParam);
@@ -78,6 +100,7 @@ void DivPlatformFlashSynth::tick(bool sysTick) {
         if (f.oldAlg!=f.alg) {
           flashsynth_parameterChange(&fs, 0, cc_algo, f.alg);
           f.oldAlg=f.alg;
+          alg=f.alg;
         }
       }
     }
@@ -89,7 +112,7 @@ void DivPlatformFlashSynth::tick(bool sysTick) {
         chan[i].keyOn=false;
       }
       if (chan[i].keyOff) {
-        fs.noteOff(&fs, i, note, chan[i].vol);
+        fs.noteOff(&fs, i, note, i);
         chan[i].keyOff=false;
       }
     }
@@ -154,6 +177,31 @@ unsigned char* DivPlatformFlashSynth::getRegisterPool() {
 int DivPlatformFlashSynth::getRegisterPoolSize() {
   return sizeof (flashsynth_instance);
 }
+void DivPlatformFlashSynth::getPaired(int ch, std::vector<DivChannelPair>& ret) {
+  ret.clear();
+  switch (algFlags[alg].oscs) {
+    case 2:
+      if ((algFlags[alg].mono && ch==0) || (!algFlags[alg].mono && (ch&1)==0)) {
+        ret.push_back(DivChannelPair("stereo", ch+1));
+      }
+      return;
+    case 3:
+      if ((algFlags[alg].mono && ch==0)) {
+        ret.push_back(DivChannelPair("tri", ch+1,ch+2,-1,-1,-1,-1,-1,-1));
+      }
+      return;
+    case 4:
+      if ((algFlags[alg].mono && ch==0) || (!algFlags[alg].mono && (ch&3)==0)) {
+        ret.push_back(DivChannelPair("quad", ch+1,ch+2,ch+3,-1,-1,-1,-1,-1));
+      }
+      return;
+    case 1:
+      if (algFlags[alg].mono && ch==0) {
+        ret.push_back(DivChannelPair("mono", ch+1));
+      }
+      return;
+  }
+}
 
 void DivPlatformFlashSynth::reset() {
   flashsynth_reset(&fs);
@@ -163,9 +211,14 @@ void DivPlatformFlashSynth::reset() {
     chan[i]=Channel();
     isMuted[i]=false;
     // flashsynth_parameterChange(&fs, i, cc_output_gain, 127);
-    // flashsynth_parameterChange(&fs, i, cc_sustain, 0);
+    flashsynth_parameterChange(&fs, i, cc_sustain, 0);
+    chan[i].osc=&fs.oscillators[i];
+    chan[i].chan=&fs.channels[i];
+    fs.noteOn(&fs,0,0,0,i);
+    fs.noteOff(&fs,i,0,i);
   }
   flashsynth_loadPatch(&fs, 0);
+  alg=0;
 }
 
 int DivPlatformFlashSynth::init(DivEngine* p, int ch, int sugRate, const DivConfig& flags) {
@@ -174,7 +227,6 @@ int DivPlatformFlashSynth::init(DivEngine* p, int ch, int sugRate, const DivConf
   for (int i=0; i<16; i++) {
     oscBuf[i]=new DivDispatchOscBuffer;
     oscBuf[i]->setRate(44107);
-    isMuted[i]=false;
   }
   reset();
   return 16;

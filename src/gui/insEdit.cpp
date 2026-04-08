@@ -339,6 +339,42 @@ const char* sid3SpecialWaveforms[]={
   _N("Clipped Saw")
 };
 
+const char* flashsynthWaveforms[]={
+  _N("Sine"),
+  _N("Hammondish"),
+  _N("Hammondish 2"),
+  _N("Cubed Sine"),
+  _N("Half Sine"),
+  _N("Absolute Sine"),
+  _N("Hard Square"),
+  _N("Soft Square"),
+  _N("Fifth Square"),
+  _N("Octave Square"),
+  _N("Fifth Saw"),
+  _N("Hard Saw"),
+  _N("Soft Saw"),
+  _N("Variable Saw"),
+  _N("Even Sine"),
+  _N("Absolute Even Sine"),
+  _N("Hard Pulse"),
+  _N("Soft Pulse"),
+  _N("Hard Sync Sine"),
+  _N("Hard Sync Saw")
+};
+
+const char* flashsynthAlgorithms[]={
+  _N("Alg. 1 Polyphonic"),
+  _N("Alg. 1 Stereo"),
+  _N("Alg. 1 Monophonic"),
+  _N("Alg. 1 Quad Osc."),
+  _N("Alg. 2 Polyphonic"),
+  _N("Alg. 2 Stereo"),
+  _N("Alg. 2 Monophonic"),
+  _N("Alg. 2 Quad Osc."),
+  _N("Alg. 3 Polyphonic"),
+  _N("Alg. 3 Monophonic"),
+};
+
 const bool opIsOutput[8][4]={
   {false,false,false,true},
   {false,false,false,true},
@@ -7794,7 +7830,12 @@ void FurnaceGUI::drawInsEdit() {
           }
           ImGui::EndDisabled();
           ImGui::BeginDisabled(*usePatch);
-          if (CWSliderScalar(_("Waveform"), ImGuiDataType_U8, &ins->flash.waveform, &_ZERO, &_NINETEEN)) {
+          bool susB=ins->flash.sustain>64;
+          if (ImGui::Checkbox(_("Sustain"), &susB)) {
+            ins->flash.sustain=susB?127:0;
+            PARAMETER;
+          }
+          if (CWSliderScalar(_("Waveform"), ImGuiDataType_U8, &ins->flash.waveform, &_ZERO, &_NINETEEN, _(flashsynthWaveforms[ins->flash.waveform]))) {
             PARAMETER
             flashsynth_generateWaveform(flashSynthWaveform, ins->flash.waveform, ins->flash.waveformParam);
           }
@@ -7813,8 +7854,9 @@ void FurnaceGUI::drawInsEdit() {
           _FS_CC_PARAM(_("FM Depth"), fmDepth)
           _FS_CC_PARAM(_("FM Attack"), fmAttack)
           _FS_CC_PARAM(_("FM Decay"), fmDecay)
+          _FS_CC_PARAM(_("Detune"), detune)
           _FS_CC_PARAM(_("PWM Depth"), pwmDepth)
-          if (CWSliderScalar(_("Algorithm"), ImGuiDataType_U8, &ins->flash.alg, &_ZERO, &_TEN)) {PARAMETER}
+          if (CWSliderScalar(_("Algorithm"), ImGuiDataType_U8, &ins->flash.alg, &_ZERO, &_NINE, _(flashsynthAlgorithms[ins->flash.alg]))) {PARAMETER}
           _FS_CC_PARAM(_("Gain"), gain)
           #undef _FS_CC_PARAM
           ImGui::EndDisabled();

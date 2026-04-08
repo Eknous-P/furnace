@@ -1035,10 +1035,10 @@ struct DivInstrumentFlashSynth {
   unsigned char attack, release;
   unsigned char fmFreq, fmFreqFine;
   unsigned char fmDepth, fmAttack, fmDecay;
-  unsigned char pwmDepth;
+  unsigned char detune, pwmDepth;
   unsigned char alg, oldAlg, waveform, waveformParam, oldWaveform, oldWaveformParam;
   bool usePatch;
-  unsigned char patch, gain;
+  unsigned char patch, gain, sustain;
 
   bool operator==(const DivInstrumentFlashSynth& other);
   bool operator!=(const DivInstrumentFlashSynth& other) {
@@ -1050,9 +1050,9 @@ struct DivInstrumentFlashSynth {
     attack(0), release(0),
     fmFreq(0), fmFreqFine(0),
     fmDepth(0), fmAttack(0), fmDecay(0),
-    pwmDepth(0),
+    detune(0), pwmDepth(0),
     alg(0), oldAlg(0), waveform(0), waveformParam(0), oldWaveform(0), oldWaveformParam(0),
-    usePatch(false), patch(0), gain(0) {}
+    usePatch(false), patch(0), gain(0), sustain(0) {}
 };
 
 struct DivInstrumentPOD {

@@ -884,9 +884,9 @@ bool DivInstrumentFlashSynth::operator==(const DivInstrumentFlashSynth& other) {
     _C(attack) && _C(release) &&
     _C(fmFreq) && _C(fmFreqFine) &&
     _C(fmDepth) && _C(fmAttack) && _C(fmDecay) &&
-    _C(pwmDepth) &&
+    _C(detune) && _C(pwmDepth) &&
     _C(alg) && _C(waveform) && _C(waveformParam) &&
-    _C(usePatch) && _C(patch)
+    _C(usePatch) && _C(patch) && _C(sustain)
   );
 }
 
